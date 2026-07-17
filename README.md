@@ -36,7 +36,7 @@ Use this decision rule:
 |---|---|---|
 | Primary goal | Produce stronger, less AI-shaped prose | Produce more natural wording without semantic drift |
 | Claims | May remove weak, generic, unsupported, or redundant claims | Must preserve every claim, including weak or unsupported ones |
-| Opinions | May sharpen or add point of view when the source and genre support it | Must preserve the same opinion, owner, direction, and emotional valence |
+| Opinions | May sharpen a supplied point of view, but cannot invent an attitude or experience | Must preserve the same opinion, owner, direction, and emotional valence |
 | Certainty | Must not invent certainty, but may remove a weak claim entirely | Must preserve `may`, `might`, `will`, `must`, and all other modality exactly in force |
 | Attribution | May remove vague attribution or ask for a source | Must preserve vague attribution as vague attribution |
 | Structure | May merge, split, reorder, or replace paragraphs, headings, and lists | Preserves section order, paragraph order, examples, and list membership by default |
@@ -52,26 +52,27 @@ Use this decision rule:
 Source:
 
 ```text
-Industry reports suggest adoption is accelerating, highlighting the platform's growing relevance.
+Atlas Draft can generate documentation and tests. Industry observers say it helps developers move faster.
 ```
 
 Editorial Humanizer may return:
 
 ```text
-The adoption claim is difficult to assess because the reports are not identified.
+Atlas Draft can generate documentation and tests.
 ```
 
-That is a valid editorial rewrite because it challenges the weak attribution and
-reframes the paragraph around evidence quality.
+That is a valid editorial rewrite because it keeps the supported product behavior
+and removes an attributed benefit that the source does not establish. It does not
+replace the discarded benefit with softer praise or audit commentary.
 
 Faithful Humanizer may return:
 
 ```text
-Industry reports suggest that adoption is accelerating, a trend that highlights the platform's growing relevance.
+Atlas Draft can generate documentation and tests. Industry observers say it helps developers move faster.
 ```
 
-That version keeps the unnamed reports, the hedge `suggest`, the acceleration
-claim, and the evaluation that the platform is becoming more relevant.
+That version keeps the unnamed observers and attributed benefit because Faithful
+Humanizer preserves supplied claims rather than evaluating their support.
 
 A second example:
 
@@ -97,8 +98,7 @@ Neither result is universally better. They answer different editing contracts.
 
 ## Editorial Humanizer
 
-Editorial Humanizer is the successor to the former `$humanizer` skill. It is the
-broader anti-slop editor.
+Editorial Humanizer is the broader anti-slop editor.
 
 Use it when you want:
 
@@ -111,8 +111,10 @@ Use it when you want:
 - an audit and score of AI-writing patterns.
 
 It protects factual integrity: it must not invent names, figures, dates, studies,
-quotes, citations, examples, prices, or experiences. However, it may remove a
-claim that cannot be supported or rewrite the surrounding argument more broadly.
+quotes, citations, examples, prices, experiences, benefits, attitudes, or causal
+explanations. It must preserve epistemic status and may remove a claim that cannot
+be supported or rewrite the surrounding argument more broadly. A rewrite must not
+replace discarded claims with audit commentary unless the user requested an audit.
 
 Basic use:
 
@@ -286,22 +288,6 @@ cp -R humanizer-skill-plugin/skills/editorial-humanizer ~/.config/opencode/skill
 cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.config/opencode/skills/faithful-humanizer
 ```
 
-## Migration from 2.x
-
-Version 3.0.0 renames the skills:
-
-| Previous invocation | New invocation |
-|---|---|
-| `$humanizer` | `$editorial-humanizer` |
-| `$humanizer-form` | `$faithful-humanizer` |
-
-The rename is intentional. `$humanizer` did not communicate that the skill could
-remove material, restructure the text, and add voice. `$humanizer-form` described
-an implementation constraint rather than the user-facing promise.
-
-After upgrading, start a new session and update saved prompts, workflows, and evals
-to use the new names.
-
 ## Repository layout
 
 ```text
@@ -388,13 +374,6 @@ scientific, financial, security, or policy text still requires human review.
 
 Neither skill guarantees that an AI detector will classify the output as
 human-written. Detector evasion is not the objective.
-
-## Versioning
-
-- Plugin `3.0.0`: renames the skills to Editorial Humanizer and Faithful Humanizer,
-  clarifies their contracts, and updates all documentation and eval prompts.
-- Editorial Humanizer `3.0.0`: successor to the former `humanizer` skill.
-- Faithful Humanizer `1.0.0`: successor to the unreleased `humanizer-form` skill.
 
 ## License
 

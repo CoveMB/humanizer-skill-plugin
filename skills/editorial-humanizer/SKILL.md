@@ -59,28 +59,44 @@ When given text to humanize:
 
 1. **Do not invent details.** Never fabricate studies, people, companies, quotes,
    metrics, examples, timelines, prices, citations, anecdotes, or experiences.
-2. **No em dashes by default.** Use commas, periods, colons, semicolons, or
+2. **Do not invent benefits or causal explanations.** Unless the source supports
+   them, do not claim that something saves time, moves faster, reduces friction,
+   makes work easier, improves quality, frees attention, supports judgment, improves
+   decisions, or explain why an outcome varies.
+3. **Preserve epistemic status.** Do not turn attributed, uncertain, or unsupported
+   claims into facts. Attribution and uncertainty are not interchangeable. Keep the
+   original status, remove the claim, or ask a precise source question.
+4. **Prefer the smallest faithful rewrite.** Do not add framing to compensate for
+   material you removed. One plain sentence is enough when it contains all the
+   supported concrete content.
+5. **Rewrite mode is not audit mode.** In a rewrite-only response, remove discarded
+   hype and filler instead of replacing it with commentary about missing evidence.
+   Reserve explanations for an audit, comparison, or requested source question.
+6. **No em dashes by default.** Use commas, periods, colons, semicolons, or
    parentheses unless the user explicitly asks to preserve them.
-3. **No forced rule-of-three lists.** Keep only items that carry real content. Do
+7. **No forced rule-of-three lists.** Keep only items that carry real content. Do
    not invent a third item or preserve generic filler merely to maintain a triad.
-4. **No contrast framing as a crutch.** Avoid repeated "not X, but Y," "not just,"
-   and escalation ladders when a direct statement works.
-5. **No dramatic staccato bursts.** Do not stack short sentences to manufacture
+   Do not translate `fostering alignment` into `helping teams stay on the same page`.
+8. **No contrast framing as a crutch.** Avoid repeated "not X, but Y" and
+   escalation ladders when a direct statement works.
+9. **No `not just` phrasing.** State the supported point directly.
+10. **No dramatic staccato bursts.** Do not stack short sentences to manufacture
    importance.
-6. **No rhetorical transition hooks.** Remove "The catch?", "Here's the thing,"
+11. **No rhetorical transition hooks.** Remove "The catch?", "Here's the thing,"
    "So what does this mean?", and similar setup lines unless they serve a real
    rhetorical purpose.
-7. **No fake naming.** Do not turn ordinary ideas into invented title-cased
+12. **No fake naming.** Do not turn ordinary ideas into invented title-cased
    frameworks, methods, paradoxes, loops, or flywheels.
-8. **No self-narration.** Replace "this highlights," "the key takeaway is," and
+13. **No self-narration.** Replace "this highlights," "the key takeaway is," and
    similar announcements with the point itself.
-9. **No chatbot wrapper.** Do not add praise, a preamble, "I hope this helps," or a
+14. **No chatbot wrapper.** Do not add praise, a preamble, "I hope this helps," or a
    closing invitation around a rewrite.
-10. **No vague attribution presented as evidence.** Name a supplied source, keep the
-    claim general, remove it, or ask for the source. Never invent one.
-11. **Preserve supplied concrete nouns.** Keep product, object, feature, audience,
+15. **No vague attribution presented as evidence.** `Some say` is still vague
+    attribution, not a repair. Name a supplied source, keep the claim general,
+    remove it, or ask for the source. Never invent one or substitute a new hedge.
+16. **Preserve supplied concrete nouns.** Keep product, object, feature, audience,
     domain, and scope terms when they define what the text is about.
-12. **Do not silently strengthen claims.** Editorial cleanup may remove weak or
+17. **Do not silently strengthen claims.** Editorial cleanup may remove weak or
     unsupported material, but it may not convert uncertainty into certainty or
     correlation into causation.
 
@@ -104,7 +120,12 @@ Do not use this latitude when the user explicitly asks for form-only preservatio
 
 ## Factual and anchor preservation
 
-Before rewriting, map what the source actually supplies:
+Before rewriting, separate concrete content from promotional claims, attributed,
+uncertain, or unsupported claims, benefits, causal explanations, names, numbers,
+dates, examples, quotations, supplied attitudes, and tone. A statement appearing in
+the source does not make it established fact.
+
+Map and preserve what the source actually supplies:
 
 - names, organizations, products, places, and defined terms;
 - numbers, dates, prices, units, measurements, and ranges;
@@ -113,8 +134,17 @@ Before rewriting, map what the source actually supplies:
 - uncertainty, scope, negation, conditions, and causal strength that remain in the
   final text.
 
-Do not replace supplied concrete nouns with generic substitutes merely for variety.
-Do not add a more specific fact than the source supports.
+Keep the user's exact noun where possible, including singular or plural form. Do
+not replace supplied concrete nouns with generic substitutes merely for variety or
+flatten scope qualifiers. For example, do not change `teams` to `people`,
+`documentation` to `docs`, `offline mode` to `works offline`, `adoption` to
+`traction`, or `flights` to `a flight`. Do not add a more specific fact than the
+source supports.
+
+Removing promotional language does not permit softer promotional language. Do not
+turn `value proposition` into `practical value`, `robust foundation` into `reliable
+starting point`, or a removed benefit into a new claim about speed, ease, quality,
+friction, productivity, attention, judgment, or decisions.
 
 ## Pattern catalog
 
@@ -156,7 +186,9 @@ When the user supplies a writing sample:
 2. Note sentence length, word choice, paragraph openings, punctuation, transitions,
    recurring phrases, formality, and tolerance for uncertainty.
 3. Match those surface and rhetorical patterns without importing facts from the
-   sample.
+   sample. A sample establishes style, not preferences, feelings, experiences,
+   timing, or evaluations. Phrases such as `finally`, `I care about`, or `sounds
+   usable` are off-limits unless the source or user supplies that attitude.
 
 When no sample is supplied, use a natural, varied voice appropriate to the genre.
 A technical note should remain technical; a formal report should remain formal.
@@ -178,7 +210,8 @@ Do not invent feelings, anecdotes, experiences, jokes, or stakes.
 
 Run this process internally:
 
-1. **Map facts and anchors.** Record what is supplied and what is unavailable.
+1. **Map the source.** Record facts, anchors, attribution, uncertainty, benefits,
+   causal explanations, supplied attitudes, and what is unavailable.
 2. **Calibrate voice.** Use the source register or supplied writing sample.
 3. **Diagnose patterns.** Read `references/banned-list.md` for dense drafts.
 4. **Rewrite editorially.** Remove or reshape material that clearly weakens the text.
@@ -195,7 +228,8 @@ Before returning the rewrite, check for:
 
 - unsupported names, numbers, dates, prices, quotations, examples, or citations;
 - dropped anchor nouns or scope-defining phrases;
-- invented benefits or substitute filler;
+- invented benefits, causal explanations, attitudes, or substitute filler;
+- lost attribution, uncertainty, or other epistemic qualifiers;
 - repeated triads, contrast formulas, or staccato drama;
 - rhetorical hooks, self-narration, fake names, and chatbot wrappers;
 - vague attribution treated as evidence;
@@ -257,14 +291,14 @@ entity, metric, and timeframe.
 
 **Before**
 
-> Great question! AI-assisted coding serves as an enduring testament to the transformative potential of large language models, marking a pivotal moment in the rapidly evolving landscape of software development. At its core, the value proposition is clear: streamlining documentation, enhancing tests, and fostering alignment. Industry observers have noted adoption is rising. Let me know if you want more detail.
+> Great question! Atlas Draft can generate documentation and tests. Industry observers say it helps developers move faster, unlocking productivity at scale. Let me know if you want more detail.
 
 **After**
 
-> AI coding assistants can help with documentation and tests. The adoption claim is difficult to assess because "industry observers" does not identify a source.
+> Atlas Draft can generate documentation and tests.
 
-The rewrite removes chatbot framing, significance inflation, generic filler, and a
-forced triad without inventing evidence.
+The rewrite removes chatbot framing and the unsupported attributed benefit without
+inventing a replacement benefit or turning the rewrite into an audit.
 
 ## Reference
 

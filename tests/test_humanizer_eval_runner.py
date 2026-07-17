@@ -43,8 +43,12 @@ def minimal_eval_case(**overrides):
     }
 
 
-def two_dimension_rubric(minimum_total_score=16, minimum_dimension_score=8):
-    return {
+def two_dimension_rubric(
+    minimum_total_score=16,
+    minimum_dimension_score=8,
+    minimum_dimension_scores=None,
+):
+    rubric = {
         "minimum_total_score": minimum_total_score,
         "minimum_dimension_score": minimum_dimension_score,
         "dimensions": [
@@ -52,6 +56,9 @@ def two_dimension_rubric(minimum_total_score=16, minimum_dimension_score=8):
             {"name": "rewrite_only", "question": "Rewrite only?"},
         ],
     }
+    if minimum_dimension_scores is not None:
+        rubric["minimum_dimension_scores"] = minimum_dimension_scores
+    return rubric
 
 
 def skill_read_trace(usage=None):
@@ -141,6 +148,9 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 "dense_banned_list_scrub",
                 "contextual_release_notes",
                 "contextual_docs_cleanup",
+                "unsupported_benefit_substitution",
+                "epistemic_status_preservation",
+                "already_natural_restraint",
                 "negative_fact_check_only",
                 "negative_translate_only",
                 "negative_summary_only",
@@ -179,6 +189,10 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             if dimension["name"] == "factual_fidelity"
         )
         self.assertIn("Do not penalize removal of generic filler", factual_fidelity_question)
+        self.assertEqual(
+            rewrite_rubric["minimum_dimension_scores"],
+            {"factual_fidelity": 9},
+        )
         for case in cases:
             if case.get("rubric_id"):
                 self.assertIn("rubric", case)
@@ -291,6 +305,38 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                             rubric_id="bad",
                         )
                     ],
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_accepts_dimension_specific_thresholds(self):
+        cases = self._load_cases_from_data(
+            {
+                "rubrics": {
+                    "fact_safe": two_dimension_rubric(
+                        minimum_dimension_scores={"factual_fidelity": 9}
+                    )
+                },
+                "cases": [minimal_eval_case(rubric_id="fact_safe")],
+            },
+            output_contract_cases={},
+        )
+
+        self.assertEqual(
+            cases[0]["rubric"]["minimum_dimension_scores"],
+            {"factual_fidelity": 9},
+        )
+
+    def test_load_eval_cases_rejects_unknown_dimension_threshold(self):
+        with self.assertRaisesRegex(ValueError, "unknown dimension"):
+            self._load_cases_from_data(
+                {
+                    "rubrics": {
+                        "bad": two_dimension_rubric(
+                            minimum_dimension_scores={"missing": 9}
+                        )
+                    },
+                    "cases": [minimal_eval_case(rubric_id="bad")],
                 },
                 output_contract_cases={},
             )
@@ -413,6 +459,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             "rubric": {
                 "minimum_total_score": 8,
                 "minimum_dimension_score": 4,
+                "minimum_dimension_scores": {"factual_fidelity": 9},
                 "dimensions": [
                     {
                         "name": "factual_fidelity",
@@ -433,6 +480,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         self.assertIn("Atlas Note adoption rose 43% last quarter.", prompt)
         self.assertIn("factual_fidelity", prompt)
+        self.assertIn('"factual_fidelity": 9', prompt)
         self.assertIn('"scores"', prompt)
         self.assertIn("Return only JSON", prompt)
 
@@ -460,6 +508,28 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         }
 
         with self.assertRaisesRegex(AssertionError, "rewrite_only"):
+            self.runner.validate_rubric_grade(case, grade)
+
+    def test_validate_rubric_grade_uses_dimension_specific_threshold(self):
+        case = {
+            "id": "rubric",
+            "rubric": two_dimension_rubric(
+                minimum_total_score=16,
+                minimum_dimension_scores={"factual_fidelity": 9},
+            ),
+        }
+        grade = {
+            "case_id": "rubric",
+            "scores": {
+                "factual_fidelity": {"score": 8, "rationale": "added a benefit"},
+                "rewrite_only": {"score": 10, "rationale": "rewrite only"},
+            },
+            "total_score": 18,
+            "passed": True,
+            "issues": ["unsupported benefit"],
+        }
+
+        with self.assertRaisesRegex(AssertionError, "factual_fidelity"):
             self.runner.validate_rubric_grade(case, grade)
 
     def test_validate_rubric_grade_rejects_boolean_dimension_score(self):

@@ -25,6 +25,7 @@ SUPPORTED_CONSTRAINT_KEYS = {
     "rewrite_must_not_include",
     "rewrite_only",
     "max_question_marks",
+    "minimum_score_out_of_80",
 }
 
 REWRITE_SECTION_BOUNDARY_PATTERN = re.compile(
@@ -249,12 +250,27 @@ def extract_named_entity_terms(text):
     return unique_normalized_terms(matches)
 
 
-def reject_introduced_terms(case_id, source, output, extract_terms, term_label):
+def source_contains_term(source, term):
+    return re.search(
+        rf"(?i)(?<!\w){re.escape(term)}(?!\w)",
+        source,
+    ) is not None
+
+
+def reject_introduced_terms(
+    case_id,
+    source,
+    output,
+    extract_terms,
+    term_label,
+    allow_source_text_match=False,
+):
     source_terms = set(extract_terms(source))
     introduced_terms = [
         term
         for term in extract_terms(extract_rewrite_section(output))
         if term not in source_terms
+        and not (allow_source_text_match and source_contains_term(source, term))
     ]
     raise_if_violations(
         f"{case_id}: introduced {term_label} not present in source {term!r}"
@@ -273,6 +289,7 @@ def reject_new_named_entities(case_id, source, output):
         output,
         extract_named_entity_terms,
         "named entity",
+        allow_source_text_match=True,
     )
 
 
@@ -318,6 +335,29 @@ def enforce_question_limit(case_id, output, maximum_question_marks):
         raise AssertionError(
             f"{case_id}: expected at most {maximum_question_marks} question marks, "
             f"found {question_mark_count}"
+        )
+
+
+def enforce_minimum_score_out_of_80(case_id, output, minimum_score):
+    if (
+        not isinstance(minimum_score, int)
+        or isinstance(minimum_score, bool)
+        or not 0 <= minimum_score <= 80
+    ):
+        raise AssertionError(
+            f"{case_id}: minimum_score_out_of_80 must be an integer from 0 to 80"
+        )
+
+    score_match = re.search(r"(?i)\bscore\s*:\s*(\d{1,2})/80\b", output)
+    if score_match is None:
+        raise AssertionError(f"{case_id}: missing Score: NN/80")
+
+    score = int(score_match.group(1))
+    if score > 80:
+        raise AssertionError(f"{case_id}: score {score}/80 exceeds 80/80")
+    if score < minimum_score:
+        raise AssertionError(
+            f"{case_id}: score {score}/80 below minimum {minimum_score}/80"
         )
 
 
@@ -409,6 +449,15 @@ def validate_case_output(case, output):
             case_id,
             normalized_output,
             constraints["max_question_marks"],
+        )
+
+    if "minimum_score_out_of_80" in constraints:
+        collect_violation(
+            violations,
+            enforce_minimum_score_out_of_80,
+            case_id,
+            normalized_output,
+            constraints["minimum_score_out_of_80"],
         )
 
     if violations:

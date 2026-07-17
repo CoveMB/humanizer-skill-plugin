@@ -479,6 +479,39 @@ def require_rubric_score_threshold(rubric_id, rubric, key):
     return value
 
 
+def validate_dimension_score_thresholds(
+    rubric_id,
+    rubric,
+    dimension_names,
+):
+    thresholds = rubric.get("minimum_dimension_scores", {})
+    if not isinstance(thresholds, dict):
+        raise ValueError(
+            f"{rubric_id}: rubric minimum_dimension_scores must be an object"
+        )
+
+    unknown_dimension_names = sorted(set(thresholds) - set(dimension_names))
+    if unknown_dimension_names:
+        raise ValueError(
+            f"{rubric_id}: rubric minimum_dimension_scores has unknown dimension(s): "
+            + ", ".join(unknown_dimension_names)
+        )
+
+    normalized_thresholds = {}
+    for dimension_name, threshold in thresholds.items():
+        if not is_positive_integer(threshold):
+            raise ValueError(
+                f"{rubric_id}: rubric minimum score for {dimension_name} "
+                "must be a positive integer"
+            )
+        if threshold > RUBRIC_MAX_DIMENSION_SCORE:
+            raise ValueError(
+                f"{rubric_id}: rubric minimum score for {dimension_name} is too high"
+            )
+        normalized_thresholds[dimension_name] = threshold
+    return normalized_thresholds
+
+
 def validate_rubric_definition(rubric_id, rubric):
     if not isinstance(rubric, dict):
         raise ValueError(f"{rubric_id}: rubric must be an object")
@@ -518,6 +551,11 @@ def validate_rubric_definition(rubric_id, rubric):
     )
     if minimum_dimension_score > RUBRIC_MAX_DIMENSION_SCORE:
         raise ValueError(f"{rubric_id}: rubric minimum_dimension_score is too high")
+    minimum_dimension_scores = validate_dimension_score_thresholds(
+        rubric_id,
+        rubric,
+        dimension_names,
+    )
 
     maximum_total_score = len(normalized_dimensions) * RUBRIC_MAX_DIMENSION_SCORE
     if minimum_total_score > maximum_total_score:
@@ -526,6 +564,7 @@ def validate_rubric_definition(rubric_id, rubric):
     return {
         "minimum_total_score": minimum_total_score,
         "minimum_dimension_score": minimum_dimension_score,
+        "minimum_dimension_scores": minimum_dimension_scores,
         "dimensions": normalized_dimensions,
     }
 
@@ -631,6 +670,13 @@ def build_codex_prompt(case, plugin_root=None):
 
 def build_rubric_prompt(case, output_text):
     rubric = case["rubric"]
+    minimum_scores_by_dimension = {
+        dimension["name"]: rubric.get("minimum_dimension_scores", {}).get(
+            dimension["name"],
+            rubric["minimum_dimension_score"],
+        )
+        for dimension in rubric["dimensions"]
+    }
     expected_schema = {
         "case_id": case["id"],
         "scores": {
@@ -650,6 +696,8 @@ def build_rubric_prompt(case, output_text):
             "Use only the source and output below. Do not infer outside facts.",
             f"Minimum total score: {rubric['minimum_total_score']}",
             f"Minimum dimension score: {rubric['minimum_dimension_score']}",
+            "Minimum score by dimension: "
+            + json.dumps(minimum_scores_by_dimension, sort_keys=True),
             "",
             "<rubric>",
             json.dumps(rubric["dimensions"], indent=2),
@@ -945,11 +993,17 @@ def validate_rubric_grade(case, grade):
     if grade.get("total_score") != total_score:
         raise AssertionError(f"{case_id}: rubric total_score does not match scores")
 
-    violations = [
-        f"{case_id}: {name} score {score} below minimum {rubric['minimum_dimension_score']}"
-        for name, score in dimension_scores.items()
-        if score < rubric["minimum_dimension_score"]
-    ]
+    minimum_dimension_scores = rubric.get("minimum_dimension_scores", {})
+    violations = []
+    for name, score in dimension_scores.items():
+        minimum_score = minimum_dimension_scores.get(
+            name,
+            rubric["minimum_dimension_score"],
+        )
+        if score < minimum_score:
+            violations.append(
+                f"{case_id}: {name} score {score} below minimum {minimum_score}"
+            )
     if total_score < rubric["minimum_total_score"]:
         violations.append(
             f"{case_id}: total_score {total_score} below minimum {rubric['minimum_total_score']}"

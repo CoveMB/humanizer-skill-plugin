@@ -43,12 +43,36 @@
           "rough edges",
           "by hand",
           "the actual problem",
-          "bigger value"
+          "bigger value",
+          "move faster",
+          "save developers time",
+          "reducing the drag",
+          "take some of the drag",
+          "spend more time",
+          "work that needs judgment",
+          "one of the clearest ways",
+          "showing up in software development",
+          "practical value",
+          "stay on the same page",
+          "more visible ways",
+          "clearest uses",
+          "part of the story",
+          "part of the picture",
+          "broader question",
+          "day-to-day coding",
+          "claims about alignment",
+          "broader claims about creativity",
+          "most concrete uses"
         ],
         "must_not_match": [
           "(?i)future looks bright",
           "(?i)game[- ]changer",
-          "(?i)\\bdoc(?:s|umentation)?\\b,\\s+tests?,\\s+and\\s+[^.?!,;:]+"
+          "(?i)\\bdoc(?:s|umentation)?\\b,\\s+tests?,\\s+and\\s+[^.?!,;:]+",
+          "(?i)\\b(?:make|makes|making)\\b[^.?!]{0,60}\\beasier\\b",
+          "(?i)\\bwithout\\s+(?:lowering|reducing)\\s+(?:the\\s+)?quality\\b",
+          "(?i)\\b(?:the\\s+)?pace\\s+depends\\s+on\\b",
+          "(?i)\\bmore\\s+than\\s+(?:just\\s+)?autocomplete\\b",
+          "(?i)(?:^|[.!?]\\s+)adoption\\s+is\\s+(?:rising|growing)(?:[.!?]|$)"
         ],
         "no_em_dash": true,
         "no_chatbot_wrapper": true,
@@ -113,15 +137,18 @@
       "constraints": {
         "must_include": [
           "ChronoPad",
-          "offline",
-          "flight",
+          "offline mode",
+          "flights",
           "sync"
         ],
         "must_not_include": [
           "significantly enhanced",
           "showcasing",
           "commitment",
-          "seamless productivity"
+          "seamless productivity",
+          "finally",
+          "part I care about",
+          "sounds usable"
         ],
         "no_em_dash": true,
         "no_chatbot_wrapper": true,
@@ -159,8 +186,11 @@
         "must_match": [
           "(?i)\\bteams\\b",
           "(?i)(align\\w*|agree\\w*|shared direction)",
-          "(?i)score\\s*:?\\s*\\d{1,2}/80"
+          "(?i)\\bcollaborat\\w*\\b",
+          "(?i)score\\s*:?\\s*\\d{1,2}/80",
+          "(?i)factual integrity\\s*:\\s*(?:9|10)/10"
         ],
+        "minimum_score_out_of_80": 56,
         "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
@@ -268,7 +298,117 @@
           "enabling",
           "seamlessly",
           "leverage",
-          "unlock productivity"
+          "unlock productivity",
+          "productivity",
+          "solid base",
+          "reliable starting point",
+          "productively",
+          "effectively"
+        ],
+        "must_not_match": [
+          "(?i)\\b(?:make|makes|making)\\b[^.?!]{0,60}\\beasier\\b"
+        ],
+        "no_em_dash": true,
+        "no_chatbot_wrapper": true,
+        "no_contrast_frame": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "unsupported_benefit_substitution",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "no_unsupported_benefits"
+      ],
+      "prompt": "Humanize this without adding benefits. Return only the rewritten text.",
+      "source": "Atlas Draft can generate documentation and tests.",
+      "constraints": {
+        "must_include": [
+          "Atlas Draft",
+          "documentation",
+          "tests"
+        ],
+        "must_not_include": [
+          "faster",
+          "easier",
+          "save time",
+          "quality",
+          "focus",
+          "judgment",
+          "drag",
+          "friction",
+          "productivity",
+          "better decisions"
+        ],
+        "no_em_dash": true,
+        "no_chatbot_wrapper": true,
+        "no_contrast_frame": true,
+        "no_rule_of_three": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "epistemic_status_preservation",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "preserve_epistemic_status"
+      ],
+      "prompt": "Humanize this without presenting an attributed claim as established fact. Return only the rewritten text.",
+      "source": "Industry observers say Atlas Draft adoption is rising.",
+      "constraints": {
+        "must_include": [
+          "Atlas Draft",
+          "adoption"
+        ],
+        "must_match": [
+          "(?i)\\b(industry observers|source|evidence|claim|which|who)\\b"
+        ],
+        "must_not_match": [
+          "(?i)^Atlas Draft adoption is (?:rising|growing)[.!]?$",
+          "(?i)^Atlas Draft adoption (?:may|might|appears? to|seems? to) be (?:rising|growing)[.!]?$"
+        ],
+        "must_not_include": [
+          "some say"
+        ],
+        "no_em_dash": true,
+        "no_chatbot_wrapper": true,
+        "no_contrast_frame": true,
+        "no_rule_of_three": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "already_natural_restraint",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "minimal_edit"
+      ],
+      "prompt": "Humanize this, but leave wording alone when it already sounds natural. Return only the rewritten text.",
+      "source": "We shipped offline comments on Tuesday. Search is faster because the release caches recent issue titles. I still want to watch error rates before calling the change a success.",
+      "constraints": {
+        "must_include": [
+          "offline comments on Tuesday",
+          "caches recent issue titles",
+          "watch error rates",
+          "before calling the change a success"
         ],
         "no_em_dash": true,
         "no_chatbot_wrapper": true,

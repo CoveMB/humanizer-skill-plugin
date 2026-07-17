@@ -47,6 +47,156 @@ class OutputContractTests(unittest.TestCase):
                 "AI coding assistants can help with documentation, tests, and refactors.",
             )
 
+    def test_dense_ai_rewrite_rejects_unsupported_benefit_substitutions(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        unsupported_outputs = (
+            (
+                "AI coding assistants can help with documentation and tests. "
+                "They make development work easier."
+            ),
+            (
+                "AI coding assistants can help with documentation and tests "
+                "without lowering quality."
+            ),
+            (
+                "AI coding assistants can help with documentation and tests. "
+                "The pace depends on the team and the kind of code being written."
+            ),
+            (
+                "AI coding assistants are one of the clearest ways large language "
+                "models are showing up in software development. Autocomplete is "
+                "part of it, but the practical value is in documentation and tests."
+            ),
+            (
+                "AI coding assistants are useful for more than autocomplete. They "
+                "can help with documentation and tests, and they may also make it "
+                "easier for teams to stay on the same page."
+            ),
+            (
+                "AI coding assistants are one of the more visible ways large "
+                "language models are showing up in software development. Their "
+                "clearest uses are practical ones: helping with documentation and "
+                "tests. Autocomplete is part of the story, but the broader question "
+                "is how these tools fit into day-to-day coding work."
+            ),
+        )
+
+        for output in unsupported_outputs:
+            with self.subTest(output=output), self.assertRaisesRegex(
+                AssertionError,
+                "forbidden",
+            ):
+                validate_case_output(cases["dense_ai_rewrite"], output)
+
+    def test_dense_ai_rewrite_rejects_unqualified_adoption_claim(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+
+        with self.assertRaisesRegex(AssertionError, "forbidden pattern"):
+            validate_case_output(
+                cases["dense_ai_rewrite"],
+                (
+                    "AI coding assistants can help with documentation and tests. "
+                    "Adoption is rising."
+                ),
+            )
+
+    def test_voice_calibration_rejects_invented_attitude(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+
+        with self.assertRaisesRegex(AssertionError, "forbidden"):
+            validate_case_output(
+                cases["voice_calibration"],
+                (
+                    "ChronoPad finally has an offline mode that sounds usable. "
+                    "You can edit notes on flights and sync them when you reconnect."
+                ),
+            )
+
+    def test_docs_cleanup_rejects_invented_ease_claim(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+
+        with self.assertRaisesRegex(AssertionError, "forbidden pattern"):
+            validate_case_output(
+                cases["contextual_docs_cleanup"],
+                (
+                    "This configuration supports scalable workflows and makes the "
+                    "platform easier to use across cross-functional teams."
+                ),
+            )
+
+    def test_docs_cleanup_rejects_softened_promotional_padding(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        padded_outputs = (
+            (
+                "This configuration gives developers a solid base for scalable "
+                "workflows and helps cross-functional teams use the platform "
+                "more productively."
+            ),
+            (
+                "This configuration supports scalable workflows so developers "
+                "can use the platform effectively across cross-functional teams."
+            ),
+            (
+                "This configuration gives developers a reliable starting point for "
+                "building scalable workflows on the platform across cross-functional "
+                "teams."
+            ),
+            (
+                "With this configuration, developers can use the platform for "
+                "scalable workflows and productivity across cross-functional teams."
+            ),
+        )
+
+        for output in padded_outputs:
+            with self.subTest(output=output), self.assertRaisesRegex(
+                AssertionError,
+                "forbidden",
+            ):
+                validate_case_output(cases["contextual_docs_cleanup"], output)
+
+    def test_targeted_fact_safe_contracts_accept_literal_outputs(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+
+        validate_case_output(
+            cases["unsupported_benefit_substitution"],
+            "Atlas Draft can generate documentation and tests.",
+        )
+        validate_case_output(
+            cases["epistemic_status_preservation"],
+            "Which industry observers support the claim that Atlas Draft adoption is rising?",
+        )
+        validate_case_output(
+            cases["already_natural_restraint"],
+            cases["already_natural_restraint"]["source"],
+        )
+
+    def test_targeted_fact_safe_contracts_reject_known_regressions(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        rejected_outputs = {
+            "unsupported_benefit_substitution": (
+                "Atlas Draft generates documentation and tests so developers can "
+                "move faster."
+            ),
+            "epistemic_status_preservation": "Atlas Draft adoption is rising.",
+            "already_natural_restraint": "We shipped offline comments on Tuesday.",
+        }
+
+        for case_id, output in rejected_outputs.items():
+            with self.subTest(case=case_id), self.assertRaises(AssertionError):
+                validate_case_output(cases[case_id], output)
+
+        with self.assertRaisesRegex(AssertionError, "forbidden"):
+            validate_case_output(
+                cases["epistemic_status_preservation"],
+                "Some say Atlas Draft adoption is rising.",
+            )
+
+        with self.assertRaisesRegex(AssertionError, "required pattern"):
+            validate_case_output(
+                cases["epistemic_status_preservation"],
+                "Atlas Draft adoption may be rising.",
+            )
+
     def test_accepts_output_that_satisfies_constraints(self):
         output = "Atlas Note adoption rose 43%. The source is unnamed, so the claim should stay general."
         validate_case_output(BASE_CASE, output)
@@ -79,6 +229,41 @@ class OutputContractTests(unittest.TestCase):
         case = {"id": "score", "constraints": {"must_match": [r"Score:\s+\d+/80"]}}
         with self.assertRaises(AssertionError):
             validate_case_output(case, "Score unavailable.")
+
+    def test_minimum_80_point_score_accepts_threshold(self):
+        case = {
+            "id": "score_threshold",
+            "constraints": {"minimum_score_out_of_80": 56},
+        }
+
+        validate_case_output(case, "Score: 56/80")
+
+    def test_minimum_80_point_score_rejects_low_score(self):
+        case = {
+            "id": "score_threshold",
+            "constraints": {"minimum_score_out_of_80": 56},
+        }
+
+        with self.assertRaisesRegex(AssertionError, "below minimum"):
+            validate_case_output(case, "Score: 55/80")
+
+    def test_minimum_80_point_score_rejects_invalid_threshold(self):
+        case = {
+            "id": "score_threshold",
+            "constraints": {"minimum_score_out_of_80": True},
+        }
+
+        with self.assertRaisesRegex(AssertionError, "integer from 0 to 80"):
+            validate_case_output(case, "Score: 80/80")
+
+    def test_minimum_80_point_score_rejects_score_above_80(self):
+        case = {
+            "id": "score_threshold",
+            "constraints": {"minimum_score_out_of_80": 56},
+        }
+
+        with self.assertRaisesRegex(AssertionError, "exceeds 80/80"):
+            validate_case_output(case, "Score: 81/80")
 
     def test_rejects_em_dash(self):
         with self.assertRaises(AssertionError):
@@ -210,6 +395,18 @@ class OutputContractTests(unittest.TestCase):
         validate_case_output(
             case,
             "Which reports support Atlas Note's 43% adoption increase last quarter?",
+        )
+
+    def test_allows_source_backed_sentence_initial_reporting_verb(self):
+        case = {
+            "id": "sentence_initial_reporting_verb",
+            "source": "Users can edit notes on flights and sync them when they reconnect.",
+            "constraints": {"no_new_named_entities": True},
+        }
+
+        validate_case_output(
+            case,
+            "Edit notes on flights and sync them when you reconnect.",
         )
 
     def test_rewrite_scoped_forbidden_fragments_allow_audit_notes(self):

@@ -90,8 +90,22 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
                 self.assertIn(term, normalized)
 
     def test_editorial_skill_protects_factual_integrity(self):
+        normalized = " ".join(self.skill_markdown.split())
         required_terms = [
             "Do not invent details",
+            "Do not invent benefits or causal explanations",
+            "Preserve epistemic status",
+            "Prefer the smallest faithful rewrite",
+            "Rewrite mode is not audit mode",
+            "No em dashes",
+            "No forced rule-of-three lists",
+            "No contrast framing",
+            "No `not just` phrasing",
+            "No dramatic staccato bursts",
+            "No rhetorical transition hooks",
+            "No fake naming",
+            "No self-narration",
+            "No chatbot wrapper",
             "No vague attribution presented as evidence",
             "Preserve supplied concrete nouns",
             "Do not silently strengthen claims",
@@ -99,7 +113,35 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         ]
         for term in required_terms:
             with self.subTest(term=term):
-                self.assertIn(term, self.skill_markdown)
+                self.assertIn(term, normalized)
+
+    def test_fact_safe_boundaries_cover_observed_live_failures(self):
+        normalized = " ".join(self.skill_markdown.split())
+        expected_patterns = [
+            r"saves? time",
+            r"moves? faster",
+            r"reduces? friction",
+            r"makes? work easier",
+            r"improves? quality",
+            r"causal explanation",
+            r"attributed, uncertain, or unsupported claims",
+            r"preferences, feelings, experiences, timing, or evaluations",
+            r"`finally`, `I care about`, or `sounds usable`",
+            r"`value proposition` into `practical value`",
+            r"`Some say` is still vague attribution",
+            r"`documentation` to `docs`",
+            r"`offline mode` to `works offline`",
+            r"`adoption` to `traction`",
+            r"`flights` to `a flight`",
+            r"`helping teams stay on the same page`",
+            r"`reliable starting point`",
+            r"One plain sentence is enough",
+            r"A statement appearing in the source does not make it established fact",
+            r"Attribution and uncertainty are not interchangeable",
+        ]
+        for expected_pattern in expected_patterns:
+            with self.subTest(pattern=expected_pattern):
+                self.assertRegex(normalized, expected_pattern)
 
     def test_scoring_gate_thresholds_are_present(self):
         for threshold in [
@@ -139,7 +181,6 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.assertLessEqual(len(prompts), 3)
         self.assertTrue(any("$editorial-humanizer" in prompt for prompt in prompts))
         self.assertTrue(any("$faithful-humanizer" in prompt for prompt in prompts))
-        self.assertFalse(any("$humanizer-form" in prompt for prompt in prompts))
         for prompt in prompts:
             self.assertLessEqual(len(prompt), 128)
 
@@ -151,18 +192,12 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "$faithful-humanizer",
             "Detailed comparison",
             "Same source, different result",
-            "Migration from 2.x",
             "Would you accept the editor deleting a weak sentence",
             "every supplied idea and qualifier must survive",
         ]
         for term in required_terms:
             with self.subTest(term=term):
                 self.assertIn(term, self.readme_markdown)
-
-    def test_readme_documents_rename_migration(self):
-        self.assertIn("| `$humanizer` | `$editorial-humanizer` |", self.readme_markdown)
-        self.assertIn("| `$humanizer-form` | `$faithful-humanizer` |", self.readme_markdown)
-        self.assertIn("Version 3.0.0 renames the skills", self.readme_markdown)
 
     def test_readme_documents_install_and_update_lifecycle(self):
         for term in [
