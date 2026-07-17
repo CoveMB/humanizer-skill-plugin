@@ -69,56 +69,6 @@ jobs:
           git mv tests/test_humanizer_form_artifacts.py tests/test_faithful_humanizer_artifacts.py
           git rm -r skills/humanizer skills/humanizer-form
           git rm docs/humanizer-form-research.md
-          git rm .github/workflows/rename-humanizers.yml
-
-          cat > .github/workflows/test.yml <<'YAML'
-          name: Test
-
-          on:
-            push:
-              branches:
-                - main
-            pull_request:
-
-          jobs:
-            test:
-              runs-on: ubuntu-latest
-
-              steps:
-                - name: Check out repository
-                  uses: actions/checkout@v4
-                  with:
-                    fetch-depth: 0
-
-                - name: Set up Python
-                  uses: actions/setup-python@v5
-                  with:
-                    python-version: "3.12"
-
-                - name: Check whitespace
-                  run: |
-                    if [ "${{ github.event_name }}" = "pull_request" ]; then
-                      git diff --check "origin/${{ github.base_ref }}...HEAD"
-                    elif [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
-                      git diff --check "${{ github.event.before }}..${{ github.sha }}"
-                    else
-                      git diff --check "HEAD~1..HEAD"
-                    fi
-
-                - name: Run tests
-                  run: make test
-
-                - name: Check eval matrix
-                  run: make eval-humanizer-dry-run
-
-                - name: Check eval flag variations
-                  run: >-
-                    make eval-humanizer-dry-run
-                    EVAL_ARGS='--filter explicit_dense_rewrite --filter contextual_docs_cleanup
-                    --rubric-grade --model gpt-5.5 --timeout-seconds 600
-                    --cases evals/humanizer_eval_cases.json
-                    --artifacts-dir /tmp/humanizer-eval-artifacts --codex-bin codex'
-          YAML
 
           git diff --check
           make test
@@ -126,7 +76,11 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add \
+            scripts/run_humanizer_evals.py \
+            tests/test_humanizer_eval_runner.py \
+            tests/test_skill_artifacts.py \
+            tests/test_faithful_humanizer_artifacts.py
           git commit -m "refactor: complete Editorial and Faithful Humanizer rename"
           git push origin HEAD:agent/add-form-only-humanizer
 
