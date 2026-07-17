@@ -1,52 +1,234 @@
 # Humanizer Plugin
 
-Humanizer Plugin packages two prose-editing skills for Codex and other skill-aware agents:
+Humanizer Plugin contains two prose-editing skills with deliberately different
+levels of editorial authority:
 
-| Skill | Purpose | Editing latitude |
+| Skill | Invocation | Core promise |
 |---|---|---|
-| `humanizer` | Remove common AI-writing patterns with the existing fact-safe anti-slop workflow | May cut weak or generic material, restructure prose, and add voice when the source allows it |
-| `humanizer-form` | Make wording read more naturally while preserving the supplied substance | Changes form only; every claim, opinion, qualifier, attribution, example, and logical relation must survive |
+| **Editorial Humanizer** | `$editorial-humanizer` | Improve the writing with broad editorial judgment while preserving factual integrity |
+| **Faithful Humanizer** | `$faithful-humanizer` | Improve only the presentation while preserving every substantive element |
 
-The second skill exists for cases where the original Humanizer is too opinionated. It uses minimal local edits and a semantic-diff gate rather than a long catalog of banned words and structures.
+The names describe what each editor is allowed to do:
 
-The repository works as a plain skill source for Claude Code, OpenCode, and Codex. The repository root is also a Codex plugin package.
+- **Editorial** means the skill may decide that material is weak, generic,
+  repetitive, unsupported, badly structured, or inconsistent with the intended
+  voice. It can remove or reshape that material.
+- **Faithful** means the supplied text remains authoritative. The skill can improve
+  grammar, syntax, punctuation, transitions, repetition, and rhythm, but it cannot
+  add, remove, strengthen, weaken, fact-check, neutralize, or reinterpret content.
 
-## Which skill should you use?
+“Faithful” is more precise than “non-opinionated.” The skill still makes local
+copy-editing judgments, but it cannot impose a new position or editorial agenda.
 
-Use `humanizer` when you want editorial cleanup: less padding, fewer AI-writing patterns, tighter structure, and a more natural voice.
+## Choose the correct skill
 
-Use `humanizer-form` when the instruction is closer to:
+Use this decision rule:
 
-- Humanize the form, not the substance.
-- Preserve every claim and opinion.
-- Do not fact-check, add evidence, remove vague claims, or reinterpret the argument.
-- Keep every hedge, negation, exception, quantifier, attribution, example, and technical term.
-- Make the smallest changes needed for natural wording.
+> Would you accept the editor deleting a weak sentence, changing the structure, or
+> sharpening the voice?
 
-A faithful result that remains slightly artificial is preferable to a smoother result that changes the content.
+- **Yes:** use Editorial Humanizer.
+- **No, every supplied idea and qualifier must survive:** use Faithful Humanizer.
 
-## Humanizer Form contract
+### Detailed comparison
 
-`humanizer-form` protects more than the text's general topic or "core meaning." Its semantic ledger covers:
+| Dimension | Editorial Humanizer | Faithful Humanizer |
+|---|---|---|
+| Primary goal | Produce stronger, less AI-shaped prose | Produce more natural wording without semantic drift |
+| Claims | May remove weak, generic, unsupported, or redundant claims | Must preserve every claim, including weak or unsupported ones |
+| Opinions | May sharpen or add point of view when the source and genre support it | Must preserve the same opinion, owner, direction, and emotional valence |
+| Certainty | Must not invent certainty, but may remove a weak claim entirely | Must preserve `may`, `might`, `will`, `must`, and all other modality exactly in force |
+| Attribution | May remove vague attribution or ask for a source | Must preserve vague attribution as vague attribution |
+| Structure | May merge, split, reorder, or replace paragraphs, headings, and lists | Preserves section order, paragraph order, examples, and list membership by default |
+| Voice | May add stronger human texture or match a supplied voice sample broadly | Matches only compatible surface features; never imports opinions or experiences |
+| Promotional language | May neutralize or delete it | Preserves its evaluative force if the author supplied it |
+| Fact checking | Does not research by default, but may flag or question unsupported claims | Does not fact-check, correct, challenge, endorse, or rebut |
+| Missing evidence | May ask for evidence, generalize, or remove the claim | Keeps the claim and attribution without inventing evidence |
+| Detector optimization | Not a goal | Not a goal |
+| Audit and score | Supports an 80-point editorial audit | Supports form-change notes only; no AI-likeness score |
+
+## Same source, different result
+
+Source:
+
+```text
+Industry reports suggest adoption is accelerating, highlighting the platform's growing relevance.
+```
+
+Editorial Humanizer may return:
+
+```text
+The adoption claim is difficult to assess because the reports are not identified.
+```
+
+That is a valid editorial rewrite because it challenges the weak attribution and
+reframes the paragraph around evidence quality.
+
+Faithful Humanizer may return:
+
+```text
+Industry reports suggest that adoption is accelerating, a trend that highlights the platform's growing relevance.
+```
+
+That version keeps the unnamed reports, the hedge `suggest`, the acceleration
+claim, and the evaluation that the platform is becoming more relevant.
+
+A second example:
+
+Source:
+
+```text
+The system serves as a robust foundation for scalable workflows, ensuring that cross-functional teams can coordinate effectively.
+```
+
+Editorial Humanizer may simplify the claim:
+
+```text
+The system supports scalable workflows for cross-functional teams.
+```
+
+Faithful Humanizer keeps the supplied evaluative and causal force:
+
+```text
+The system is a robust foundation for scalable workflows and ensures that cross-functional teams can coordinate effectively.
+```
+
+Neither result is universally better. They answer different editing contracts.
+
+## Editorial Humanizer
+
+Editorial Humanizer is the successor to the former `$humanizer` skill. It is the
+broader anti-slop editor.
+
+Use it when you want:
+
+- AI-writing patterns removed rather than mechanically preserved;
+- weak or generic material cut;
+- lists and paragraphs restructured;
+- promotional or inflated language reduced;
+- a more distinctive point of view;
+- voice matching from a writing sample;
+- an audit and score of AI-writing patterns.
+
+It protects factual integrity: it must not invent names, figures, dates, studies,
+quotes, citations, examples, prices, or experiences. However, it may remove a
+claim that cannot be supported or rewrite the surrounding argument more broadly.
+
+Basic use:
+
+```text
+Use $editorial-humanizer to improve this draft. Return only the rewrite:
+
+[paste draft]
+```
+
+Audit use:
+
+```text
+Use $editorial-humanizer to audit and score this draft for AI-writing patterns.
+Put the rewrite first, then concise notes:
+
+[paste draft]
+```
+
+## Faithful Humanizer
+
+Faithful Humanizer is the strict form-only editor.
+
+Use it when:
+
+- every claim and opinion must remain;
+- legal, scientific, medical, policy, financial, security, or technical qualifiers
+  must not drift;
+- vague attribution must remain attributed rather than being challenged;
+- promotional language belongs to the author's intended message;
+- list items, examples, chronology, and argument order must remain;
+- you want minimal local edits instead of paragraph regeneration.
+
+It protects:
 
 - every factual and evaluative proposition;
-- the speaker and owner of each opinion;
-- certainty and modality such as `may`, `might`, `will`, and `must`;
-- negation, exclusions, exceptions, and conditions;
-- quantifiers and scope such as `some`, `most`, `only`, and `all`;
-- causal, comparative, concessive, and temporal relationships;
-- attribution, chronology, emphasis, examples, and list membership;
-- exact names, numbers, dates, units, URLs, citations, quotes, code, identifiers, and domain terms.
+- stance, opinion, and emotional valence;
+- modality and certainty;
+- negation, exceptions, permissions, prohibitions, and conditions;
+- quantifiers and scope;
+- causality, comparison, concession, purpose, and sequence;
+- attribution and ownership of claims;
+- chronology, tense, examples, list membership, and ordering;
+- exact names, numbers, dates, units, citations, quotations, URLs, code, identifiers,
+  versions, file paths, and domain terminology.
 
-It may correct grammar, punctuation, awkward syntax, repetition, transitions, and sentence flow. It does not add personality, anecdotes, opinions, humor, sources, facts, examples, or detector-oriented randomness. It also does not remove supplied material because it is vague, promotional, unsupported, or disputable.
+Basic use:
 
-The full design rationale and comparison of existing skills is in [`docs/humanizer-form-research.md`](docs/humanizer-form-research.md).
+```text
+Use $faithful-humanizer. Make this read naturally, but preserve every claim,
+opinion, qualifier, example, attribution, and logical relation. Return only the
+rewrite:
+
+[paste draft]
+```
+
+Stricter use:
+
+```text
+Use $faithful-humanizer. Humanize the form only. Do not add, remove, fact-check,
+strengthen, soften, summarize, reorganize, or reinterpret any content. Preserve
+all names, numbers, dates, quotations, citations, code, modality, negation, scope,
+causality, attribution, examples, and list items.
+
+[paste draft]
+```
+
+Audit use:
+
+```text
+Use $faithful-humanizer to rewrite this and briefly explain only the form changes.
+Note any wording deliberately retained to avoid changing the substance:
+
+[paste draft]
+```
+
+The audit contains:
+
+1. the rewritten text;
+2. `Form changes`;
+3. `Preservation notes`.
+
+It does not assign an AI-likeness score.
+
+## Trigger behavior
+
+The two skills intentionally have different trigger contracts.
+
+Editorial Humanizer can be selected for requests such as:
+
+```text
+This draft sounds padded and generic. Tighten it and remove the AI-writing patterns.
+```
+
+```text
+Make this read like a person wrote it and improve the structure.
+```
+
+Faithful Humanizer should be selected only when preservation is explicit, for
+example:
+
+```text
+Humanize the form only. Do not change the substance.
+```
+
+```text
+Preserve every claim, hedge, attribution, and example.
+```
+
+Automatic selection varies by client. Use the explicit skill invocation whenever
+the distinction matters.
 
 ## Installation
 
 ### Codex plugin marketplace
 
-Add this repository as a marketplace:
+Add the repository as a marketplace:
 
 ```bash
 codex plugin marketplace add CoveMB/humanizer-skill-plugin --ref main
@@ -58,184 +240,67 @@ Install the plugin:
 codex plugin add humanizer-plugin@humanizer-plugin-local
 ```
 
-Then start a new Codex session so the installed skills are loaded into the prompt.
-
-Confirm the installation:
+Confirm the installed version:
 
 ```bash
 codex plugin list
 ```
 
-The plugin exposes both `humanizer` and `humanizer-form` through the `./skills/` directory declared in `.codex-plugin/plugin.json`.
+Start a new Codex session after installation or upgrade so the skill catalog is
+reloaded.
 
 ### Upgrade
 
-Update the marketplace checkout and installed plugin:
-
 ```bash
 codex plugin marketplace upgrade humanizer-plugin-local
-```
-
-Start a new Codex session after upgrading.
-
-### Remove
-
-```bash
 codex plugin remove humanizer-plugin@humanizer-plugin-local
+codex plugin add humanizer-plugin@humanizer-plugin-local
+codex plugin list
 ```
 
 ### Plain Codex skills
 
-Clone the repository and copy either skill into the agent skill directory:
-
 ```bash
 git clone https://github.com/CoveMB/humanizer-skill-plugin.git
-mkdir -p ~/.agents/skills/humanizer ~/.agents/skills/humanizer-form
-cp -R humanizer-skill-plugin/skills/humanizer/. ~/.agents/skills/humanizer/
-cp -R humanizer-skill-plugin/skills/humanizer-form/. ~/.agents/skills/humanizer-form/
+mkdir -p ~/.agents/skills/editorial-humanizer ~/.agents/skills/faithful-humanizer
+cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.agents/skills/editorial-humanizer/
+cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.agents/skills/faithful-humanizer/
 ```
 
-Do not enable the plain skill and plugin at the same time. Loading duplicate copies can make skill selection and provenance harder to reason about.
+Do not enable the plain skills and plugin copies at the same time. Duplicate copies
+can make selection and provenance ambiguous.
 
 ### Claude Code
 
 ```bash
 mkdir -p ~/.claude/skills
-cp -R humanizer-skill-plugin/skills/humanizer ~/.claude/skills/humanizer
-cp -R humanizer-skill-plugin/skills/humanizer-form ~/.claude/skills/humanizer-form
+cp -R humanizer-skill-plugin/skills/editorial-humanizer ~/.claude/skills/editorial-humanizer
+cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.claude/skills/faithful-humanizer
 ```
 
 ### OpenCode
 
 ```bash
 mkdir -p ~/.config/opencode/skills
-cp -R humanizer-skill-plugin/skills/humanizer ~/.config/opencode/skills/humanizer
-cp -R humanizer-skill-plugin/skills/humanizer-form ~/.config/opencode/skills/humanizer-form
+cp -R humanizer-skill-plugin/skills/editorial-humanizer ~/.config/opencode/skills/editorial-humanizer
+cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.config/opencode/skills/faithful-humanizer
 ```
 
-## Usage
+## Migration from 2.x
 
-### Standard Humanizer
+Version 3.0.0 renames the skills:
 
-```text
-Use $humanizer to rewrite this. Return only the rewritten text:
+| Previous invocation | New invocation |
+|---|---|
+| `$humanizer` | `$editorial-humanizer` |
+| `$humanizer-form` | `$faithful-humanizer` |
 
-[paste draft]
-```
+The rename is intentional. `$humanizer` did not communicate that the skill could
+remove material, restructure the text, and add voice. `$humanizer-form` described
+an implementation constraint rather than the user-facing promise.
 
-Use it for broader anti-slop editing, voice calibration, or an audit with the existing 80-point scoring gate.
-
-### Form-only Humanizer
-
-```text
-Use $humanizer-form. Make this read naturally, but preserve every claim, opinion, qualifier, example, attribution, and logical relation. Return only the rewrite:
-
-[paste draft]
-```
-
-A stricter version:
-
-```text
-Use $humanizer-form. Humanize the form only. Do not add, remove, fact-check, strengthen, soften, summarize, reorganize, or reinterpret any content. Preserve all names, numbers, dates, quotations, citations, code, modality, negation, scope, causality, attribution, and list items.
-
-[paste draft]
-```
-
-### Form-only audit
-
-```text
-Use $humanizer-form to rewrite this and briefly explain only the form changes. Note any wording you deliberately retained to avoid changing the substance:
-
-[paste draft]
-```
-
-The output should contain the rewrite, `Form changes`, and `Preservation notes`. Humanizer Form does not assign an AI-likeness score.
-
-### Trigger behavior
-
-A skill-aware client can auto-select Humanizer when the request says that writing sounds generated, padded, generic, should read more naturally, or should produce text that reads like a person wrote it. Examples include:
-
-```text
-This release note sounds padded. Rewrite it without adding facts.
-```
-
-```text
-Make this read like a person wrote it.
-```
-
-For a deterministic workflow, explicitly say `Use Humanizer` or invoke `$humanizer`.
-
-Humanizer Form has intentionally narrower triggers. Explicitly invoke `$humanizer-form` when preserving substance is the central constraint. Phrases such as "form only," "do not change the substance," and "preserve every claim and opinion" are included in its frontmatter trigger contract.
-
-Do not treat auto-selection as guaranteed. Client behavior varies. In particular, `codex exec` does not expose a separate skill-invocation event, so the repository's live Humanizer evals force a read of the expected skill file and verify that path in the trace.
-
-## Examples
-
-### Preserve an uncertain claim
-
-Input:
-
-```text
-Additionally, it is important to note that the platform may potentially reduce setup time for some teams.
-```
-
-`humanizer-form` output:
-
-```text
-Importantly, the platform may reduce setup time for some teams.
-```
-
-The rewrite preserves the importance claim, `may`, and `some teams`.
-
-### Preserve vague attribution
-
-Input:
-
-```text
-Industry reports suggest adoption is accelerating, highlighting the platform's growing relevance.
-```
-
-`humanizer-form` output:
-
-```text
-Industry reports suggest that adoption is accelerating, a trend that highlights the platform's growing relevance.
-```
-
-The skill does not invent a report, delete the attribution, or neutralize the relevance claim.
-
-### Preserve opinion and emotional valence
-
-Input:
-
-```text
-I find the change unsettling. It may, however, improve efficiency.
-```
-
-`humanizer-form` output:
-
-```text
-I find the change unsettling, although it may improve efficiency.
-```
-
-The feeling, order, concessive relation, and uncertain benefit all remain.
-
-### Preserve promotional force when it is supplied content
-
-Input:
-
-```text
-The system serves as a robust foundation for scalable workflows, ensuring that cross-functional teams can coordinate effectively.
-```
-
-`humanizer-form` output:
-
-```text
-The system is a robust foundation for scalable workflows and ensures that cross-functional teams can coordinate effectively.
-```
-
-A broader editor might delete `robust` or weaken `ensures`. Humanizer Form keeps them because they are part of the source's evaluative and causal force.
-
-More examples are in [`docs/skill-examples.md`](docs/skill-examples.md).
+After upgrading, start a new session and update saved prompts, workflows, and evals
+to use the new names.
 
 ## Repository layout
 
@@ -243,11 +308,8 @@ More examples are in [`docs/skill-examples.md`](docs/skill-examples.md).
 .
 ├── .agents/plugins/marketplace.json
 ├── .codex-plugin/plugin.json
-├── .github/workflows/
-│   ├── live-eval.yml
-│   └── test.yml
 ├── docs/
-│   ├── humanizer-form-research.md
+│   ├── faithful-humanizer-research.md
 │   └── skill-examples.md
 ├── evals/
 │   └── humanizer_eval_cases.json
@@ -255,89 +317,91 @@ More examples are in [`docs/skill-examples.md`](docs/skill-examples.md).
 │   ├── run_humanizer_evals.py
 │   └── validate_humanizer_outputs.py
 ├── skills/
-│   ├── humanizer/
+│   ├── editorial-humanizer/
 │   │   ├── SKILL.md
 │   │   └── references/banned-list.md
-│   └── humanizer-form/
+│   └── faithful-humanizer/
 │       └── SKILL.md
 └── tests/
-    ├── test_humanizer_form_artifacts.py
-    └── test_skill_artifacts.py
 ```
+
+The existing eval runner currently exercises Editorial Humanizer. Faithful
+Humanizer has deterministic contract tests focused on semantic preservation. A
+future live matrix should compare source and output for proposition coverage,
+modality, negation, scope, attribution, exact anchors, and forbidden additions.
 
 ## Testing
 
-Run all deterministic tests:
+Run deterministic tests:
 
 ```bash
 make test
 ```
 
-Validate the existing Humanizer eval matrix without invoking a model:
+Validate the Editorial Humanizer eval matrix without invoking a model:
 
 ```bash
 make eval-humanizer-dry-run
 ```
 
-The new form-only skill has static contract tests covering its trigger contract, semantic invariants, exact anchors, forbidden edits, contextual style rules, bidirectional semantic diff, output format, examples, and research record.
+Run saved-output validation:
 
-### Live Humanizer evals
+```bash
+make validate-humanizer-output OUTPUT_DIR=output-dir
+```
 
-The existing live runner installs the checked-out plugin into an isolated Codex home and exercises the standard `humanizer` cases:
+Live evals require isolated `HOME` and `CODEX_HOME` directories:
 
 ```bash
 export HOME="$(mktemp -d)"
 export CODEX_HOME="$(mktemp -d)"
-python3 scripts/run_humanizer_evals.py \
-  --cases evals/humanizer_eval_cases.json \
-  --artifacts-dir evals/artifacts/local \
-  --codex-bin codex \
-  --filter explicit_dense_rewrite \
-  --timeout-seconds 600 \
-  --rubric-grade
+python3 scripts/run_humanizer_evals.py --rubric-grade
 ```
 
-For live evals, isolate both `HOME` and `CODEX_HOME`. The runner requires a non-default Codex home, and CI configures a temporary `HOME` for every Codex subprocess so plugin and credential state cannot leak from the host environment.
+## Research and design rationale
 
-Useful flags:
+The design review compared public humanizer, de-slop, clarity, and detector-oriented
+skills. The main finding was that most implementations mix surface cleanup with
+substantive authorship: they add opinions, first person, anecdotes, emotional
+reactions, specificity, or personality presets.
 
-| Flag | Purpose |
-|---|---|
-| `--cases` | Select an eval-case JSON file |
-| `--artifacts-dir` | Choose where results and traces are written |
-| `--codex-bin` | Select the Codex executable |
-| `--filter` | Run matching case IDs only |
-| `--timeout-seconds` | Set the per-case timeout |
-| `--rubric-grade` | Enable model-based rubric grading |
+Faithful Humanizer separates those tasks. Its design is based on:
 
-The form-only skill is not yet included in the live model matrix. Its first release relies on deterministic artifact tests and the explicit semantic contract. A separate live matrix should compare source and output for proposition coverage, modality, scope, negation, attribution, exact anchors, and forbidden additions rather than reward detector scores.
+1. source authority;
+2. explicit semantic invariants;
+3. exact-anchor preservation;
+4. minimal local edits;
+5. a bidirectional semantic diff;
+6. restore-on-doubt behavior.
+
+The detailed comparison and rejected design choices are documented in
+[`docs/faithful-humanizer-research.md`](docs/faithful-humanizer-research.md).
 
 ## Design limits
 
-Neither skill can mathematically guarantee semantic equivalence. Language is ambiguous, and a model can still make a bad paraphrase. Humanizer Form reduces that risk through minimal edits, explicit invariants, exact-anchor preservation, and restore-on-doubt rules. High-stakes legal, medical, scientific, security, financial, or policy text still requires human review.
+Neither skill can mathematically guarantee semantic equivalence. Language is
+ambiguous, and a model can still make a bad paraphrase.
 
-Neither skill guarantees that an AI detector will classify the output as human-written. Detector evasion is not the objective.
+Faithful Humanizer reduces that risk through minimal edits, explicit invariants,
+exact-anchor preservation, and restore-on-doubt rules. High-stakes legal, medical,
+scientific, financial, security, or policy text still requires human review.
+
+Neither skill guarantees that an AI detector will classify the output as
+human-written. Detector evasion is not the objective.
 
 ## Versioning
 
-- Plugin `2.9.0`: adds `humanizer-form` 1.0.0, dual-skill documentation, a research record, and deterministic contract tests.
-- `humanizer` remains the existing opinionated anti-slop editor, with its version advanced to match the plugin package.
-- `humanizer-form` follows its own skill version because its contract is independent from the legacy catalog.
-
-## Sources and research
-
-The original Humanizer is based on Wikipedia's *Signs of AI writing* and incorporates attributed checklist and scoring concepts from stop-slop and Tagore. Its complete attribution is recorded in `NOTICE` and in the skill frontmatter.
-
-Humanizer Form was written from scratch after reviewing multiple public humanizer and de-slop skills. The comparison and rejected design choices are documented in [`docs/humanizer-form-research.md`](docs/humanizer-form-research.md).
+- Plugin `3.0.0`: renames the skills to Editorial Humanizer and Faithful Humanizer,
+  clarifies their contracts, and updates all documentation and eval prompts.
+- Editorial Humanizer `3.0.0`: successor to the former `humanizer` skill.
+- Faithful Humanizer `1.0.0`: successor to the unreleased `humanizer-form` skill.
 
 ## License
 
-Original repository code, plugin metadata, tests, documentation, and `humanizer-form` are released under the MIT License.
+Original repository code, plugin metadata, tests, documentation, and Faithful
+Humanizer are released under the MIT License.
 
-Wikipedia-derived material in the original `humanizer` skill is available under CC BY-SA 4.0. The attribution and scope of the Wikipedia-derived material are described in `NOTICE`.
+Wikipedia-derived material in Editorial Humanizer remains available under
+CC BY-SA 4.0. Attribution and license scope are documented in `NOTICE`.
 
-CC BY-SA 4.0 license text and terms:
-
-https://creativecommons.org/licenses/by-sa/4.0/
-
-The package therefore reports `MIT AND CC-BY-SA-4.0` at the plugin level. See `LICENSE` and `NOTICE` for details.
+The plugin therefore reports `MIT AND CC-BY-SA-4.0` at the package level.
