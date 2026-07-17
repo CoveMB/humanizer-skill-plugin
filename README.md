@@ -153,7 +153,7 @@ The output should contain the rewrite, `Form changes`, and `Preservation notes`.
 
 ### Trigger behavior
 
-A skill-aware client can auto-select Humanizer when the request says that writing sounds generated, padded, generic, or should read more naturally. Examples include:
+A skill-aware client can auto-select Humanizer when the request says that writing sounds generated, padded, generic, should read more naturally, or should produce text that reads like a person wrote it. Examples include:
 
 ```text
 This release note sounds padded. Rewrite it without adding facts.
@@ -208,7 +208,7 @@ The skill does not invent a report, delete the attribution, or neutralize the re
 Input:
 
 ```text
-Although I find the change unsettling, it may improve efficiency.
+I find the change unsettling. It may, however, improve efficiency.
 ```
 
 `humanizer-form` output:
@@ -217,7 +217,7 @@ Although I find the change unsettling, it may improve efficiency.
 I find the change unsettling, although it may improve efficiency.
 ```
 
-The feeling and uncertain benefit both remain.
+The feeling, order, concessive relation, and uncertain benefit all remain.
 
 ### Preserve promotional force when it is supplied content
 
