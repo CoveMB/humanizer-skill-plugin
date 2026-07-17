@@ -5,7 +5,7 @@ This product includes original work and material adapted from the following
 open-source sources:
 
 1. Humanizer Plugin original code, tests, scripts, plugin metadata,
-   `humanizer-form`, and CoveMB-authored additions
+   Faithful Humanizer, and CoveMB-authored additions
    Author: CoveMB
    Source: https://github.com/CoveMB/humanizer-skill-plugin
    License: MIT
@@ -19,8 +19,8 @@ open-source sources:
    Maintainer: WikiProject AI Cleanup
    Source: https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing
    License: CC BY-SA 4.0
-   Changes: Adapted, reorganized, and expanded into a skill catalog,
-   reference list, examples, and plugin documentation for Humanizer Plugin.
+   Changes: Adapted, reorganized, and expanded into Editorial Humanizer's
+   skill instructions, reference catalog, examples, and plugin documentation.
 
 4. stop-slop
    Author: Hardik Pandya
