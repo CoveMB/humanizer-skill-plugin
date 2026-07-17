@@ -216,7 +216,7 @@ def verify_eval_plugin_is_model_visible(
         "eval plugin provenance check",
     )
     expected_skill_path = (
-        Path(installed_path) / "skills" / "humanizer" / "SKILL.md"
+        Path(installed_path) / "skills" / "editorial-humanizer" / "SKILL.md"
     ).resolve()
     if str(expected_skill_path) not in json.dumps(prompt_input):
         raise RuntimeError(

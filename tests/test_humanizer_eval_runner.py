@@ -665,6 +665,28 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             self.assertFalse(plugin_root.joinpath(".git").exists())
             self.assertFalse(plugin_root.joinpath("tests").exists())
 
+    def test_verify_eval_plugin_is_model_visible_targets_editorial_skill(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            installed_path = Path(temporary_directory) / "plugin"
+            expected_path = (
+                installed_path
+                / "skills"
+                / "editorial-humanizer"
+                / "SKILL.md"
+            ).resolve()
+            with mock.patch.object(
+                self.runner,
+                "run_cli_json",
+                return_value={"prompt_input": str(expected_path)},
+            ):
+                actual_path = self.runner.verify_eval_plugin_is_model_visible(
+                    "codex",
+                    "humanizer-plugin@humanizer-eval-test",
+                    installed_path,
+                    {},
+                )
+            self.assertEqual(actual_path, str(expected_path))
+
     def test_require_isolated_codex_home_rejects_missing_and_default_home(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             user_home = Path(temporary_directory) / "user"
