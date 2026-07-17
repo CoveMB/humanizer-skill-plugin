@@ -32,7 +32,16 @@ jobs:
           fi
 
       - name: Run tests
-        run: make test
+        run: |
+          set -o pipefail
+          make test 2>&1 | tee /tmp/humanizer-test.log
+
+      - name: Upload failed test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: humanizer-test-log
+          path: /tmp/humanizer-test.log
 
       - name: Check eval matrix
         run: make eval-humanizer-dry-run
