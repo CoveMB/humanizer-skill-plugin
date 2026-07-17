@@ -1,514 +1,343 @@
-# Humanizer
+# Humanizer Plugin
 
-Humanizer is a fact-safe anti-slop writing skill with a Codex plugin wrapper. It rewrites AI-drafted or AI-sounding prose so it reads more naturally while preserving the facts, claims, tone, and level of certainty supplied by the user.
+Humanizer Plugin packages two prose-editing skills for Codex and other skill-aware agents:
 
-It works as a plain skill in Claude Code, OpenCode, and Codex. This repository root is also a Codex plugin package.
-
-## What Humanizer does
-
-Humanizer is an editing workflow for prose. It is useful for essays, release notes, documentation, posts, emails, reports, and other drafts where AI-writing patterns make the text sound padded, overconfident, promotional, or generic.
-
-It does five main things:
-
-- Detects 31 AI-writing patterns, including significance inflation, vague attribution, promotional language, superficial `-ing` analysis, forced three-item lists, em dash overuse, fake naming, self-narration, and chatbot wrappers.
-- Rewrites the draft in a more natural voice while keeping the meaning intact.
-- Protects factual integrity by refusing to invent names, numbers, dates, studies, citations, quotes, prices, examples, or claims.
-- Matches a supplied writing sample when the user wants voice calibration.
-- Runs a private checklist and scoring gate before returning the final rewrite.
-
-For dense drafts, the skill can also load `skills/humanizer/references/banned-list.md`, which contains a longer list of phrases, structures, emojis, fake names, and style patterns to remove.
-
-## What Humanizer does not do
-
-Humanizer is not a fact checker by default. It can flag unsupported claims in the text you provide, but it does not research missing facts unless the user separately asks the agent to research.
-
-It does not make vague text specific by inventing details. If the draft says "industry reports show adoption is rising" without naming the reports, Humanizer should keep the statement general, remove it, or ask for the missing source.
-
-It does not guarantee that a detector will classify the result as human-written. The goal is better writing, not detector evasion.
-
-It does not preserve every sentence, heading, punctuation mark, or list shape. It preserves meaning and factual content, then rewrites the structure when the structure itself is part of the problem.
-
-It does not turn every draft casual. The target voice depends on the request and the source text. A technical note should stay technical. A formal report should stay formal.
-
-## How it works
-
-Humanizer runs this workflow internally:
-
-1. Map the facts supplied by the user.
-2. Calibrate to a writing sample if the user provides one.
-3. Scan for the 31-pattern catalog.
-4. Rewrite the text without adding unsupported specifics.
-5. Add human texture only where the source allows it.
-6. Run the mechanical checklist.
-7. Score the rewrite privately.
-8. Self-audit for remaining AI tells.
-9. Return the rewrite.
-
-By default, Humanizer returns only the rewritten text. If the user asks for an audit, score, comparison, or explanation, it can include brief notes after the rewrite.
-
-## Quality gate
-
-Version 2.7.0 adds a private quality gate inspired by stop-slop and Tagore. The gate keeps the skill from passing a rewrite that is technically clean but still flat, generic, or factually risky.
-
-### Mechanics
-
-| Dimension | Question |
-|---|---|
-| Directness | Does the prose state the point instead of announcing it? |
-| Rhythm | Do sentence lengths and paragraph endings vary naturally? |
-| Trust | Does it respect the reader without over-explaining? |
-| Authenticity | Does it sound like a person instead of a generated explainer? |
-| Density | Can anything be cut without losing meaning? |
-
-### Substance
-
-| Dimension | Question | Protects against |
+| Skill | Purpose | Editing latitude |
 |---|---|---|
-| Factual integrity | Does every concrete detail come from the user or provided source? | Plausible but fabricated specifics |
-| Restraint | Does the text state things at their actual size? | Puffery, significance inflation, notability padding |
-| Voice | Is there a point of view suited to the context? | Clean but soulless prose |
+| `humanizer` | Remove common AI-writing patterns with the existing fact-safe anti-slop workflow | May cut weak or generic material, restructure prose, and add voice when the source allows it |
+| `humanizer-form` | Make wording read more naturally while preserving the supplied substance | Changes form only; every claim, opinion, qualifier, attribution, example, and logical relation must survive |
 
-The rewrite must score at least 56/80 overall, with mechanics at least 35/50 and substance at least 21/30. Factual integrity must score at least 9/10. If factual integrity fails, the skill should revise, ask for missing facts, or keep the line general.
+The second skill exists for cases where the original Humanizer is too opinionated. It uses minimal local edits and a semantic-diff gate rather than a long catalog of banned words and structures.
 
-## Pattern catalog
+The repository works as a plain skill source for Claude Code, OpenCode, and Codex. The repository root is also a Codex plugin package.
 
-The full catalog lives in `skills/humanizer/SKILL.md`. This table summarizes what Humanizer looks for and how it usually fixes it.
+## Which skill should you use?
 
-### Content patterns
+Use `humanizer` when you want editorial cleanup: less padding, fewer AI-writing patterns, tighter structure, and a more natural voice.
 
-| # | Pattern | What changes |
-|---|---|---|
-| 1 | Significance inflation | Removes claims that ordinary facts are pivotal, vital, enduring, or symbolic without evidence. |
-| 2 | Notability padding | Replaces broad media name-dropping with a specific sourced claim, or removes it. |
-| 3 | Superficial `-ing` analysis | Cuts clauses like "highlighting" and "showcasing" when they add fake depth. |
-| 4 | Promotional language | Replaces press-release phrasing with neutral description. |
-| 5 | Vague attribution | Replaces "experts say" with named sources when supplied, or keeps the claim general. |
-| 6 | Formulaic challenges sections | Removes stock "despite challenges" endings unless the draft includes real facts. |
+Use `humanizer-form` when the instruction is closer to:
 
-### Language and grammar patterns
+- Humanize the form, not the substance.
+- Preserve every claim and opinion.
+- Do not fact-check, add evidence, remove vague claims, or reinterpret the argument.
+- Keep every hedge, negation, exception, quantifier, attribution, example, and technical term.
+- Make the smallest changes needed for natural wording.
 
-| # | Pattern | What changes |
-|---|---|---|
-| 7 | AI vocabulary | Cuts overused words such as "delve," "showcase," "testament," and abstract "landscape." |
-| 8 | Copula avoidance | Replaces "serves as," "boasts," and "features" with simpler verbs when appropriate. |
-| 9 | Negative parallelisms | Rewrites "not just X, but Y" and tailing fragments like "no guessing." |
-| 10 | Rule of three | Removes forced triplets and keeps only the items the content needs. |
-| 11 | Synonym cycling | Repeats the clearest noun instead of rotating through near-synonyms. |
-| 12 | False ranges | Rewrites "from X to Y" constructions that do not describe a real scale. |
-| 13 | Passive voice and subjectless fragments | Names the actor when doing so improves clarity. |
+A faithful result that remains slightly artificial is preferable to a smoother result that changes the content.
 
-### Style patterns
+## Humanizer Form contract
 
-| # | Pattern | What changes |
-|---|---|---|
-| 14 | Em dash overuse | Uses commas, periods, semicolons, or parentheses instead. |
-| 15 | Boldface overuse | Removes mechanical emphasis. |
-| 16 | Inline-header lists | Converts repeated bold-label bullets into prose when the list shape is filler. |
-| 17 | Title Case headings | Uses sentence case unless the style guide says otherwise. |
-| 18 | Emoji decoration | Removes decorative emoji from headings and bullets. |
-| 19 | Curly quotation marks | Converts smart quotes to straight quotes for plain text contexts. |
-| 26 | Hyphenated word pair overuse | Removes unnecessary hyphens from common word pairs. |
-| 27 | Persuasive authority tropes | Removes phrases like "at its core" and "what really matters." |
-| 28 | Signposting announcements | Removes "let's dive in" and similar setup lines. |
-| 29 | Fragmented headers | Deletes one-line warmups that restate the heading. |
-| 30 | Fake naming | Removes invented frameworks, methods, paradoxes, and flywheels. |
-| 31 | Self-narration and rhetorical hooks | Replaces "this highlights" and "the key takeaway is" with the actual point. |
+`humanizer-form` protects more than the text's general topic or "core meaning." Its semantic ledger covers:
 
-### Communication patterns
+- every factual and evaluative proposition;
+- the speaker and owner of each opinion;
+- certainty and modality such as `may`, `might`, `will`, and `must`;
+- negation, exclusions, exceptions, and conditions;
+- quantifiers and scope such as `some`, `most`, `only`, and `all`;
+- causal, comparative, concessive, and temporal relationships;
+- attribution, chronology, emphasis, examples, and list membership;
+- exact names, numbers, dates, units, URLs, citations, quotes, code, identifiers, and domain terms.
 
-| # | Pattern | What changes |
-|---|---|---|
-| 20 | Chatbot artifacts | Removes preambles, praise, "I hope this helps," and "let me know" closers. |
-| 21 | Knowledge-cutoff disclaimers | Removes model-limit disclaimers or asks for current facts. |
-| 22 | Sycophantic tone | Replaces excessive agreement with direct response. |
+It may correct grammar, punctuation, awkward syntax, repetition, transitions, and sentence flow. It does not add personality, anecdotes, opinions, humor, sources, facts, examples, or detector-oriented randomness. It also does not remove supplied material because it is vague, promotional, unsupported, or disputable.
 
-### Filler and hedging
-
-| # | Pattern | What changes |
-|---|---|---|
-| 23 | Filler phrases | Replaces "in order to," "due to the fact that," and similar padding. |
-| 24 | Excessive hedging | Reduces stacked uncertainty to the actual level of certainty. |
-| 25 | Generic positive conclusions | Replaces vague upbeat endings with supplied facts or removes them. |
+The full design rationale and comparison of existing skills is in [`docs/humanizer-form-research.md`](docs/humanizer-form-research.md).
 
 ## Installation
 
-### Claude Code
+### Codex plugin marketplace
 
-Clone this repository into Claude Code's skills directory:
-
-```bash
-mkdir -p ~/.claude/skills
-git clone https://github.com/CoveMB/humanizer-skill-plugin.git ~/.claude/skills/humanizer
-```
-
-If you already have this repository locally, copy the skill and reference files:
-
-```bash
-mkdir -p ~/.claude/skills/humanizer
-cp skills/humanizer/SKILL.md ~/.claude/skills/humanizer/
-cp -R skills/humanizer/references ~/.claude/skills/humanizer/
-```
-
-### OpenCode
-
-Clone this repository into OpenCode's skills directory:
-
-```bash
-mkdir -p ~/.config/opencode/skills
-git clone https://github.com/CoveMB/humanizer-skill-plugin.git ~/.config/opencode/skills/humanizer
-```
-
-Or copy the skill and references:
-
-```bash
-mkdir -p ~/.config/opencode/skills/humanizer
-cp skills/humanizer/SKILL.md ~/.config/opencode/skills/humanizer/
-cp -R skills/humanizer/references ~/.config/opencode/skills/humanizer/
-```
-
-OpenCode also scans `~/.claude/skills/` for compatibility, so a single clone into `~/.claude/skills/humanizer/` can cover both tools.
-
-### Codex as a skill
-
-Install Humanizer as a plain Codex skill only when you do not want the plugin:
-
-```bash
-mkdir -p ~/.agents/skills/humanizer
-cp skills/humanizer/SKILL.md ~/.agents/skills/humanizer/
-cp -R skills/humanizer/references ~/.agents/skills/humanizer/
-```
-
-Do not enable the plain skill and plugin at the same time. They both expose a skill named `humanizer`, so Codex may show duplicate choices. Start a new Codex session after installing or replacing the plain skill.
-
-### Codex as a plugin (recommended)
-
-Humanizer can be installed from this repository before it is listed in a public marketplace. The repository includes its own marketplace catalog and the plugin package at the repository root.
-
-Add the GitHub repository as a marketplace, install Humanizer, and confirm the installed version:
+Add this repository as a marketplace:
 
 ```bash
 codex plugin marketplace add CoveMB/humanizer-skill-plugin --ref main
+```
+
+Install the plugin:
+
+```bash
 codex plugin add humanizer-plugin@humanizer-plugin-local
+```
+
+Then start a new Codex session so the installed skills are loaded into the prompt.
+
+Confirm the installation:
+
+```bash
 codex plugin list
 ```
 
-Start a new Codex session after installation. A session that was already open may still use the previous plugin catalog.
+The plugin exposes both `humanizer` and `humanizer-form` through the `./skills/` directory declared in `.codex-plugin/plugin.json`.
 
-#### Update the plugin
+### Upgrade
 
-Refresh the Git marketplace snapshot, remove the cached installation, and install the current version:
+Update the marketplace checkout and installed plugin:
 
 ```bash
 codex plugin marketplace upgrade humanizer-plugin-local
+```
+
+Start a new Codex session after upgrading.
+
+### Remove
+
+```bash
 codex plugin remove humanizer-plugin@humanizer-plugin-local
-codex plugin add humanizer-plugin@humanizer-plugin-local
-codex plugin list
 ```
 
-`marketplace upgrade` refreshes the Git snapshot. Removing and adding the plugin replaces the installed cache. Confirm the new version in `codex plugin list`, then start a new Codex session.
+### Plain Codex skills
 
-#### Local development
+Clone the repository and copy either skill into the agent skill directory:
 
-For local iteration, use a personal marketplace entry that points at the checkout. Codex discovers `~/.agents/plugins/marketplace.json` automatically. A common layout keeps the checkout or a symlink at `~/plugins/humanizer-plugin` and uses this source entry:
-
-```json
-{
-  "name": "humanizer-plugin",
-  "source": {
-    "source": "local",
-    "path": "./plugins/humanizer-plugin"
-  },
-  "policy": {
-    "installation": "AVAILABLE",
-    "authentication": "ON_INSTALL"
-  },
-  "category": "Productivity"
-}
+```bash
+git clone https://github.com/CoveMB/humanizer-skill-plugin.git
+mkdir -p ~/.agents/skills/humanizer ~/.agents/skills/humanizer-form
+cp -R humanizer-skill-plugin/skills/humanizer/. ~/.agents/skills/humanizer/
+cp -R humanizer-skill-plugin/skills/humanizer-form/. ~/.agents/skills/humanizer-form/
 ```
 
-Read the personal marketplace's top-level `name`, then reinstall with `codex plugin add humanizer-plugin@<personal-marketplace-name>`. Confirm the version with `codex plugin list` and start a new Codex session. Do not run `codex plugin marketplace add` for the default personal marketplace.
-
-#### Migrate an older installation
-
-Older instructions copied Humanizer into `~/.codex/plugins/`, installed it as a plain skill under `~/.codex/skills/`, or linked a personal marketplace entry to a development checkout. Back up any local changes before migrating.
-
-Install the repository marketplace version first and confirm it in `codex plugin list`. Then disable or remove the older plugin entry or plain skill. Do not leave both copies enabled. Start a new Codex session and confirm that Humanizer appears once.
-
-## Usage
-
-For prompt examples with context, see `docs/skill-examples.md`.
-
-### Basic rewrite
-
-```text
-Humanize this text:
-[paste draft]
-```
+Do not enable the plain skill and plugin at the same time. Loading duplicate copies can make skill selection and provenance harder to reason about.
 
 ### Claude Code
 
-```text
-/humanizer
-
-[paste draft]
+```bash
+mkdir -p ~/.claude/skills
+cp -R humanizer-skill-plugin/skills/humanizer ~/.claude/skills/humanizer
+cp -R humanizer-skill-plugin/skills/humanizer-form ~/.claude/skills/humanizer-form
 ```
 
 ### OpenCode
 
+```bash
+mkdir -p ~/.config/opencode/skills
+cp -R humanizer-skill-plugin/skills/humanizer ~/.config/opencode/skills/humanizer
+cp -R humanizer-skill-plugin/skills/humanizer-form ~/.config/opencode/skills/humanizer-form
+```
+
+## Usage
+
+### Standard Humanizer
+
 ```text
-/humanizer
+Use $humanizer to rewrite this. Return only the rewritten text:
 
 [paste draft]
 ```
 
-### Codex
+Use it for broader anti-slop editing, voice calibration, or an audit with the existing 80-point scoring gate.
 
-Ask for the installed Humanizer skill or plugin by name:
+### Form-only Humanizer
 
 ```text
-Use Humanizer to rewrite this:
+Use $humanizer-form. Make this read naturally, but preserve every claim, opinion, qualifier, example, attribution, and logical relation. Return only the rewrite:
+
 [paste draft]
 ```
 
-If your Codex client supports explicit skill mentions, select the Humanizer skill and provide the draft.
+A stricter version:
+
+```text
+Use $humanizer-form. Humanize the form only. Do not add, remove, fact-check, strengthen, soften, summarize, reorganize, or reinterpret any content. Preserve all names, numbers, dates, quotations, citations, code, modality, negation, scope, causality, attribution, and list items.
+
+[paste draft]
+```
+
+### Form-only audit
+
+```text
+Use $humanizer-form to rewrite this and briefly explain only the form changes. Note any wording you deliberately retained to avoid changing the substance:
+
+[paste draft]
+```
+
+The output should contain the rewrite, `Form changes`, and `Preservation notes`. Humanizer Form does not assign an AI-likeness score.
 
 ### Trigger behavior
 
-After Humanizer is installed and the skill/plugin catalog is reloaded, clients that support automatic skill selection can auto-select Humanizer when the prompt clearly asks for anti-AI writing cleanup. Typical trigger phrasing includes:
+A skill-aware client can auto-select Humanizer when the request says that writing sounds generated, padded, generic, or should read more naturally. Examples include:
 
 ```text
-This release note sounds padded. Tighten it without adding facts.
+This release note sounds padded. Rewrite it without adding facts.
 ```
 
 ```text
-Edit this documentation paragraph so it reads like a person wrote it, but keep the technical meaning intact.
+Make this read like a person wrote it.
 ```
+
+For a deterministic workflow, explicitly say `Use Humanizer` or invoke `$humanizer`.
+
+Humanizer Form has intentionally narrower triggers. Explicitly invoke `$humanizer-form` when preserving substance is the central constraint. Phrases such as "form only," "do not change the substance," and "preserve every claim and opinion" are included in its frontmatter trigger contract.
+
+Do not treat auto-selection as guaranteed. Client behavior varies. In particular, `codex exec` traces do not expose a separate skill-invocation event, so the repository's live Humanizer evals force a read of the expected skill file and verify that path in the trace.
+
+## Examples
+
+### Preserve an uncertain claim
+
+Input:
 
 ```text
-Clean up this dense AI-sounding draft. Return only the rewritten text.
+Additionally, it is important to note that the platform may potentially reduce setup time for some teams.
 ```
 
-Do not treat auto-selection as guaranteed in workflows where activation matters. For deterministic runs, reviews, CI, or support instructions, use an explicit prompt such as `Use Humanizer to rewrite this:` or select the Humanizer skill/plugin in the client UI.
-
-The repository live evals include contextual trigger prompts, but `codex exec` currently does not expose a separate skill-invocation event. For that reason, positive live cases force a `skills/humanizer/SKILL.md` read so the trace proves the current skill instructions were used; they validate prompt coverage and output behavior, not an end-to-end guarantee of automatic client-side selection.
-
-### Voice calibration
-
-Provide a sample when you want the rewrite to sound like a specific person:
+`humanizer-form` output:
 
 ```text
-Humanize this text. Match my style from this sample:
-
-[paste 2 or 3 paragraphs of sample writing]
-
-Draft:
-[paste draft]
+Importantly, the platform may reduce setup time for some teams.
 ```
 
-Humanizer will inspect sentence length, word choice, paragraph starts, punctuation habits, transitions, and recurring phrasing before rewriting.
+The rewrite preserves the importance claim, `may`, and `some teams`.
 
-### Audit and scoring
+### Preserve vague attribution
 
-Ask for an audit when you want notes instead of a rewrite-only response:
+Input:
 
 ```text
-Audit and score this draft for AI-writing patterns:
-[paste draft]
+Industry reports suggest adoption is accelerating, highlighting the platform's growing relevance.
 ```
 
-The response should put the rewritten text first, followed by concise notes and a score summary.
-
-### Missing facts
-
-If the text needs details that were not supplied, use a prompt that gives Humanizer permission to ask:
+`humanizer-form` output:
 
 ```text
-Humanize this. If a sentence needs missing facts to become specific, ask instead of inventing:
-[paste draft]
+Industry reports suggest that adoption is accelerating, a trend that highlights the platform's growing relevance.
 ```
 
-## Output behavior
+The skill does not invent a report, delete the attribution, or neutralize the relevance claim.
 
-For a normal rewrite request, Humanizer should return only the revised text. It should not add "here is," "I hope this helps," a change log, or a closing invitation.
+### Preserve opinion and emotional valence
 
-For an audit, score, comparison, or explanation request, Humanizer should include the rewrite first, then short notes.
-
-If the draft contains claims that cannot be made specific without new information, Humanizer should keep the language general, remove the claim, or ask for the missing detail.
-
-## Example
-
-Before:
+Input:
 
 ```text
-Great question! AI-assisted coding serves as an enduring testament to the transformative potential of large language models, marking a pivotal moment in the evolution of software development. At its core, the value proposition is clear: streamlining processes, enhancing collaboration, and fostering alignment. It is not just about autocomplete, it is about unlocking creativity at scale. Industry observers have noted that adoption continues to grow. In conclusion, the future looks bright. Let me know if you would like me to expand on this.
+Although I find the change unsettling, it may improve efficiency.
 ```
 
-After:
+`humanizer-form` output:
 
 ```text
-AI coding assistants can help with drafts, tests, and routine edits. The useful part is speed, but the output still needs review.
-
-The adoption claim is too vague as written. "Industry observers" does not identify a source or provide data, so the safer version is simple: these tools may speed up parts of software work, but teams still need human review and tests.
+I find the change unsettling, although it may improve efficiency.
 ```
+
+The feeling and uncertain benefit both remain.
+
+### Preserve promotional force when it is supplied content
+
+Input:
+
+```text
+The system serves as a robust foundation for scalable workflows, ensuring that cross-functional teams can coordinate effectively.
+```
+
+`humanizer-form` output:
+
+```text
+The system is a robust foundation for scalable workflows and ensures that cross-functional teams can coordinate effectively.
+```
+
+A broader editor might delete `robust` or weaken `ensures`. Humanizer Form keeps them because they are part of the source's evaluative and causal force.
+
+More examples are in [`docs/skill-examples.md`](docs/skill-examples.md).
 
 ## Repository layout
 
 ```text
-.codex-plugin/plugin.json
-.agents/plugins/marketplace.json
-docs/skill-examples.md
-skills/humanizer/SKILL.md
-skills/humanizer/references/banned-list.md
-evals/humanizer_eval_cases.json
-scripts/run_humanizer_evals.py
-scripts/validate_humanizer_outputs.py
-tests/
-README.md
-NOTICE
-LICENSE
+.
+├── .agents/plugins/marketplace.json
+├── .codex-plugin/plugin.json
+├── .github/workflows/
+│   ├── live-eval.yml
+│   └── test.yml
+├── docs/
+│   ├── humanizer-form-research.md
+│   └── skill-examples.md
+├── evals/
+│   └── humanizer_eval_cases.json
+├── scripts/
+│   ├── run_humanizer_evals.py
+│   └── validate_humanizer_outputs.py
+├── skills/
+│   ├── humanizer/
+│   │   ├── SKILL.md
+│   │   └── references/banned-list.md
+│   └── humanizer-form/
+│       └── SKILL.md
+└── tests/
+    ├── test_humanizer_form_artifacts.py
+    └── test_skill_artifacts.py
 ```
-
-`skills/humanizer/SKILL.md` and `skills/humanizer/references/banned-list.md` are the source files for the bundled skill. The repository root is the plugin package. The public marketplace resolves the released package from GitHub, while the eval runner stages the current checkout separately.
-
-## Maintenance checklist
-
-Before releasing a change:
-
-- Choose a version greater than every version already distributed or cached.
-- Update the version in both `skills/humanizer/SKILL.md` and `.codex-plugin/plugin.json`.
-- Run `make test` and `make eval-humanizer-dry-run`.
-- Test a fresh marketplace install and the documented remove-and-reinstall update flow in an isolated environment.
-- Confirm the installed version with `codex plugin list`, then verify Humanizer in a new Codex session.
-- Keep the README pattern summary consistent with `skills/humanizer/SKILL.md`.
-- Keep `NOTICE` current when adding or changing source material.
-
-For release verification, isolate both `HOME` and `CODEX_HOME`. A temporary `CODEX_HOME` alone does not hide plain skills or personal marketplaces under `~/.agents`.
-
-```bash
-export HUMANIZER_RELEASE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/humanizer-release.XXXXXX")"
-export HOME="$HUMANIZER_RELEASE_ROOT/home"
-export CODEX_HOME="$HUMANIZER_RELEASE_ROOT/codex-home"
-mkdir -p "$HOME" "$CODEX_HOME"
-```
-
-Run the documented marketplace installation and update commands in that shell. Authenticate inside the isolated environment only if the final session check needs model access. Remove the temporary release root after verification.
 
 ## Testing
 
-Run the deterministic test suite:
+Run all deterministic tests:
 
 ```bash
 make test
 ```
 
-The tests check the skill manifest, YAML frontmatter, hard rules, scoring gate, reference catalog, fixture coverage, and output validators.
-
-To validate saved Humanizer outputs from a manual or agent run, create one text file per fixture case using the case id as the file name:
-
-```text
-output-dir/
-  dense_ai_rewrite.txt
-  missing_source_handling.txt
-  voice_calibration.txt
-  audit_mode.txt
-  dense_banned_list_scrub.txt
-  contextual_release_notes.txt
-  contextual_docs_cleanup.txt
-  negative_fact_check_only.txt
-  negative_translate_only.txt
-  negative_summary_only.txt
-  negative_spellcheck_only.txt
-```
-
-Then run:
-
-```bash
-make validate-humanizer-output OUTPUT_DIR=output-dir
-```
-
-To run live Codex skill evals, start with a dry run:
+Validate the existing Humanizer eval matrix without invoking a model:
 
 ```bash
 make eval-humanizer-dry-run
 ```
 
-Live evals require an explicit, non-default `CODEX_HOME`. Create one and authenticate the CLI there before running the suite:
+The new form-only skill has static contract tests covering its trigger contract, semantic invariants, exact anchors, forbidden edits, contextual style rules, bidirectional semantic diff, output format, examples, and research record.
+
+### Live Humanizer evals
+
+The existing live runner installs the checked-out plugin into an isolated Codex home and exercises the standard `humanizer` cases:
 
 ```bash
-export CODEX_HOME="$(mktemp -d "${TMPDIR:-/tmp}/humanizer-eval-codex-home.XXXXXX")"
-codex login
-make eval-humanizer
+export HOME="$(mktemp -d)"
+export CODEX_HOME="$(mktemp -d)"
+python3 scripts/run_humanizer_evals.py \
+  --cases evals/humanizer_eval_cases.json \
+  --artifacts-dir evals/artifacts/local \
+  --codex-bin codex \
+  --filter explicit_dense_rewrite \
+  --timeout-seconds 600 \
+  --rubric-grade
 ```
 
-The live runner executes the prompts in `evals/humanizer_eval_cases.json` through `codex exec --json` in a read-only sandbox. It writes JSONL traces, final outputs, and `plugin-provenance.json` under `evals/artifacts/latest/`, checks trigger-related trace terms, records token and command counts in the summary, and reuses the saved-output contracts for cases that map to `tests/fixtures/humanizer_contract_cases.json`.
+For live evals, isolate both `HOME` and `CODEX_HOME`. The runner requires a non-default Codex home, and CI configures a temporary `HOME` for every Codex subprocess so plugin and credential state cannot leak from the host environment.
 
-Some live cases also define rubric IDs for semantic review. Add `EVAL_ARGS='--rubric-grade'` to run the optional second-pass grader, which writes rubric prompts, traces, stderr, and JSON grades under `evals/artifacts/latest/`.
+Useful flags:
 
-For reproducibility, the runner copies the checkout's plugin package into a temporary local marketplace and installs it under a unique eval-only selector. It compares the installed version and package digest with the checkout, confirms that the exact installed `SKILL.md` path is model-visible, and stops before sampling if any check fails. The runner uses a temporary `HOME` for every Codex subprocess, so plain skills and personal marketplaces under `~/.agents` cannot leak into the eval. It removes the staged plugin and marketplace after the suite, ignores user config and project rules, uses ephemeral sessions, and pins the default eval model to `gpt-5.5`.
+| Flag | Purpose |
+|---|---|
+| `--cases` | Select an eval-case JSON file |
+| `--artifacts-dir` | Choose where results and traces are written |
+| `--codex-bin` | Select the Codex executable |
+| `--filter` | Run matching case IDs only |
+| `--timeout-seconds` | Set the per-case timeout |
+| `--rubric-grade` | Enable model-based rubric grading |
 
-Positive skill cases set `force_skill_file_read` so the trace proves the installed checkout copy of `skills/humanizer/SKILL.md` was used. Dense catalog cases can also set `force_reference_file_read` to prove the installed `skills/humanizer/references/banned-list.md` was loaded. The runner does not treat output-only direct `$humanizer` prompts as skill activation proof because current `codex exec` traces do not expose a separate skill-invocation event for that path. Use `EVAL_ARGS='--model <model>'` to test another model, or `EVAL_ARGS='--timeout-seconds 600'` for slower environments.
+The form-only skill is not yet included in the live model matrix. Its first release relies on deterministic artifact tests and the explicit semantic contract. A separate live matrix should compare source and output for proposition coverage, modality, scope, negation, attribution, exact anchors, and forbidden additions rather than reward detector scores.
 
-Useful eval flags:
+## Design limits
 
-```bash
-make eval-humanizer-dry-run EVAL_ARGS='--filter explicit_dense_rewrite'
-make eval-humanizer EVAL_ARGS='--filter explicit_dense_rewrite --rubric-grade'
-make eval-humanizer EVAL_ARGS='--model gpt-5.5 --timeout-seconds 600'
-make eval-humanizer-dry-run EVAL_ARGS='--cases evals/humanizer_eval_cases.json --artifacts-dir evals/artifacts/latest --codex-bin codex'
-```
+Neither skill can mathematically guarantee semantic equivalence. Language is ambiguous, and a model can still make a bad paraphrase. Humanizer Form reduces that risk through minimal edits, explicit invariants, exact-anchor preservation, and restore-on-doubt rules. High-stakes legal, medical, scientific, security, financial, or policy text still requires human review.
 
-Repeat `--filter` locally to run more than one focused case. Use `--cases` only when testing an alternate eval matrix, `--artifacts-dir` only when keeping artifacts separate from `evals/artifacts/latest/`, and `--codex-bin` only when testing a non-default Codex executable.
+Neither skill guarantees that an AI detector will classify the output as human-written. Detector evasion is not the objective.
 
-### Manual live eval workflow
+## Versioning
 
-Normal push and pull-request CI runs only deterministic checks. It runs the eval matrix dry-run and a representative dry-run with `--filter`, `--rubric-grade`, `--model`, `--timeout-seconds`, `--cases`, `--artifacts-dir`, and `--codex-bin` so flag wiring is covered without invoking Codex. The live eval is available as a separate GitHub Actions workflow named `Live Eval` and must be started manually from the Actions tab.
+- Plugin `2.9.0`: adds `humanizer-form` 1.0.0, dual-skill documentation, a research record, and deterministic contract tests.
+- `humanizer` remains the existing opinionated anti-slop editor, with its version advanced to match the plugin package.
+- `humanizer-form` follows its own skill version because its contract is independent from the legacy catalog.
 
-To enable it:
+## Sources and research
 
-1. Create an OpenAI Platform API key with access to the eval model.
-2. Add a repository Actions secret named `OPENAI_API_KEY`.
-3. Confirm the API project has billing and rate limits for the selected model.
-4. Open GitHub Actions, choose `Live Eval`, click `Run workflow`, select the branch, and optionally set:
-   - `model`, default `gpt-5.5`
-   - `timeout_seconds`, default `300`
-   - `filter`, a single eval case id for a focused run
-   - `rubric_grade`, default `false`, to run the optional rubric grading pass
+The original Humanizer is based on Wikipedia's *Signs of AI writing* and incorporates attributed checklist and scoring concepts from stop-slop and Tagore. Its complete attribution is recorded in `NOTICE` and in the skill frontmatter.
 
-The workflow installs the Codex CLI, isolates both `HOME` and `CODEX_HOME` under the temporary runner directory, stores auth in that `CODEX_HOME`, runs `make test`, runs `make eval-humanizer-dry-run`, then runs the live eval. It uploads `evals/artifacts/latest/` even when the eval fails, so traces, prompts, stderr, outputs, and plugin provenance are available for debugging.
-
-## Sources and credits
-
-Humanizer 2.8.0 is derived from and inspired by these sources:
-
-- [humanizer](https://github.com/blader/humanizer) by blader, based on Wikipedia's "Signs of AI writing" guide.
-- [Wikipedia: Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup.
-- [stop-slop](https://github.com/hardikpandya/stop-slop) by Hardik Pandya, used as inspiration for the mechanical checklist and scoring gate.
-- [Tagore](https://github.com/apurvrdx1/tagore) by Apurv Ray, used as inspiration for the combined catalog-plus-scoring workflow and substance scoring.
-
-See `NOTICE` for attribution and license details.
-
-## Version history
-
-- **2.8.0**: Replaced copy-based Codex plugin setup with an opt-in marketplace install, isolated checkout-backed live evals, deterministic cache replacement, and migration guidance for older local installations.
-- **2.7.3**: Tightened dense rewrite guidance so removed filler items are not replaced with new broad work categories such as smaller coding tasks.
-- **2.7.2**: Tightened fact preservation for scoped noun phrases and made rule-of-three cleanup drop generic filler items instead of preserving source triplets mechanically.
-- **2.7.1**: Tightened Codex skill activation metadata for padded prose and requests to make text read like a person wrote it.
-- **2.7.0**: Added the fact-safe quality gate, including stop-slop-inspired mechanical checks, scoring thresholds, and Tagore-inspired substance scoring while keeping Humanizer's factual-integrity rules.
-- **2.6.0**: Ported stricter guardrails for factual integrity, fake naming, self-narration, rhetorical hooks, no-preamble output, and safer examples.
-- **2.5.1**: Added passive voice and subjectless fragments, raising the catalog to 29 patterns.
-- **2.5.0**: Added persuasive framing, signposting, fragmented headers, expanded negative parallelisms, and tighter wording around em dash overuse.
-- **2.4.0**: Added voice calibration from writing samples.
-- **2.3.0**: Added hyphenated word pair overuse.
-- **2.2.0**: Added a final "obviously AI generated" audit and second-pass rewrite.
-- **2.1.1**: Fixed the quotation-mark example.
-- **2.1.0**: Added before and after examples for all 24 patterns.
-- **2.0.0**: Rebuilt the skill from the Wikipedia "Signs of AI writing" guide.
-- **1.0.0**: Initial release.
+Humanizer Form was written from scratch after reviewing multiple public humanizer and de-slop skills. The comparison and rejected design choices are documented in [`docs/humanizer-form-research.md`](docs/humanizer-form-research.md).
 
 ## License
 
-Humanizer Plugin uses mixed licensing:
+Original repository code, plugin metadata, tests, documentation, and `humanizer-form` are released under the MIT License.
 
-- Original repository code, tests, scripts, plugin metadata, and CoveMB-authored additions are MIT. See `LICENSE`.
-- MIT-licensed upstream material from blader's humanizer, stop-slop, and Tagore is credited in `NOTICE`.
-- Text and pattern guidance adapted from Wikipedia's "Signs of AI writing" remain under CC BY-SA 4.0. Those portions are attributed in `NOTICE`; downstream adaptations should preserve the CC BY-SA 4.0 attribution, license, and change notices.
+Wikipedia-derived material in the original `humanizer` skill is available under CC BY-SA 4.0. The attribution and scope of the Wikipedia-derived material are described in `NOTICE`.
+
+CC BY-SA 4.0 license text and terms:
+
+https://creativecommons.org/licenses/by-sa/4.0/
+
+The package therefore reports `MIT AND CC-BY-SA-4.0` at the plugin level. See `LICENSE` and `NOTICE` for details.
