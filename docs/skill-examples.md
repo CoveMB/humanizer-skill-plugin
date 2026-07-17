@@ -187,7 +187,7 @@ Humanizer Form must not invent a report, remove the vague attribution, or neutra
 ```text
 Use $humanizer-form. Humanize the form only:
 
-Although I find the change unsettling, it may improve efficiency.
+I find the change unsettling. It may, however, improve efficiency.
 ```
 
 Expected rewrite:
@@ -196,7 +196,7 @@ Expected rewrite:
 I find the change unsettling, although it may improve efficiency.
 ```
 
-The output keeps both the first-person reaction and the uncertain benefit.
+The output keeps the first-person reaction, original order, concessive relation, and uncertain benefit.
 
 ### Preserve technical anchors and claim strength
 
