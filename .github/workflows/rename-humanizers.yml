@@ -1,0 +1,73 @@
+name: Complete Humanizer Rename
+
+on:
+  push:
+    branches:
+      - agent/add-form-only-humanizer
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/add-form-only-humanizer
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Update internal paths and terminology
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          paths = [
+              Path("scripts/run_humanizer_evals.py"),
+              Path("tests/test_humanizer_eval_runner.py"),
+          ]
+
+          replacements = [
+              ("skills/humanizer/references/banned-list.md", "skills/editorial-humanizer/references/banned-list.md"),
+              ("skills/humanizer/SKILL.md", "skills/editorial-humanizer/SKILL.md"),
+              ("skills/humanizer-form/SKILL.md", "skills/faithful-humanizer/SKILL.md"),
+              ("docs/humanizer-form-research.md", "docs/faithful-humanizer-research.md"),
+              ("Use $humanizer", "Use $editorial-humanizer"),
+              ("Use Humanizer", "Use Editorial Humanizer"),
+              ("final Humanizer output", "final Editorial Humanizer output"),
+              ("Grade this Humanizer eval output", "Grade this Editorial Humanizer eval output"),
+              ("Humanizer eval case(s)", "Editorial Humanizer eval case(s)"),
+              ("live Codex evals for the Humanizer skill", "live Codex evals for Editorial Humanizer"),
+          ]
+
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              for old, new in replacements:
+                  text = text.replace(old, new)
+              path.write_text(text, encoding="utf-8")
+          PY
+
+          git mv tests/test_humanizer_form_artifacts.py tests/test_faithful_humanizer_artifacts.py
+          git rm -r skills/humanizer skills/humanizer-form
+          git rm docs/humanizer-form-research.md
+          git rm .github/workflows/rename-humanizers.yml
+
+      - name: Run validation
+        run: |
+          git diff --check
+          make test
+          make eval-humanizer-dry-run
+
+      - name: Commit rename
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor: complete Editorial and Faithful Humanizer rename"
+          git push origin HEAD:agent/add-form-only-humanizer
