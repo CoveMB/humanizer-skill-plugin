@@ -1,7 +1,7 @@
 {
   "name": "humanizer-plugin",
-  "version": "2.9.0",
-  "description": "Codex plugin with an anti-slop humanizer and a conservative form-only humanizer.",
+  "version": "3.0.0",
+  "description": "Codex plugin with Editorial Humanizer and Faithful Humanizer.",
   "author": {
     "name": "CoveMB",
     "url": "https://github.com/CoveMB"
@@ -15,14 +15,14 @@
     "style",
     "humanizer",
     "codex",
-    "factual-integrity",
+    "editorial-editing",
     "semantic-preservation"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Humanizer Plugin",
-    "shortDescription": "AI-writing cleanup with a form-only option.",
-    "longDescription": "Two Codex writing editors: Humanizer removes common AI-writing patterns with fact-safe checks, while Humanizer Form makes minimal surface edits and preserves every supplied claim, opinion, qualifier, attribution, and logical relation.",
+    "shortDescription": "Editorial and faithful AI-writing cleanup.",
+    "longDescription": "Two clearly separated Codex writing editors: Editorial Humanizer applies broader anti-slop judgment and may reshape or remove weak material, while Faithful Humanizer changes only presentation and preserves every supplied claim, qualifier, attribution, example, and logical relation.",
     "developerName": "CoveMB",
     "category": "Productivity",
     "capabilities": [
@@ -32,9 +32,9 @@
     "privacyPolicyURL": "https://github.com/CoveMB/humanizer-skill-plugin/blob/main/README.md",
     "termsOfServiceURL": "https://github.com/CoveMB/humanizer-skill-plugin/blob/main/README.md#license",
     "defaultPrompt": [
-      "Use $humanizer to humanize this text:",
-      "Use $humanizer-form to improve the wording without changing the substance:",
-      "Use $humanizer to audit and score this draft for AI-writing patterns."
+      "Use $editorial-humanizer to improve this draft with broader editorial judgment:",
+      "Use $faithful-humanizer to improve the wording without changing the substance:",
+      "Use $editorial-humanizer to audit and score this draft for AI-writing patterns."
     ],
     "screenshots": [],
     "brandColor": "#475569"
