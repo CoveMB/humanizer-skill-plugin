@@ -4,7 +4,6 @@ import unittest
 from tests.helpers.skill_artifacts import (
     MANIFEST_PATH,
     MARKETPLACE_PATH,
-    MARKETPLACE_PLUGIN_PATH,
     REFERENCE_PATH,
     REPO_ROOT,
     SKILL_PATH,
@@ -49,19 +48,36 @@ class SkillArtifactTests(unittest.TestCase):
         skill_directory = plugin_root / self.manifest["skills"]
         self.assertTrue(skill_directory.is_dir(), skill_directory)
 
-    def test_repo_marketplace_points_at_plugin_root(self):
+    def test_repo_marketplace_points_at_git_plugin_root(self):
+        self.assertEqual(self.marketplace["name"], "humanizer-plugin-local")
+        self.assertEqual(
+            self.marketplace["interface"]["displayName"],
+            "Humanizer Plugin",
+        )
+
         plugins = self.marketplace["plugins"]
         self.assertEqual(len(plugins), 1)
 
         plugin_entry = plugins[0]
         source = plugin_entry["source"]
         self.assertEqual(plugin_entry["name"], "humanizer-plugin")
-        self.assertEqual(source["source"], "local")
-        self.assertTrue(source["path"].startswith("./"))
-        self.assertTrue(source["path"][2:])
-        self.assertEqual(source["path"], "./.")
-        self.assertEqual((REPO_ROOT / source["path"]).resolve(), MARKETPLACE_PLUGIN_PATH)
-        self.assertTrue(MARKETPLACE_PLUGIN_PATH.joinpath(".codex-plugin", "plugin.json").exists())
+        self.assertEqual(
+            source,
+            {
+                "source": "url",
+                "url": "https://github.com/CoveMB/humanizer-skill-plugin.git",
+                "ref": "main",
+            },
+        )
+        self.assertTrue(MANIFEST_PATH.exists())
+        self.assertEqual(
+            plugin_entry["policy"],
+            {
+                "installation": "AVAILABLE",
+                "authentication": "ON_INSTALL",
+            },
+        )
+        self.assertEqual(plugin_entry["category"], "Productivity")
 
     def test_manifest_and_skill_versions_match(self):
         self.assertEqual(
@@ -259,6 +275,28 @@ class SkillArtifactTests(unittest.TestCase):
         self.assertNotIn("plugins/humanizer/", readme_markdown)
         self.assertNotIn("scripts/sync-plugin.sh", readme_markdown)
 
+    def test_readme_documents_marketplace_install_and_update_lifecycle(self):
+        readme_markdown = read_text(REPO_ROOT / "README.md")
+        required_snippets = [
+            "codex plugin marketplace add CoveMB/humanizer-skill-plugin --ref main",
+            "codex plugin add humanizer-plugin@humanizer-plugin-local",
+            "codex plugin marketplace upgrade humanizer-plugin-local",
+            "codex plugin remove humanizer-plugin@humanizer-plugin-local",
+            "codex plugin list",
+            "start a new Codex session",
+            "~/.agents/skills/humanizer",
+            "Do not enable the plain skill and plugin at the same time",
+            "isolate both `HOME` and `CODEX_HOME`",
+            "temporary `HOME` for every Codex subprocess",
+        ]
+        for required_snippet in required_snippets:
+            self.assertIn(required_snippet, readme_markdown)
+
+        self.assertNotIn(
+            "cp -R .codex-plugin skills README.md NOTICE LICENSE",
+            readme_markdown,
+        )
+
     def test_readme_documents_trigger_behavior_and_limits(self):
         readme_markdown = read_text(REPO_ROOT / "README.md")
         expected_patterns = [
@@ -303,7 +341,9 @@ class SkillArtifactTests(unittest.TestCase):
             "workflow_dispatch:",
             "npm i -g @openai/codex@latest",
             "OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}",
+            'export HOME="${RUNNER_TEMP:?RUNNER_TEMP is required}/home"',
             'export CODEX_HOME="${RUNNER_TEMP:?RUNNER_TEMP is required}/codex-home"',
+            'printf \'HOME=%s\\n\' "$HOME" >> "$GITHUB_ENV"',
             'printf \'CODEX_HOME=%s\\n\' "$CODEX_HOME" >> "$GITHUB_ENV"',
             "credentials_store = \"file\"",
             "codex login --with-api-key",

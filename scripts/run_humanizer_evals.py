@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import json
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
+import uuid
+from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -18,8 +25,12 @@ DEFAULT_CASES_PATH = REPO_ROOT / "evals" / "humanizer_eval_cases.json"
 DEFAULT_ARTIFACTS_DIR = REPO_ROOT / "evals" / "artifacts" / "latest"
 DEFAULT_MODEL = "gpt-5.5"
 DEFAULT_TIMEOUT_SECONDS = 300
-LOCAL_MARKETPLACE_NAME = "humanizer-plugin-local"
+PLUGIN_BOOTSTRAP_TIMEOUT_SECONDS = 60
+EVAL_MARKETPLACE_PREFIX = "humanizer-eval"
 LOCAL_PLUGIN_NAME = "humanizer-plugin"
+PLUGIN_PACKAGE_DIRECTORIES = (".codex-plugin", "skills")
+PLUGIN_PACKAGE_FILES = ("README.md", "NOTICE", "LICENSE")
+PLUGIN_PROVENANCE_FILENAME = "plugin-provenance.json"
 VALID_CATEGORIES = {"explicit", "implicit", "contextual", "negative"}
 REQUIRED_CASE_KEYS = {"id", "category", "should_trigger", "prompt", "source"}
 DEFAULT_FORBIDDEN_STDERR_TERMS = (
@@ -35,8 +46,306 @@ TRACE_METRIC_KEYS = (
 RUBRIC_MAX_DIMENSION_SCORE = 10
 
 
+@dataclass
+class EvalPluginInstallation:
+    plugin_id: str
+    marketplace_name: str
+    version: str
+    installed_path: Path
+    package_sha256: str
+    environment: dict
+
+
 def read_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def require_isolated_codex_home(environment=None):
+    environment = os.environ if environment is None else environment
+    configured_codex_home = environment.get("CODEX_HOME")
+    if not configured_codex_home:
+        raise ValueError(
+            "CODEX_HOME is required for live evals and must point to an isolated directory"
+        )
+
+    user_home = Path(environment.get("HOME", Path.home())).expanduser().resolve()
+    codex_home = Path(configured_codex_home).expanduser().resolve()
+    if codex_home == user_home / ".codex":
+        raise ValueError("CODEX_HOME must not use the default user Codex home")
+    if not codex_home.is_dir():
+        raise ValueError(f"CODEX_HOME does not exist or is not a directory: {codex_home}")
+    return codex_home
+
+
+def build_eval_environment(codex_home, isolated_home):
+    environment = os.environ.copy()
+    environment["CODEX_HOME"] = str(Path(codex_home).resolve())
+    environment["HOME"] = str(Path(isolated_home).resolve())
+    return environment
+
+
+def stage_eval_marketplace(repo_root, marketplace_root, marketplace_name):
+    repo_root = Path(repo_root)
+    marketplace_root = Path(marketplace_root)
+    plugin_root = marketplace_root / "plugins" / LOCAL_PLUGIN_NAME
+    plugin_root.mkdir(parents=True, exist_ok=True)
+
+    for directory_name in PLUGIN_PACKAGE_DIRECTORIES:
+        shutil.copytree(
+            repo_root / directory_name,
+            plugin_root / directory_name,
+        )
+    for file_name in PLUGIN_PACKAGE_FILES:
+        shutil.copy2(repo_root / file_name, plugin_root / file_name)
+
+    marketplace_path = marketplace_root / ".agents" / "plugins" / "marketplace.json"
+    marketplace_path.parent.mkdir(parents=True, exist_ok=True)
+    marketplace = {
+        "name": marketplace_name,
+        "interface": {"displayName": "Humanizer Eval"},
+        "plugins": [
+            {
+                "name": LOCAL_PLUGIN_NAME,
+                "source": {
+                    "source": "local",
+                    "path": f"./plugins/{LOCAL_PLUGIN_NAME}",
+                },
+                "policy": {
+                    "installation": "AVAILABLE",
+                    "authentication": "ON_INSTALL",
+                },
+                "category": "Productivity",
+            }
+        ],
+    }
+    marketplace_path.write_text(
+        json.dumps(marketplace, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return plugin_root
+
+
+def plugin_package_sha256(plugin_root):
+    plugin_root = Path(plugin_root)
+    digest = hashlib.sha256()
+    for directory_name in PLUGIN_PACKAGE_DIRECTORIES:
+        directory = plugin_root / directory_name
+        for path in sorted(path for path in directory.rglob("*") if path.is_file()):
+            relative_path = path.relative_to(plugin_root).as_posix()
+            digest.update(relative_path.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(path.read_bytes())
+            digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def run_cli_json(command, environment, label):
+    try:
+        result = subprocess.run(
+            command,
+            cwd=REPO_ROOT,
+            env=environment,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=PLUGIN_BOOTSTRAP_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError(f"{label} failed to run: {error}") from error
+
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "no error details"
+        raise RuntimeError(f"{label} failed: {detail}")
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"{label} returned invalid JSON") from error
+
+
+def validate_eval_plugin_install(repo_root, codex_home, plugin_id, install_result):
+    expected_manifest = read_json(Path(repo_root) / ".codex-plugin" / "plugin.json")
+    expected_version = expected_manifest["version"]
+    if install_result.get("pluginId") != plugin_id:
+        raise RuntimeError("eval plugin installation returned the wrong plugin id")
+    if install_result.get("version") != expected_version:
+        raise RuntimeError(
+            "eval plugin installation returned version "
+            f"{install_result.get('version')!r}; expected {expected_version!r}"
+        )
+
+    installed_path_value = install_result.get("installedPath")
+    if not isinstance(installed_path_value, str) or not installed_path_value:
+        raise RuntimeError("eval plugin installation did not return an installed path")
+    installed_path = Path(installed_path_value).resolve()
+    if not installed_path.is_dir():
+        raise RuntimeError(f"eval plugin install path does not exist: {installed_path}")
+    try:
+        installed_path.relative_to(Path(codex_home).resolve())
+    except ValueError as error:
+        raise RuntimeError("eval plugin was installed outside the isolated CODEX_HOME") from error
+
+    checkout_digest = plugin_package_sha256(repo_root)
+    installed_digest = plugin_package_sha256(installed_path)
+    if installed_digest != checkout_digest:
+        raise RuntimeError("installed eval plugin contents do not match the checkout")
+
+    return {
+        "pluginId": plugin_id,
+        "version": expected_version,
+        "installedPath": str(installed_path),
+        "packageSha256": checkout_digest,
+    }
+
+
+def verify_eval_plugin_is_model_visible(
+    codex_bin,
+    plugin_id,
+    installed_path,
+    environment,
+):
+    prompt_input = run_cli_json(
+        [
+            codex_bin,
+            "debug",
+            "prompt-input",
+            "-c",
+            f'plugins."{plugin_id}".enabled=true',
+            "Use Humanizer to rewrite this text.",
+        ],
+        environment,
+        "eval plugin provenance check",
+    )
+    expected_skill_path = (
+        Path(installed_path) / "skills" / "humanizer" / "SKILL.md"
+    ).resolve()
+    if str(expected_skill_path) not in json.dumps(prompt_input):
+        raise RuntimeError(
+            "installed checkout skill is not present in the model-visible prompt input"
+        )
+    return str(expected_skill_path)
+
+
+def cleanup_eval_plugin(
+    codex_bin,
+    installation,
+    marketplace_added,
+    plugin_installed,
+):
+    errors = []
+    if plugin_installed:
+        try:
+            run_cli_json(
+                [codex_bin, "plugin", "remove", installation.plugin_id, "--json"],
+                installation.environment,
+                "eval plugin removal",
+            )
+        except RuntimeError as error:
+            errors.append(str(error))
+    if marketplace_added:
+        try:
+            run_cli_json(
+                [
+                    codex_bin,
+                    "plugin",
+                    "marketplace",
+                    "remove",
+                    installation.marketplace_name,
+                    "--json",
+                ],
+                installation.environment,
+                "eval marketplace removal",
+            )
+        except RuntimeError as error:
+            errors.append(str(error))
+    return errors
+
+
+@contextmanager
+def installed_eval_plugin(codex_bin, repo_root, artifacts_dir, codex_home):
+    marketplace_name = f"{EVAL_MARKETPLACE_PREFIX}-{uuid.uuid4().hex}"
+    plugin_id = f"{LOCAL_PLUGIN_NAME}@{marketplace_name}"
+    with tempfile.TemporaryDirectory(prefix="humanizer-eval-runtime-") as temporary_directory:
+        temporary_root = Path(temporary_directory)
+        isolated_home = temporary_root / "home"
+        marketplace_root = temporary_root / "marketplace"
+        isolated_home.mkdir()
+        staged_plugin_root = stage_eval_marketplace(
+            repo_root,
+            marketplace_root,
+            marketplace_name,
+        )
+        environment = build_eval_environment(codex_home, isolated_home)
+        installation = EvalPluginInstallation(
+            plugin_id=plugin_id,
+            marketplace_name=marketplace_name,
+            version=read_json(Path(repo_root) / ".codex-plugin" / "plugin.json")["version"],
+            installed_path=Path(),
+            package_sha256=plugin_package_sha256(staged_plugin_root),
+            environment=environment,
+        )
+        marketplace_added = False
+        plugin_installed = False
+        try:
+            marketplace_result = run_cli_json(
+                [
+                    codex_bin,
+                    "plugin",
+                    "marketplace",
+                    "add",
+                    str(marketplace_root),
+                    "--json",
+                ],
+                environment,
+                "eval marketplace installation",
+            )
+            marketplace_added = True
+            if marketplace_result.get("marketplaceName") != marketplace_name:
+                raise RuntimeError("eval marketplace installation returned the wrong name")
+
+            install_result = run_cli_json(
+                [codex_bin, "plugin", "add", plugin_id, "--json"],
+                environment,
+                "eval plugin installation",
+            )
+            plugin_installed = True
+            provenance = validate_eval_plugin_install(
+                repo_root,
+                codex_home,
+                plugin_id,
+                install_result,
+            )
+            model_visible_skill_path = verify_eval_plugin_is_model_visible(
+                codex_bin,
+                plugin_id,
+                provenance["installedPath"],
+                environment,
+            )
+            provenance.update(
+                {
+                    "checkoutPath": str(Path(repo_root).resolve()),
+                    "modelVisibleSkillPath": model_visible_skill_path,
+                }
+            )
+            artifacts_dir.mkdir(parents=True, exist_ok=True)
+            artifacts_dir.joinpath(PLUGIN_PROVENANCE_FILENAME).write_text(
+                json.dumps(provenance, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            installation.installed_path = Path(provenance["installedPath"])
+            installation.package_sha256 = provenance["packageSha256"]
+            yield installation
+        finally:
+            cleanup_errors = cleanup_eval_plugin(
+                codex_bin,
+                installation,
+                marketplace_added,
+                plugin_installed,
+            )
+            if cleanup_errors:
+                message = "; ".join(cleanup_errors)
+                if sys.exc_info()[0] is None:
+                    raise RuntimeError(message)
+                print(f"warning: {message}", file=sys.stderr)
 
 
 def positive_integer(value):
@@ -274,20 +583,26 @@ def load_output_contract_cases():
     return {case["id"]: case for case in load_fixture_cases()}
 
 
-def build_codex_prompt(case):
+def build_codex_prompt(case, plugin_root=None):
     prompt_lines = []
     if case.get("force_skill_file_read", False):
+        skill_path = Path("skills/humanizer/SKILL.md")
+        if plugin_root is not None:
+            skill_path = Path(plugin_root) / skill_path
         prompt_lines.extend(
             [
-                "Read `skills/humanizer/SKILL.md` before answering.",
+                f"Read `{skill_path}` before answering.",
                 "Reading the skill file is essential for this eval.",
                 "",
             ]
         )
     if case.get("force_reference_file_read", False):
+        reference_path = Path("skills/humanizer/references/banned-list.md")
+        if plugin_root is not None:
+            reference_path = Path(plugin_root) / reference_path
         prompt_lines.extend(
             [
-                "Read `skills/humanizer/references/banned-list.md` before answering.",
+                f"Read `{reference_path}` before answering.",
                 "Reading the banned-list reference is essential for this dense-draft eval.",
                 "",
             ]
@@ -422,10 +737,6 @@ def collect_trace_metrics(events):
     return metrics
 
 
-def local_marketplace_config_key():
-    return f"marketplaces.{LOCAL_MARKETPLACE_NAME}"
-
-
 def check_trace_expectations(case, events):
     for expected_term in case.get("expected_trace_terms", []):
         if not trace_contains_term(events, expected_term):
@@ -456,7 +767,7 @@ def build_codex_command(
     output_path,
     prompt,
     model=None,
-    enable_local_plugin=True,
+    plugin_id=None,
 ):
     command = [
         codex_bin,
@@ -473,15 +784,11 @@ def build_codex_command(
         str(output_path),
     ]
 
-    if enable_local_plugin:
+    if plugin_id:
         command.extend(
             [
                 "-c",
-                f'{local_marketplace_config_key()}.source_type="local"',
-                "-c",
-                f'{local_marketplace_config_key()}.source="{repo_root}"',
-                "-c",
-                f'plugins."{LOCAL_PLUGIN_NAME}@{LOCAL_MARKETPLACE_NAME}".enabled=true',
+                f'plugins."{plugin_id}".enabled=true',
             ]
         )
 
@@ -500,7 +807,15 @@ def process_output_text(output):
     return str(output)
 
 
-def run_codex_process(command, trace_path, stderr_path, timeout_seconds, case_id, label):
+def run_codex_process(
+    command,
+    trace_path,
+    stderr_path,
+    timeout_seconds,
+    case_id,
+    label,
+    environment=None,
+):
     try:
         result = subprocess.run(
             command,
@@ -509,6 +824,7 @@ def run_codex_process(command, trace_path, stderr_path, timeout_seconds, case_id
             capture_output=True,
             check=False,
             timeout=timeout_seconds,
+            env=environment,
         )
     except subprocess.TimeoutExpired as error:
         trace_path.write_text(
@@ -672,6 +988,7 @@ def run_rubric_grade(
     codex_bin,
     model=None,
     timeout_seconds=DEFAULT_TIMEOUT_SECONDS,
+    environment=None,
 ):
     rubric_prompt_path = artifact_dirs["rubric_prompts"] / f"{case['id']}.txt"
     rubric_output_path = artifact_dirs["rubric_outputs"] / f"{case['id']}.json"
@@ -687,7 +1004,6 @@ def run_rubric_grade(
         rubric_output_path,
         prompt,
         model=model,
-        enable_local_plugin=False,
     )
     result = run_codex_process(
         command,
@@ -696,6 +1012,7 @@ def run_rubric_grade(
         timeout_seconds,
         case["id"],
         "rubric grader",
+        environment=environment,
     )
     if result.returncode != 0:
         raise AssertionError(f"{case['id']}: rubric grader exited with {result.returncode}")
@@ -718,8 +1035,11 @@ def run_eval_case(
     model=None,
     timeout_seconds=DEFAULT_TIMEOUT_SECONDS,
     grade_rubric=False,
+    plugin_id=None,
+    plugin_root=None,
+    environment=None,
 ):
-    prompt = build_codex_prompt(case)
+    prompt = build_codex_prompt(case, plugin_root=plugin_root)
     output_path = artifact_dirs["outputs"] / f"{case['id']}.txt"
     trace_path = artifact_dirs["traces"] / f"{case['id']}.jsonl"
     stderr_path = artifact_dirs["stderr"] / f"{case['id']}.stderr"
@@ -743,7 +1063,14 @@ def run_eval_case(
 
     prompt_path.write_text(prompt, encoding="utf-8")
     remove_file_if_exists(output_path)
-    command = build_codex_command(codex_bin, REPO_ROOT, output_path, prompt, model=model)
+    command = build_codex_command(
+        codex_bin,
+        REPO_ROOT,
+        output_path,
+        prompt,
+        model=model,
+        plugin_id=plugin_id,
+    )
     try:
         result = run_codex_process(
             command,
@@ -752,6 +1079,7 @@ def run_eval_case(
             timeout_seconds,
             case["id"],
             "codex",
+            environment=environment,
         )
     except AssertionError as error:
         summary["error"] = str(error)
@@ -781,6 +1109,7 @@ def run_eval_case(
                         codex_bin=codex_bin,
                         model=model,
                         timeout_seconds=timeout_seconds,
+                        environment=environment,
                     )
                 )
             except (AssertionError, OSError, ValueError, subprocess.TimeoutExpired) as error:
@@ -821,19 +1150,30 @@ def run_eval_suite(
     grade_rubric=False,
 ):
     artifact_dirs = ensure_artifact_dirs(artifacts_dir)
+    remove_file_if_exists(artifacts_dir / PLUGIN_PROVENANCE_FILENAME)
     output_contract_cases = load_output_contract_cases()
-    summaries = [
-        run_eval_case(
-            case,
-            artifact_dirs,
-            codex_bin=codex_bin,
-            output_contract_cases=output_contract_cases,
-            model=model,
-            timeout_seconds=timeout_seconds,
-            grade_rubric=grade_rubric,
-        )
-        for case in cases
-    ]
+    codex_home = require_isolated_codex_home()
+    with installed_eval_plugin(
+        codex_bin,
+        REPO_ROOT,
+        artifacts_dir,
+        codex_home,
+    ) as installation:
+        summaries = [
+            run_eval_case(
+                case,
+                artifact_dirs,
+                codex_bin=codex_bin,
+                output_contract_cases=output_contract_cases,
+                model=model,
+                timeout_seconds=timeout_seconds,
+                grade_rubric=grade_rubric,
+                plugin_id=installation.plugin_id,
+                plugin_root=installation.installed_path,
+                environment=installation.environment,
+            )
+            for case in cases
+        ]
     summary_path = write_summary(artifacts_dir, summaries)
     return summaries, summary_path
 
@@ -886,14 +1226,18 @@ def main(argv):
         print_dry_run(cases)
         return 0
 
-    summaries, summary_path = run_eval_suite(
-        cases,
-        artifacts_dir=args.artifacts_dir,
-        codex_bin=args.codex_bin,
-        model=args.model,
-        timeout_seconds=args.timeout_seconds,
-        grade_rubric=args.rubric_grade,
-    )
+    try:
+        summaries, summary_path = run_eval_suite(
+            cases,
+            artifacts_dir=args.artifacts_dir,
+            codex_bin=args.codex_bin,
+            model=args.model,
+            timeout_seconds=args.timeout_seconds,
+            grade_rubric=args.rubric_grade,
+        )
+    except (OSError, RuntimeError, ValueError) as error:
+        print(str(error), file=sys.stderr)
+        return 2
     print_summary(summaries, summary_path)
     return 0 if all(summary["passed"] for summary in summaries) else 1
 

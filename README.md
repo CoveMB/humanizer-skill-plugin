@@ -170,15 +170,7 @@ OpenCode also scans `~/.claude/skills/` for compatibility, so a single clone int
 
 ### Codex as a skill
 
-Install Humanizer as a plain Codex skill:
-
-```bash
-mkdir -p ~/.codex/skills/humanizer
-cp skills/humanizer/SKILL.md ~/.codex/skills/humanizer/
-cp -R skills/humanizer/references ~/.codex/skills/humanizer/
-```
-
-Codex also supports shared agent skill directories in many setups:
+Install Humanizer as a plain Codex skill only when you do not want the plugin:
 
 ```bash
 mkdir -p ~/.agents/skills/humanizer
@@ -186,51 +178,61 @@ cp skills/humanizer/SKILL.md ~/.agents/skills/humanizer/
 cp -R skills/humanizer/references ~/.agents/skills/humanizer/
 ```
 
-Restart Codex or reload skills if your client requires it.
+Do not enable the plain skill and plugin at the same time. They both expose a skill named `humanizer`, so Codex may show duplicate choices. Start a new Codex session after installing or replacing the plain skill.
 
-### Codex as a plugin
+### Codex as a plugin (recommended)
 
-This repository root is the local Codex plugin package.
+Humanizer can be installed from this repository before it is listed in a public marketplace. The repository includes its own marketplace catalog and the plugin package at the repository root.
 
-The plugin manifest is:
-
-```text
-.codex-plugin/plugin.json
-```
-
-The plugin loads this skill file:
-
-```text
-skills/humanizer/SKILL.md
-```
-
-For a local plugin install, copy the plugin package into your Codex plugins directory:
+Add the GitHub repository as a marketplace, install Humanizer, and confirm the installed version:
 
 ```bash
-mkdir -p ~/.codex/plugins/humanizer-plugin
-cp -R .codex-plugin skills README.md NOTICE LICENSE ~/.codex/plugins/humanizer-plugin/
+codex plugin marketplace add CoveMB/humanizer-skill-plugin --ref main
+codex plugin add humanizer-plugin@humanizer-plugin-local
+codex plugin list
 ```
 
-If your Codex setup uses a repository-local plugin marketplace, add an entry that points at the installable package inside this repository:
+Start a new Codex session after installation. A session that was already open may still use the previous plugin catalog.
+
+#### Update the plugin
+
+Refresh the Git marketplace snapshot, remove the cached installation, and install the current version:
+
+```bash
+codex plugin marketplace upgrade humanizer-plugin-local
+codex plugin remove humanizer-plugin@humanizer-plugin-local
+codex plugin add humanizer-plugin@humanizer-plugin-local
+codex plugin list
+```
+
+`marketplace upgrade` refreshes the Git snapshot. Removing and adding the plugin replaces the installed cache. Confirm the new version in `codex plugin list`, then start a new Codex session.
+
+#### Local development
+
+For local iteration, use a personal marketplace entry that points at the checkout. Codex discovers `~/.agents/plugins/marketplace.json` automatically. A common layout keeps the checkout or a symlink at `~/plugins/humanizer-plugin` and uses this source entry:
 
 ```json
 {
   "name": "humanizer-plugin",
   "source": {
     "source": "local",
-    "path": "./."
+    "path": "./plugins/humanizer-plugin"
   },
   "policy": {
-    "installation": "INSTALLED_BY_DEFAULT",
+    "installation": "AVAILABLE",
     "authentication": "ON_INSTALL"
   },
   "category": "Productivity"
 }
 ```
 
-This repository also includes `.agents/plugins/marketplace.json` with that local entry for testing. Current Codex local marketplace entries must use a non-empty `source.path` that starts with `./`, and the plugin package must stay inside the marketplace root. Absolute paths are rejected by the loader.
+Read the personal marketplace's top-level `name`, then reinstall with `codex plugin add humanizer-plugin@<personal-marketplace-name>`. Confirm the version with `codex plugin list` and start a new Codex session. Do not run `codex plugin marketplace add` for the default personal marketplace.
 
-After installing or updating the plugin, reload the Codex plugin catalog from the Codex app or CLI flow you use.
+#### Migrate an older installation
+
+Older instructions copied Humanizer into `~/.codex/plugins/`, installed it as a plain skill under `~/.codex/skills/`, or linked a personal marketplace entry to a development checkout. Back up any local changes before migrating.
+
+Install the repository marketplace version first and confirm it in `codex plugin list`. Then disable or remove the older plugin entry or plain skill. Do not leave both copies enabled. Start a new Codex session and confirm that Humanizer appears once.
 
 ## Usage
 
@@ -366,16 +368,30 @@ NOTICE
 LICENSE
 ```
 
-`skills/humanizer/SKILL.md` and `skills/humanizer/references/banned-list.md` are the source files for the bundled skill. The repository root is also the installable local marketplace package.
+`skills/humanizer/SKILL.md` and `skills/humanizer/references/banned-list.md` are the source files for the bundled skill. The repository root is the plugin package. The public marketplace resolves the released package from GitHub, while the eval runner stages the current checkout separately.
 
 ## Maintenance checklist
 
 Before releasing a change:
 
-- Update the version in `skills/humanizer/SKILL.md`.
-- Update `.codex-plugin/plugin.json` if the plugin metadata changed.
+- Choose a version greater than every version already distributed or cached.
+- Update the version in both `skills/humanizer/SKILL.md` and `.codex-plugin/plugin.json`.
+- Run `make test` and `make eval-humanizer-dry-run`.
+- Test a fresh marketplace install and the documented remove-and-reinstall update flow in an isolated environment.
+- Confirm the installed version with `codex plugin list`, then verify Humanizer in a new Codex session.
 - Keep the README pattern summary consistent with `skills/humanizer/SKILL.md`.
 - Keep `NOTICE` current when adding or changing source material.
+
+For release verification, isolate both `HOME` and `CODEX_HOME`. A temporary `CODEX_HOME` alone does not hide plain skills or personal marketplaces under `~/.agents`.
+
+```bash
+export HUMANIZER_RELEASE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/humanizer-release.XXXXXX")"
+export HOME="$HUMANIZER_RELEASE_ROOT/home"
+export CODEX_HOME="$HUMANIZER_RELEASE_ROOT/codex-home"
+mkdir -p "$HOME" "$CODEX_HOME"
+```
+
+Run the documented marketplace installation and update commands in that shell. Authenticate inside the isolated environment only if the final session check needs model access. Remove the temporary release root after verification.
 
 ## Testing
 
@@ -416,17 +432,21 @@ To run live Codex skill evals, start with a dry run:
 make eval-humanizer-dry-run
 ```
 
-Then run the live suite when the local Codex CLI is authenticated and the model is available:
+Live evals require an explicit, non-default `CODEX_HOME`. Create one and authenticate the CLI there before running the suite:
 
 ```bash
+export CODEX_HOME="$(mktemp -d "${TMPDIR:-/tmp}/humanizer-eval-codex-home.XXXXXX")"
+codex login
 make eval-humanizer
 ```
 
-The live runner executes the prompts in `evals/humanizer_eval_cases.json` through `codex exec --json` in a read-only sandbox, writes JSONL traces and final outputs under `evals/artifacts/latest/`, checks trigger-related trace terms, records token and command counts in the summary, and reuses the saved-output contracts for cases that map to `tests/fixtures/humanizer_contract_cases.json`.
+The live runner executes the prompts in `evals/humanizer_eval_cases.json` through `codex exec --json` in a read-only sandbox. It writes JSONL traces, final outputs, and `plugin-provenance.json` under `evals/artifacts/latest/`, checks trigger-related trace terms, records token and command counts in the summary, and reuses the saved-output contracts for cases that map to `tests/fixtures/humanizer_contract_cases.json`.
 
 Some live cases also define rubric IDs for semantic review. Add `EVAL_ARGS='--rubric-grade'` to run the optional second-pass grader, which writes rubric prompts, traces, stderr, and JSON grades under `evals/artifacts/latest/`.
 
-For reproducibility, the runner ignores user config and project rules, points Codex at this repository as `humanizer-plugin-local`, enables `humanizer-plugin@humanizer-plugin-local`, uses ephemeral sessions, and pins the default eval model to `gpt-5.5`. Positive skill cases set `force_skill_file_read` so the trace proves the current `skills/humanizer/SKILL.md` file was used; dense catalog cases can also set `force_reference_file_read` to prove `skills/humanizer/references/banned-list.md` was loaded. The runner does not treat output-only direct `$humanizer` prompts as skill activation proof, because current `codex exec` traces do not expose a separate skill-invocation event for that path. Use `EVAL_ARGS='--model <model>'` to test another model, or `EVAL_ARGS='--timeout-seconds 600'` for slower environments.
+For reproducibility, the runner copies the checkout's plugin package into a temporary local marketplace and installs it under a unique eval-only selector. It compares the installed version and package digest with the checkout, confirms that the exact installed `SKILL.md` path is model-visible, and stops before sampling if any check fails. The runner uses a temporary `HOME` for every Codex subprocess, so plain skills and personal marketplaces under `~/.agents` cannot leak into the eval. It removes the staged plugin and marketplace after the suite, ignores user config and project rules, uses ephemeral sessions, and pins the default eval model to `gpt-5.5`.
+
+Positive skill cases set `force_skill_file_read` so the trace proves the installed checkout copy of `skills/humanizer/SKILL.md` was used. Dense catalog cases can also set `force_reference_file_read` to prove the installed `skills/humanizer/references/banned-list.md` was loaded. The runner does not treat output-only direct `$humanizer` prompts as skill activation proof because current `codex exec` traces do not expose a separate skill-invocation event for that path. Use `EVAL_ARGS='--model <model>'` to test another model, or `EVAL_ARGS='--timeout-seconds 600'` for slower environments.
 
 Useful eval flags:
 
@@ -454,11 +474,11 @@ To enable it:
    - `filter`, a single eval case id for a focused run
    - `rubric_grade`, default `false`, to run the optional rubric grading pass
 
-The workflow installs the Codex CLI, stores auth in the temporary runner `CODEX_HOME`, runs `make test`, runs `make eval-humanizer-dry-run`, then runs the live eval. It uploads `evals/artifacts/latest/` even when the eval fails, so traces, prompts, stderr, and outputs are available for debugging.
+The workflow installs the Codex CLI, isolates both `HOME` and `CODEX_HOME` under the temporary runner directory, stores auth in that `CODEX_HOME`, runs `make test`, runs `make eval-humanizer-dry-run`, then runs the live eval. It uploads `evals/artifacts/latest/` even when the eval fails, so traces, prompts, stderr, outputs, and plugin provenance are available for debugging.
 
 ## Sources and credits
 
-Humanizer 2.7.3 is derived from and inspired by these sources:
+Humanizer 2.8.0 is derived from and inspired by these sources:
 
 - [humanizer](https://github.com/blader/humanizer) by blader, based on Wikipedia's "Signs of AI writing" guide.
 - [Wikipedia: Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup.
@@ -469,6 +489,7 @@ See `NOTICE` for attribution and license details.
 
 ## Version history
 
+- **2.8.0**: Replaced copy-based Codex plugin setup with an opt-in marketplace install, isolated checkout-backed live evals, deterministic cache replacement, and migration guidance for older local installations.
 - **2.7.3**: Tightened dense rewrite guidance so removed filler items are not replaced with new broad work categories such as smaller coding tasks.
 - **2.7.2**: Tightened fact preservation for scoped noun phrases and made rule-of-three cleanup drop generic filler items instead of preserving source triplets mechanically.
 - **2.7.1**: Tightened Codex skill activation metadata for padded prose and requests to make text read like a person wrote it.

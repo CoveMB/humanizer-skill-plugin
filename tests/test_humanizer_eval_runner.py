@@ -1,6 +1,8 @@
+import contextlib
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -368,6 +370,29 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             prompt,
         )
 
+    def test_build_codex_prompt_reads_installed_plugin_files(self):
+        case = {
+            "id": "installed",
+            "category": "explicit",
+            "should_trigger": True,
+            "force_skill_file_read": True,
+            "force_reference_file_read": True,
+            "prompt": "Use $humanizer to rewrite this.",
+            "source": "This is a pivotal moment.",
+        }
+        plugin_root = Path("/tmp/isolated-codex-home/plugins/humanizer")
+
+        prompt = self.runner.build_codex_prompt(case, plugin_root=plugin_root)
+
+        self.assertIn(
+            f"`{plugin_root}/skills/humanizer/SKILL.md`",
+            prompt,
+        )
+        self.assertIn(
+            f"`{plugin_root}/skills/humanizer/references/banned-list.md`",
+            prompt,
+        )
+
     def test_build_codex_prompt_does_not_force_skill_for_no_trigger_cases(self):
         case = {
             "id": "negative",
@@ -582,24 +607,272 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", command)
 
     def test_build_codex_command_isolates_current_repo_plugin(self):
+        plugin_id = "humanizer-plugin@humanizer-eval-test"
         command = self.runner.build_codex_command(
             codex_bin="codex",
             repo_root=REPO_ROOT,
             output_path=Path("/tmp/final.txt"),
             prompt="Humanize this.",
             model=None,
+            plugin_id=plugin_id,
         )
 
         self.assertIn("--ignore-user-config", command)
         self.assertIn("--ignore-rules", command)
-        self.assertIn("marketplaces.humanizer-plugin-local.source_type=\"local\"", command)
         self.assertIn(
-            f"marketplaces.humanizer-plugin-local.source=\"{REPO_ROOT}\"",
+            f'plugins."{plugin_id}".enabled=true',
             command,
         )
-        self.assertIn(
-            'plugins."humanizer-plugin@humanizer-plugin-local".enabled=true',
-            command,
+        self.assertFalse(any("marketplaces." in argument for argument in command))
+
+    def test_stage_eval_marketplace_copies_checkout_plugin_package(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            marketplace_root = Path(temporary_directory)
+            plugin_root = self.runner.stage_eval_marketplace(
+                REPO_ROOT,
+                marketplace_root,
+                "humanizer-eval-test",
+            )
+
+            marketplace = json.loads(
+                marketplace_root.joinpath(
+                    ".agents",
+                    "plugins",
+                    "marketplace.json",
+                ).read_text(encoding="utf-8")
+            )
+
+            self.assertEqual(marketplace["name"], "humanizer-eval-test")
+            self.assertEqual(
+                marketplace["plugins"][0]["source"],
+                {
+                    "source": "local",
+                    "path": "./plugins/humanizer-plugin",
+                },
+            )
+            self.assertEqual(
+                marketplace["plugins"][0]["policy"]["installation"],
+                "AVAILABLE",
+            )
+            self.assertEqual(
+                plugin_root.joinpath(".codex-plugin", "plugin.json").read_bytes(),
+                REPO_ROOT.joinpath(".codex-plugin", "plugin.json").read_bytes(),
+            )
+            self.assertEqual(
+                plugin_root.joinpath("skills", "humanizer", "SKILL.md").read_bytes(),
+                REPO_ROOT.joinpath("skills", "humanizer", "SKILL.md").read_bytes(),
+            )
+            self.assertFalse(plugin_root.joinpath(".git").exists())
+            self.assertFalse(plugin_root.joinpath("tests").exists())
+
+    def test_require_isolated_codex_home_rejects_missing_and_default_home(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            user_home = Path(temporary_directory) / "user"
+            default_codex_home = user_home / ".codex"
+            default_codex_home.mkdir(parents=True)
+
+            with mock.patch.dict(os.environ, {"HOME": str(user_home)}, clear=True):
+                with self.assertRaisesRegex(ValueError, "CODEX_HOME is required"):
+                    self.runner.require_isolated_codex_home()
+
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "HOME": str(user_home),
+                    "CODEX_HOME": str(default_codex_home),
+                },
+                clear=True,
+            ):
+                with self.assertRaisesRegex(ValueError, "must not use the default"):
+                    self.runner.require_isolated_codex_home()
+
+    def test_require_isolated_codex_home_accepts_explicit_non_default_home(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            user_home = Path(temporary_directory) / "user"
+            codex_home = Path(temporary_directory) / "eval-codex-home"
+            user_home.mkdir()
+            codex_home.mkdir()
+
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "HOME": str(user_home),
+                    "CODEX_HOME": str(codex_home),
+                },
+                clear=True,
+            ):
+                self.assertEqual(
+                    self.runner.require_isolated_codex_home(),
+                    codex_home.resolve(),
+                )
+
+    def test_build_eval_environment_isolates_agents_home(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_root = Path(temporary_directory)
+            codex_home = temporary_root / "codex-home"
+            isolated_home = temporary_root / "home"
+            codex_home.mkdir()
+            isolated_home.mkdir()
+
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "HOME": "/Users/example",
+                    "CODEX_HOME": str(codex_home),
+                    "PATH": "/usr/bin",
+                },
+                clear=True,
+            ):
+                environment = self.runner.build_eval_environment(
+                    codex_home,
+                    isolated_home,
+                )
+
+            self.assertEqual(environment["HOME"], str(isolated_home.resolve()))
+            self.assertEqual(environment["CODEX_HOME"], str(codex_home.resolve()))
+            self.assertEqual(environment["PATH"], "/usr/bin")
+
+    def test_validate_eval_plugin_install_rejects_stale_remote_version(self):
+        expected_version = json.loads(
+            REPO_ROOT.joinpath(".codex-plugin", "plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )["version"]
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            codex_home = Path(temporary_directory) / "codex-home"
+            installed_path = codex_home / "plugins" / "cache" / "humanizer"
+            installed_path.mkdir(parents=True)
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                f"expected {expected_version!r}",
+            ):
+                self.runner.validate_eval_plugin_install(
+                    REPO_ROOT,
+                    codex_home,
+                    "humanizer-plugin@humanizer-eval-test",
+                    {
+                        "pluginId": "humanizer-plugin@humanizer-eval-test",
+                        "version": "0.0.0-stale",
+                        "installedPath": str(installed_path),
+                    },
+                )
+
+    def test_validate_eval_plugin_install_rejects_content_mismatch(self):
+        expected_version = json.loads(
+            REPO_ROOT.joinpath(".codex-plugin", "plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )["version"]
+        plugin_id = "humanizer-plugin@humanizer-eval-test"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_root = Path(temporary_directory)
+            codex_home = temporary_root / "codex-home"
+            installed_path = self.runner.stage_eval_marketplace(
+                REPO_ROOT,
+                codex_home / "staged",
+                "humanizer-eval-test",
+            )
+            installed_path.joinpath("skills", "humanizer", "SKILL.md").write_text(
+                "stale installed content\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "do not match the checkout"):
+                self.runner.validate_eval_plugin_install(
+                    REPO_ROOT,
+                    codex_home,
+                    plugin_id,
+                    {
+                        "pluginId": plugin_id,
+                        "version": expected_version,
+                        "installedPath": str(installed_path),
+                    },
+                )
+
+    def test_installed_eval_plugin_cleans_up_rejected_marketplace(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_root = Path(temporary_directory)
+            codex_home = temporary_root / "codex-home"
+            artifacts_dir = temporary_root / "artifacts"
+            codex_home.mkdir()
+            responses = iter(
+                [
+                    {"marketplaceName": "unexpected-marketplace"},
+                    {},
+                ]
+            )
+
+            with mock.patch.object(
+                self.runner,
+                "run_cli_json",
+                side_effect=lambda *args: next(responses),
+            ) as run_cli_json:
+                with self.assertRaisesRegex(RuntimeError, "wrong name"):
+                    with self.runner.installed_eval_plugin(
+                        "codex",
+                        REPO_ROOT,
+                        artifacts_dir,
+                        codex_home,
+                    ):
+                        self.fail("a rejected marketplace must not reach the eval")
+
+            cleanup_command = run_cli_json.call_args_list[-1].args[0]
+            self.assertEqual(
+                cleanup_command[:4],
+                ["codex", "plugin", "marketplace", "remove"],
+            )
+            self.assertTrue(cleanup_command[4].startswith("humanizer-eval-"))
+
+    def test_run_eval_suite_uses_verified_installed_plugin(self):
+        case = minimal_eval_case(id="installed_plugin")
+        installation = self.runner.EvalPluginInstallation(
+            plugin_id="humanizer-plugin@humanizer-eval-test",
+            marketplace_name="humanizer-eval-test",
+            version="test-version",
+            installed_path=Path("/tmp/installed-humanizer"),
+            package_sha256="digest",
+            environment={"HOME": "/tmp/home", "CODEX_HOME": "/tmp/codex-home"},
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory, mock.patch.object(
+            self.runner,
+            "require_isolated_codex_home",
+            return_value=Path("/tmp/codex-home"),
+        ), mock.patch.object(
+            self.runner,
+            "installed_eval_plugin",
+            return_value=contextlib.nullcontext(installation),
+        ), mock.patch.object(
+            self.runner,
+            "run_eval_case",
+            return_value={"id": case["id"], "passed": True},
+        ) as run_eval_case:
+            provenance_path = (
+                Path(temporary_directory) / self.runner.PLUGIN_PROVENANCE_FILENAME
+            )
+            provenance_path.write_text("stale provenance\n", encoding="utf-8")
+            summaries, summary_path = self.runner.run_eval_suite(
+                [case],
+                Path(temporary_directory),
+                codex_bin="codex",
+                model="gpt-5.5",
+            )
+            self.assertTrue(summary_path.exists())
+            self.assertFalse(provenance_path.exists())
+
+        self.assertEqual(summaries, [{"id": case["id"], "passed": True}])
+        self.assertEqual(
+            run_eval_case.call_args.kwargs["plugin_id"],
+            installation.plugin_id,
+        )
+        self.assertEqual(
+            run_eval_case.call_args.kwargs["plugin_root"],
+            installation.installed_path,
+        )
+        self.assertEqual(
+            run_eval_case.call_args.kwargs["environment"],
+            installation.environment,
         )
 
     def test_dry_run_lists_cases_without_invoking_codex(self):

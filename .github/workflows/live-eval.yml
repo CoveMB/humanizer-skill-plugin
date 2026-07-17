@@ -53,9 +53,11 @@ jobs:
             echo "OPENAI_API_KEY secret is required" >&2
             exit 2
           fi
+          export HOME="${RUNNER_TEMP:?RUNNER_TEMP is required}/home"
           export CODEX_HOME="${RUNNER_TEMP:?RUNNER_TEMP is required}/codex-home"
+          printf 'HOME=%s\n' "$HOME" >> "$GITHUB_ENV"
           printf 'CODEX_HOME=%s\n' "$CODEX_HOME" >> "$GITHUB_ENV"
-          mkdir -p "$CODEX_HOME"
+          mkdir -p "$HOME" "$CODEX_HOME"
           {
             printf '[cli_auth]\n'
             printf 'credentials_store = "file"\n'
