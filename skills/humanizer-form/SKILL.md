@@ -218,13 +218,13 @@ because they carry content or force supplied by the source.
 
 **Before**
 
-> Although I find the change unsettling, it may improve efficiency.
+> I find the change unsettling. It may, however, improve efficiency.
 
 **After**
 
 > I find the change unsettling, although it may improve efficiency.
 
-The speaker's feeling and the uncertain benefit both remain.
+The speaker's feeling, order, concessive relation, and uncertain benefit remain.
 
 ### Forbidden transformations
 
