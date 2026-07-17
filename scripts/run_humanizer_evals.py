@@ -210,7 +210,7 @@ def verify_eval_plugin_is_model_visible(
             "prompt-input",
             "-c",
             f'plugins."{plugin_id}".enabled=true',
-            "Use Humanizer to rewrite this text.",
+            "Use Editorial Humanizer to rewrite this text.",
         ],
         environment,
         "eval plugin provenance check",
@@ -586,7 +586,7 @@ def load_output_contract_cases():
 def build_codex_prompt(case, plugin_root=None):
     prompt_lines = []
     if case.get("force_skill_file_read", False):
-        skill_path = Path("skills/humanizer/SKILL.md")
+        skill_path = Path("skills/editorial-humanizer/SKILL.md")
         if plugin_root is not None:
             skill_path = Path(plugin_root) / skill_path
         prompt_lines.extend(
@@ -597,7 +597,7 @@ def build_codex_prompt(case, plugin_root=None):
             ]
         )
     if case.get("force_reference_file_read", False):
-        reference_path = Path("skills/humanizer/references/banned-list.md")
+        reference_path = Path("skills/editorial-humanizer/references/banned-list.md")
         if plugin_root is not None:
             reference_path = Path(plugin_root) / reference_path
         prompt_lines.extend(
@@ -622,7 +622,7 @@ def build_codex_prompt(case, plugin_root=None):
     )
 
     if case["should_trigger"]:
-        prompt_lines.append("Return only the final Humanizer output, with no eval commentary.")
+        prompt_lines.append("Return only the final Editorial Humanizer output, with no eval commentary.")
     else:
         prompt_lines.append("Return only the final answer, with no eval commentary.")
 
@@ -646,7 +646,7 @@ def build_rubric_prompt(case, output_text):
     }
     return "\n".join(
         [
-            "Grade this Humanizer eval output against the rubric.",
+            "Grade this Editorial Humanizer eval output against the rubric.",
             "Use only the source and output below. Do not infer outside facts.",
             f"Minimum total score: {rubric['minimum_total_score']}",
             f"Minimum dimension score: {rubric['minimum_dimension_score']}",
@@ -1179,7 +1179,7 @@ def run_eval_suite(
 
 
 def print_dry_run(cases):
-    print(f"would run {len(cases)} Humanizer eval case(s)")
+    print(f"would run {len(cases)} Editorial Humanizer eval case(s)")
     for case in cases:
         trigger_label = "trigger" if case["should_trigger"] else "no-trigger"
         print(f"- {case['id']} [{case['category']}, {trigger_label}]")
@@ -1187,7 +1187,7 @@ def print_dry_run(cases):
 
 def print_summary(summaries, summary_path):
     passed_count = sum(1 for summary in summaries if summary["passed"])
-    print(f"passed {passed_count}/{len(summaries)} Humanizer eval case(s)")
+    print(f"passed {passed_count}/{len(summaries)} Editorial Humanizer eval case(s)")
     print(f"summary: {summary_path}")
 
     for summary in summaries:
@@ -1196,7 +1196,7 @@ def print_summary(summaries, summary_path):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Run live Codex evals for the Humanizer skill.")
+    parser = argparse.ArgumentParser(description="Run live Codex evals for Editorial Humanizer.")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES_PATH)
     parser.add_argument("--artifacts-dir", type=Path, default=DEFAULT_ARTIFACTS_DIR)
     parser.add_argument("--codex-bin", default="codex")

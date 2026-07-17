@@ -15,7 +15,7 @@ from tests.helpers.skill_artifacts import REPO_ROOT
 
 RUNNER_PATH = REPO_ROOT / "scripts" / "run_humanizer_evals.py"
 EVAL_CASES_PATH = REPO_ROOT / "evals" / "humanizer_eval_cases.json"
-SKILL_TRACE_PATH = "skills/humanizer/SKILL.md"
+SKILL_TRACE_PATH = "skills/editorial-humanizer/SKILL.md"
 DEFAULT_OUTPUT_CONTRACT_CASES = object()
 
 
@@ -37,7 +37,7 @@ def minimal_eval_case(**overrides):
         "id": "case",
         "category": "explicit",
         "should_trigger": True,
-        "prompt": "Use $humanizer.",
+        "prompt": "Use $editorial-humanizer.",
         "source": "Here is a draft.",
         **overrides,
     }
@@ -166,7 +166,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         for case in dense_reference_cases:
             with self.subTest(dense_reference_case=case["id"]):
                 self.assertIn(
-                    "skills/humanizer/references/banned-list.md",
+                    "skills/editorial-humanizer/references/banned-list.md",
                     case["expected_trace_terms"],
                 )
                 self.assertTrue(case.get("force_reference_file_read", False))
@@ -205,7 +205,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="duplicate",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             expected_trace_terms=[SKILL_TRACE_PATH],
                         ),
                         minimal_eval_case(
@@ -226,7 +226,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="unknown_contract",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             output_contract_case_id="missing_contract",
                         )
                     ]
@@ -241,7 +241,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="unknown_rubric",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             rubric_id="missing_rubric",
                         )
                     ],
@@ -263,7 +263,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="bad_rubric",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             rubric_id="bad",
                         )
                     ],
@@ -287,7 +287,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="bad_rubric",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             rubric_id="bad",
                         )
                     ],
@@ -302,7 +302,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="source_mismatch",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             source="Different source text.",
                             output_contract_case_id="contract_case",
                         )
@@ -323,17 +323,17 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             "category": "explicit",
             "should_trigger": True,
             "force_skill_file_read": True,
-            "prompt": "Use $humanizer to rewrite this.",
+            "prompt": "Use $editorial-humanizer to rewrite this.",
             "source": "Great question! This is a pivotal moment.",
             "output_contract_case_id": "dense_ai_rewrite",
         }
 
         prompt = self.runner.build_codex_prompt(case)
 
-        self.assertIn("Use $humanizer to rewrite this.", prompt)
-        self.assertIn("Read `skills/humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Use $editorial-humanizer to rewrite this.", prompt)
+        self.assertIn("Read `skills/editorial-humanizer/SKILL.md` before answering.", prompt)
         self.assertIn("Great question! This is a pivotal moment.", prompt)
-        self.assertIn("Return only the final Humanizer output", prompt)
+        self.assertIn("Return only the final Editorial Humanizer output", prompt)
         self.assertIn("Do not edit repository files", prompt)
 
     def test_build_codex_prompt_supports_unforced_activation_probes(self):
@@ -348,8 +348,8 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         prompt = self.runner.build_codex_prompt(case)
 
-        self.assertNotIn("Read `skills/humanizer/SKILL.md` before answering.", prompt)
-        self.assertIn("Return only the final Humanizer output", prompt)
+        self.assertNotIn("Read `skills/editorial-humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Return only the final Editorial Humanizer output", prompt)
 
     def test_build_codex_prompt_can_force_reference_file_read(self):
         case = {
@@ -364,9 +364,9 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         prompt = self.runner.build_codex_prompt(case)
 
-        self.assertIn("Read `skills/humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Read `skills/editorial-humanizer/SKILL.md` before answering.", prompt)
         self.assertIn(
-            "Read `skills/humanizer/references/banned-list.md` before answering.",
+            "Read `skills/editorial-humanizer/references/banned-list.md` before answering.",
             prompt,
         )
 
@@ -377,7 +377,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             "should_trigger": True,
             "force_skill_file_read": True,
             "force_reference_file_read": True,
-            "prompt": "Use $humanizer to rewrite this.",
+            "prompt": "Use $editorial-humanizer to rewrite this.",
             "source": "This is a pivotal moment.",
         }
         plugin_root = Path("/tmp/isolated-codex-home/plugins/humanizer")
@@ -385,11 +385,11 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         prompt = self.runner.build_codex_prompt(case, plugin_root=plugin_root)
 
         self.assertIn(
-            f"`{plugin_root}/skills/humanizer/SKILL.md`",
+            f"`{plugin_root}/skills/editorial-humanizer/SKILL.md`",
             prompt,
         )
         self.assertIn(
-            f"`{plugin_root}/skills/humanizer/references/banned-list.md`",
+            f"`{plugin_root}/skills/editorial-humanizer/references/banned-list.md`",
             prompt,
         )
 
@@ -404,7 +404,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         prompt = self.runner.build_codex_prompt(case)
 
-        self.assertNotIn("skills/humanizer/SKILL.md", prompt)
+        self.assertNotIn("skills/editorial-humanizer/SKILL.md", prompt)
 
     def test_build_rubric_prompt_includes_source_output_and_schema(self):
         case = {
@@ -496,12 +496,12 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
     def test_check_trace_expectations_uses_recursive_event_search(self):
         events = [
-            {"type": "item.started", "item": {"path": "skills/humanizer/SKILL.md"}},
+            {"type": "item.started", "item": {"path": "skills/editorial-humanizer/SKILL.md"}},
             {"type": "turn.completed", "usage": {"input_tokens": 1234}},
         ]
         case = {
             "id": "trace",
-            "expected_trace_terms": ["skills/humanizer/SKILL.md"],
+            "expected_trace_terms": ["skills/editorial-humanizer/SKILL.md"],
             "forbidden_trace_terms": ["dangerously-bypass-approvals"],
         }
 
@@ -511,12 +511,12 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         events = [
             {
                 "type": "agent_message",
-                "text": "I used skills/humanizer/SKILL.md for this rewrite.",
+                "text": "I used skills/editorial-humanizer/SKILL.md for this rewrite.",
             }
         ]
         case = {
             "id": "trace",
-            "expected_trace_terms": ["skills/humanizer/SKILL.md"],
+            "expected_trace_terms": ["skills/editorial-humanizer/SKILL.md"],
         }
 
         with self.assertRaisesRegex(AssertionError, "missing trace term"):
@@ -525,7 +525,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
     def test_check_trace_expectations_fails_for_missing_required_term(self):
         with self.assertRaisesRegex(AssertionError, "missing trace term"):
             self.runner.check_trace_expectations(
-                {"id": "trace", "expected_trace_terms": ["skills/humanizer/SKILL.md"]},
+                {"id": "trace", "expected_trace_terms": ["skills/editorial-humanizer/SKILL.md"]},
                 [{"type": "turn.completed"}],
             )
 
@@ -659,8 +659,8 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 REPO_ROOT.joinpath(".codex-plugin", "plugin.json").read_bytes(),
             )
             self.assertEqual(
-                plugin_root.joinpath("skills", "humanizer", "SKILL.md").read_bytes(),
-                REPO_ROOT.joinpath("skills", "humanizer", "SKILL.md").read_bytes(),
+                plugin_root.joinpath("skills", "editorial-humanizer", "SKILL.md").read_bytes(),
+                REPO_ROOT.joinpath("skills", "editorial-humanizer", "SKILL.md").read_bytes(),
             )
             self.assertFalse(plugin_root.joinpath(".git").exists())
             self.assertFalse(plugin_root.joinpath("tests").exists())
@@ -773,7 +773,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 codex_home / "staged",
                 "humanizer-eval-test",
             )
-            installed_path.joinpath("skills", "humanizer", "SKILL.md").write_text(
+            installed_path.joinpath("skills", "editorial-humanizer", "SKILL.md").write_text(
                 "stale installed content\n",
                 encoding="utf-8",
             )

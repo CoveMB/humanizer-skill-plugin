@@ -171,7 +171,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "codex plugin marketplace upgrade humanizer-plugin-local",
             "codex plugin remove humanizer-plugin@humanizer-plugin-local",
             "codex plugin list",
-            "start a new Codex session",
+            "Start a new Codex session",
             "~/.agents/skills/editorial-humanizer",
             "~/.agents/skills/faithful-humanizer",
             "Do not enable the plain skills and plugin copies at the same time",
