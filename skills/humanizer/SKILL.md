@@ -1,6 +1,6 @@
 ---
 name: humanizer
-version: 2.8.0
+version: 2.9.0
 description: |
   Remove signs of AI-generated writing from text. Use when editing or reviewing
   text to make it sound more natural and human-written. Based on Wikipedia's
@@ -358,7 +358,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The protagonist faces many challenges but eventually triumphs and returns home.
 
-
 ### 12. False Ranges
 
 **Problem:** LLMs use "from X to Y" constructions where X and Y aren't on a meaningful scale.
@@ -369,7 +368,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The book covers the Big Bang, star formation, and current theories about dark matter.
 
-
 ### 13. Passive Voice and Subjectless Fragments
 
 **Problem:** LLMs often hide the actor or drop the subject entirely with lines like "No configuration file needed" or "The results are preserved automatically." Rewrite these when active voice makes the sentence clearer and more direct.
@@ -379,7 +377,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 
 **After:**
 > You do not need a configuration file. The system preserves the results automatically.
-
 
 ## STYLE PATTERNS
 
@@ -393,7 +390,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The term is primarily promoted by Dutch institutions, not by the people themselves. You don't say "Netherlands, Europe" as an address, yet this mislabeling continues in official documents.
 
-
 ### 15. Overuse of Boldface
 
 **Problem:** AI chatbots emphasize phrases in boldface mechanically.
@@ -403,7 +399,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 
 **After:**
 > It blends OKRs, KPIs, and visual strategy tools like the Business Model Canvas and Balanced Scorecard.
-
 
 ### 16. Inline-Header Vertical Lists
 
@@ -417,7 +412,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The update improves the interface, speeds up load times through optimized algorithms, and adds end-to-end encryption.
 
-
 ### 17. Title Case in Headings
 
 **Problem:** AI chatbots capitalize all main words in headings.
@@ -427,7 +421,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 
 **After:**
 > ## Strategic negotiations and global partnerships
-
 
 ### 18. Emojis
 
@@ -441,7 +434,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The product launches in Q3. User research showed a preference for simplicity. Next step: schedule a follow-up meeting.
 
-
 ### 19. Curly Quotation Marks
 
 **Problem:** ChatGPT uses curly quotes (“...”) instead of straight quotes ("...").
@@ -451,7 +443,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 
 **After:**
 > He said "the project is on track" but others disagreed.
-
 
 ## COMMUNICATION PATTERNS
 
@@ -467,7 +458,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The French Revolution began in 1789 when financial crisis and food shortages led to widespread unrest.
 
-
 ### 21. Knowledge-Cutoff Disclaimers
 
 **Words to watch:** as of [date], Up to my last training update, While specific details are limited/scarce..., based on available information...
@@ -480,7 +470,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The company was founded in 1994, according to its registration documents.
 
-
 ### 22. Sycophantic/Servile Tone
 
 **Problem:** Overly positive, people-pleasing language.
@@ -490,7 +479,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 
 **After:**
 > The economic factors you mentioned are relevant here.
-
 
 ## FILLER AND HEDGING
 
@@ -515,7 +503,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The policy may affect outcomes.
 
-
 ### 25. Generic Positive Conclusions
 
 **Problem:** Vague upbeat endings.
@@ -525,7 +512,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 
 **After:**
 > The company plans to open two more locations next year.
-
 
 ### 26. Hyphenated Word Pair Overuse
 
@@ -552,7 +538,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 **After:**
 > The question is whether teams can adapt. That mostly depends on whether the organization is ready to change its habits.
 
-
 ### 28. Signposting and Announcements
 
 **Phrases to watch:** Let's dive in, let's explore, let's break this down, here's what you need to know, now let's look at, without further ado, nobody talks about this, nobody tells you this
@@ -564,7 +549,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 
 **After:**
 > Next.js caches data at multiple layers, including request memoization, the data cache, and the router cache.
-
 
 ### 29. Fragmented Headers
 
@@ -584,7 +568,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 >
 > When users hit a slow page, they leave.
 
-
 ### 30. Fake Naming
 
 **Signs to watch:** The Productivity Paradox, The 3C Framework, The Feedback Loop Method, The Innovation Flywheel, The Growth Paradox, The 5-Step Method
@@ -596,7 +579,6 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 
 **After:**
 > Teams can improve communication by reviewing what worked and what did not.
-
 
 ### 31. Self-Narration and Rhetorical Hooks
 
