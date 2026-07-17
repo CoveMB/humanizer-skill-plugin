@@ -44,33 +44,32 @@ jobs:
           test_name = "test_verify_eval_plugin_is_model_visible_targets_editorial_skill"
           if test_name not in tests:
               marker = "    def test_require_isolated_codex_home_rejects_missing_and_default_home(self):\n"
-              method = '''    def test_verify_eval_plugin_is_model_visible_targets_editorial_skill(self):
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            installed_path = Path(temporary_directory) / "plugin"
-            expected_path = (
-                installed_path
-                / "skills"
-                / "editorial-humanizer"
-                / "SKILL.md"
-            ).resolve()
-            with mock.patch.object(
-                self.runner,
-                "run_cli_json",
-                return_value={"prompt_input": str(expected_path)},
-            ):
-                actual_path = self.runner.verify_eval_plugin_is_model_visible(
-                    "codex",
-                    "humanizer-plugin@humanizer-eval-test",
-                    installed_path,
-                    {},
-                )
-            self.assertEqual(actual_path, str(expected_path))
-
-'''
+              method = (
+                  "    def test_verify_eval_plugin_is_model_visible_targets_editorial_skill(self):\n"
+                  "        with tempfile.TemporaryDirectory() as temporary_directory:\n"
+                  "            installed_path = Path(temporary_directory) / \"plugin\"\n"
+                  "            expected_path = (\n"
+                  "                installed_path\n"
+                  "                / \"skills\"\n"
+                  "                / \"editorial-humanizer\"\n"
+                  "                / \"SKILL.md\"\n"
+                  "            ).resolve()\n"
+                  "            with mock.patch.object(\n"
+                  "                self.runner,\n"
+                  "                \"run_cli_json\",\n"
+                  "                return_value={\"prompt_input\": str(expected_path)},\n"
+                  "            ):\n"
+                  "                actual_path = self.runner.verify_eval_plugin_is_model_visible(\n"
+                  "                    \"codex\",\n"
+                  "                    \"humanizer-plugin@humanizer-eval-test\",\n"
+                  "                    installed_path,\n"
+                  "                    {},\n"
+                  "                )\n"
+                  "            self.assertEqual(actual_path, str(expected_path))\n\n"
+              )
               if marker not in tests:
                   raise SystemExit("test insertion marker not found")
-              tests = tests.replace(marker, method + marker)
-              test_path.write_text(tests, encoding="utf-8")
+              test_path.write_text(tests.replace(marker, method + marker), encoding="utf-8")
           PY
 
           git diff --check
