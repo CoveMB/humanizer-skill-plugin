@@ -18,6 +18,9 @@ REQUIRED_TAGS = {
     "dense_banned_list",
     "voice_calibration",
     "preserve_supplied_facts",
+    "no_unsupported_benefits",
+    "preserve_epistemic_status",
+    "minimal_edit",
 }
 
 SOURCE_AWARE_CONSTRAINT_KEYS = {
@@ -67,6 +70,18 @@ class ContractFixtureQualityTests(unittest.TestCase):
                     set(case["constraints"]) & SOURCE_AWARE_CONSTRAINT_KEYS,
                     case["id"],
                 )
+
+    def test_80_point_score_thresholds_are_valid(self):
+        for case in self.cases:
+            constraints = case["constraints"]
+            if "minimum_score_out_of_80" not in constraints:
+                continue
+            with self.subTest(case=case["id"]):
+                threshold = constraints["minimum_score_out_of_80"]
+                self.assertIsInstance(threshold, int)
+                self.assertNotIsInstance(threshold, bool)
+                self.assertGreaterEqual(threshold, 0)
+                self.assertLessEqual(threshold, 80)
 
     def test_docs_cleanup_contract_preserves_supplied_team_scope(self):
         docs_cleanup_case = next(

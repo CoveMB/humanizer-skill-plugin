@@ -3,10 +3,13 @@
     "humanizer_rewrite": {
       "minimum_total_score": 32,
       "minimum_dimension_score": 8,
+      "minimum_dimension_scores": {
+        "factual_fidelity": 9
+      },
       "dimensions": [
         {
           "name": "factual_fidelity",
-          "question": "Does the output preserve concrete facts from the source without adding names, numbers, dates, sources, examples, or claims? Do not penalize removal of generic filler such as alignment, synergy, productivity, creativity, or innovation."
+          "question": "Does the output preserve facts and epistemic status without adding names, numbers, dates, sources, examples, benefits, attitudes, causal explanations, or other claims? Do not penalize removal of generic filler such as alignment, synergy, productivity, creativity, or innovation."
         },
         {
           "name": "ai_pattern_removal",
@@ -25,6 +28,9 @@
     "missing_source_handling": {
       "minimum_total_score": 24,
       "minimum_dimension_score": 8,
+      "minimum_dimension_scores": {
+        "no_fabricated_source": 9
+      },
       "dimensions": [
         {
           "name": "fact_preservation",
@@ -43,6 +49,9 @@
     "humanizer_audit": {
       "minimum_total_score": 32,
       "minimum_dimension_score": 8,
+      "minimum_dimension_scores": {
+        "factual_integrity": 9
+      },
       "dimensions": [
         {
           "name": "rewrite_quality",
@@ -186,6 +195,45 @@
         "skills/humanizer/SKILL.md"
       ],
       "output_contract_case_id": "contextual_docs_cleanup"
+    },
+    {
+      "id": "explicit_unsupported_benefit",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $humanizer to humanize this without adding benefits. Return only the rewritten text.",
+      "source": "Atlas Draft can generate documentation and tests.",
+      "expected_trace_terms": [
+        "skills/humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "unsupported_benefit_substitution",
+      "rubric_id": "humanizer_rewrite"
+    },
+    {
+      "id": "implicit_epistemic_status",
+      "category": "implicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Make this sound natural without presenting an attributed claim as established fact. Return only the rewritten text.",
+      "source": "Industry observers say Atlas Draft adoption is rising.",
+      "expected_trace_terms": [
+        "skills/humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "epistemic_status_preservation",
+      "rubric_id": "humanizer_rewrite"
+    },
+    {
+      "id": "contextual_already_natural",
+      "category": "contextual",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Humanize this, but leave wording alone when it already sounds natural. Return only the rewritten text.",
+      "source": "We shipped offline comments on Tuesday. Search is faster because the release caches recent issue titles. I still want to watch error rates before calling the change a success.",
+      "expected_trace_terms": [
+        "skills/humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "already_natural_restraint",
+      "rubric_id": "humanizer_rewrite"
     },
     {
       "id": "negative_fact_check_only",

@@ -38,24 +38,28 @@ When given text to humanize:
 3. **Preserve meaning** - Keep the core message intact
 4. **Protect factual integrity** - Do not add facts, names, numbers, sources, quotes, examples, prices, dates, or claims unless the user supplied them
 5. **Maintain voice** - Match the intended tone (formal, casual, technical, etc.)
-6. **Add soul** - Don't just remove bad patterns; inject actual personality
+6. **Add source-backed voice** - Improve rhythm and point of view without inventing a reaction, preference, or experience
 7. **Do a final anti-AI pass** - Ask yourself "What makes the below so obviously AI generated?", fix the remaining tells, then deliver the final version
 
 
 ## Hard Rules
 
 1. **Do not invent details.** If the source is vague, keep the rewrite vague or ask for missing facts. Never fabricate studies, people, companies, quotes, metrics, examples, timelines, prices, or citations to make the prose feel concrete.
-2. **No em dashes.** Use commas, periods, colons, semicolons, or parentheses unless the user explicitly asks to preserve them.
-3. **No forced rule-of-three lists.** Use the number of items the content naturally needs. Do not preserve a three-item list just because the source used one. If one item is a generic filler item such as alignment, synergy, productivity, creativity, or innovation, drop it or rewrite the concrete items directly. If the source only supports documentation and tests, keep only documentation and tests; do not invent a third work category. Do not replace a removed filler item with `smaller coding tasks`, `routine code`, or another broad work category unless the source explicitly names it. Do not rewrite `fostering alignment` as `keeping teams aligned`; cut the filler unless the source gives a concrete coordination claim. Do not output gerund triads like `writing documentation, improving tests, and helping developers keep momentum`.
-4. **No contrast framing.** Avoid "It's not X, it's Y," "Not only X, but Y," "More than just X," and escalation ladders like "It's not A. It's not even B. It's C."
-5. **No `not just` phrasing.** Do not use `not just`, even without a following `but`. Rewrite the thought directly, such as `speed matters, but quality matters too`.
-6. **No dramatic staccato bursts.** Do not stack three or more short sentences for effect.
-7. **No rhetorical transition hooks.** Delete "The catch?", "The kicker?", "Here's the thing," "So what does this mean?", and similar setup lines unless a real question belongs there.
-8. **No fake naming.** Do not capitalize ordinary ideas into invented frameworks, methods, paradoxes, or flywheels.
-9. **No self-narration.** Delete phrases that announce the point instead of making it, such as "this highlights," "this underscores," "the key takeaway is," and "here's why this matters."
-10. **No chatbot wrapper.** Do not add "Here is," "I hope this helps," "let me know," or similar preamble/closing text around the rewrite.
-11. **No vague attribution.** Delete or generalize claims credited only to "industry observers," "experts," "reports," "studies," or unnamed sources. If the user wants the claim kept specific, ask for the source.
-12. **Preserve supplied concrete nouns.** Keep concrete product, object, feature, and domain nouns the user supplied, such as platform, configuration, dashboard, notes, tests, flights, or comments, unless removing the noun is necessary to avoid a false claim. Keep the user's exact noun where possible, including singular or plural form; do not change `teams` to `people`, `platform` to `tool`, `dashboard` to `tool`, or `comments` to `feedback` just to smooth the sentence. Preserve scope qualifiers that define the meaning of a noun phrase, such as `cross-functional teams`; do not flatten that to `teams`.
+2. **Do not invent benefits or causal explanations.** Removing hype does not permit a softer inferred benefit. Unless the source explicitly supports it, do not say the subject saves time, moves faster, reduces friction, makes work easier, improves quality, frees attention, supports judgment, improves decisions, or explain why an outcome varies. Delete unsupported promotional claims instead of paraphrasing them: do not turn `transformative potential` into `one of the clearest ways`, `value proposition` into `practical value`, `robust foundation` into `solid base` or `reliable starting point`, or `productivity` into `productively` or `effectively`.
+3. **Preserve epistemic status.** Do not turn attributed, uncertain, or unsupported claims into facts. Attribution and uncertainty are not interchangeable: do not replace `observers say` with `may`, `might`, `appears`, or `seems`. Keep the original status, remove the claim, or ask a short source question that preserves the supplied attribution and claim.
+4. **Prefer the smallest faithful rewrite.** Do not add framing to compensate for text you removed. One plain sentence is enough when it contains all the concrete content. Do not fill the space with claims about what is `visible`, `clearest`, `practical`, `part of the story`, a `broader question`, or how something fits into day-to-day work.
+5. **Rewrite mode is not audit mode.** In a rewrite-only response, delete discarded hype and filler. Do not replace it with commentary that lists the removed claims or says they need evidence. Reserve that explanation for an audit, comparison, or source question the user requested.
+6. **No em dashes.** Use commas, periods, colons, semicolons, or parentheses unless the user explicitly asks to preserve them.
+7. **No forced rule-of-three lists.** Use the number of items the content naturally needs. Do not preserve a three-item list just because the source used one. If one item is a generic filler item such as alignment, synergy, productivity, creativity, or innovation, drop it or rewrite the concrete items directly. If the source only supports documentation and tests, keep only documentation and tests; do not invent a third work category. Do not replace a removed filler item with `smaller coding tasks`, `routine code`, or another broad work category unless the source explicitly names it. Do not rewrite `fostering alignment` as `keeping teams aligned` or `helping teams stay on the same page`; cut the filler unless the source gives a concrete coordination claim. Do not output gerund triads like `writing documentation, improving tests, and helping developers keep momentum`.
+8. **No contrast framing.** Avoid "It's not X, it's Y," "Not only X, but Y," "More than X," "More than just X," and escalation ladders like "It's not A. It's not even B. It's C."
+9. **No `not just` phrasing.** Do not use `not just`, even without a following `but`. Rewrite the thought directly, such as `speed matters, but quality matters too`.
+10. **No dramatic staccato bursts.** Do not stack three or more short sentences for effect.
+11. **No rhetorical transition hooks.** Delete "The catch?", "The kicker?", "Here's the thing," "So what does this mean?", and similar setup lines unless a real question belongs there.
+12. **No fake naming.** Do not capitalize ordinary ideas into invented frameworks, methods, paradoxes, or flywheels.
+13. **No self-narration.** Delete phrases that announce the point instead of making it, such as "this highlights," "this underscores," "the key takeaway is," and "here's why this matters."
+14. **No chatbot wrapper.** Do not add "Here is," "I hope this helps," "let me know," or similar preamble/closing text around the rewrite.
+15. **No vague attribution.** Delete or generalize claims credited only to "industry observers," "experts," "reports," "studies," or unnamed sources. `Some say` is still vague attribution, not a repair. If the user wants the claim kept specific, ask for the source while preserving the supplied attribution and claim. Do not restate it as an unqualified fact or substitute a new hedge.
+16. **Preserve supplied concrete nouns.** Keep concrete product, object, feature, and domain nouns the user supplied, such as platform, configuration, dashboard, notes, tests, flights, or comments, unless removing the noun is necessary to avoid a false claim. Keep the user's exact noun where possible, including singular or plural form; do not change `teams` to `team`, `teams` to `people`, `platform` to `tool`, `dashboard` to `tool`, `comments` to `feedback`, `documentation` to `docs`, `offline mode` to `works offline`, `flights` to `a flight`, or `adoption` to `traction` just to smooth the sentence. Preserve scope qualifiers that define the meaning of a noun phrase, such as `cross-functional teams`; do not flatten that to `teams`.
 
 
 ## Final Verification Pass
@@ -67,6 +71,11 @@ Before answering, compare the final rewrite against the source:
 - Remove parallel gerund triads such as `writing documentation, improving tests, and keeping work aligned`. Keep one or two concrete items, split the thought, or replace the filler item with a direct sentence.
 - Do not replace vague source benefits with new benefit claims. Avoid adding examples such as `routine code`, `smaller coding tasks`, `rough edges`, `by hand`, `the actual problem`, or `bigger value` unless the source supplied them.
 - Do not replace removed pitch phrases with softer pitch phrases such as `the bigger value is`, `take friction out`, `keep momentum`, or `routine writing and checking around code`.
+- Remove unsupported promotional claims rather than translating them into softer praise such as `practical value`, `solid base`, `productively`, or `effectively`.
+- Check every benefit and causal explanation against the source. Remove unsupported claims about speed, time saved, ease, friction, quality, attention, judgment, decisions, or why results vary.
+- Preserve epistemic status. An attributed or uncertain claim must remain attributed or uncertain, be generalized or removed, or become a request for the missing source.
+- In rewrite mode, remove discarded claims instead of listing them in a new evidence critique. Keep edit commentary in audit mode.
+- When matching a personal voice, preserve its observable style without inventing the writer's feelings, preferences, experiences, timing, or evaluation.
 
 
 ## Output Format
@@ -82,7 +91,7 @@ Provide:
 
 Run this process internally on every rewrite:
 
-1. **Map the facts.** List what the source actually gives you: claims, names, numbers, dates, examples, quotes, and tone. Treat everything else as unavailable.
+1. **Map the source.** Separate concrete content from promotional claims, attributed claims, uncertainty, benefits, causal explanations, names, numbers, dates, examples, quotes, stated attitudes, and tone. A statement appearing in the source does not make it established fact. Treat everything else as unavailable.
 2. **Scrub the 31-pattern catalog.** Remove the AI tells below. If the draft is dense with patterns, read `references/banned-list.md` first.
 3. **Add human texture only where the source allows it.** Improve rhythm, point of view, stakes, and restraint without inventing facts. If specificity would require new facts, keep the line general or ask the user. If you ask, preserve the supplied facts in the question so the user knows which claim needs evidence.
 4. **Run the mechanical checklist.** Fix any issue that survives.
@@ -96,6 +105,9 @@ Run this process internally on every rewrite:
 Before final output, check the rewrite for:
 
 - Unsupported names, numbers, dates, prices, quotes, examples, studies, or citations
+- Unsupported benefits or causal explanations, including claims about speed, saved time, ease, friction, quality, attention, judgment, decisions, or why an outcome varies
+- Lost attribution, uncertainty, or other epistemic qualifiers
+- Invented preferences, feelings, experiences, timing, or evaluations when matching a voice sample
 - Any em dash unless the user explicitly asked to preserve it
 - Forced three-item lists or repeated three-part rhythm
 - Contrast framing like "not X, but Y" when a direct statement works
@@ -162,7 +174,7 @@ If the user provides a writing sample (their own previous writing), analyze it b
    - Any recurring phrases or verbal tics
    - How they handle transitions (explicit connectors? Just start the next point?)
 
-2. **Match their voice in the rewrite.** Don't just remove AI patterns - replace them with patterns from the sample. If they write short sentences, don't produce long ones. If they use "stuff" and "things," don't upgrade to "elements" and "components."
+2. **Match their voice in the rewrite.** Replace AI patterns with observable patterns from the sample, such as rhythm, pronouns, diction, and punctuation. If they write short sentences, don't produce long ones. If they use "stuff" and "things," don't upgrade to "elements" and "components." A sample establishes style, not new facts: do not invent preferences, feelings, experiences, timing, or evaluations. Phrases such as `finally`, `I care about`, or `sounds usable` are off-limits unless the source or user supplies that attitude.
 
 3. **When no sample is provided,** fall back to the default behavior (natural, varied, opinionated voice from the PERSONALITY AND SOUL section below).
 
@@ -175,6 +187,8 @@ If the user provides a writing sample (their own previous writing), analyze it b
 
 Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as obvious as slop. Good writing has a human behind it.
 
+Voice must come from the source, the user's instructions, or an explicit invitation to add a new first-person reaction. Never invent a stance merely because it sounds more human.
+
 ### Signs of soulless writing (even if technically "clean"):
 - Every sentence is the same length and structure
 - No opinions, just neutral reporting
@@ -185,17 +199,17 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 ### How to add voice:
 
-**Have opinions.** Don't just report facts - react to them. "I genuinely don't know how to feel about this" is more human than neutrally listing pros and cons.
+**Use supplied opinions.** When the source or user provides a stance, state it plainly instead of flattening it into neutral reporting. Do not invent an opinion to decorate factual prose.
 
 **Vary your rhythm.** Short punchy sentences. Then longer ones that take their time getting where they're going. Mix it up.
 
-**Acknowledge complexity.** Real humans have mixed feelings. "This is impressive but also kind of unsettling" beats "This is impressive."
+**Preserve supplied complexity.** If the source expresses mixed feelings or uncertainty, keep that tension instead of smoothing it away.
 
-**Use "I" when it fits.** First person isn't unprofessional - it's honest. "I keep coming back to..." or "Here's what gets me..." signals a real person thinking.
+**Use "I" when the source supports it.** First person can be direct and natural, but only when the user wrote in first person or explicitly requested a new personal reaction.
 
-**Let some mess in.** Perfect structure feels algorithmic. Tangents, asides, and half-formed thoughts are human.
+**Keep source-backed irregularity.** A useful aside or rough edge can preserve voice. Do not add a tangent or half-formed thought that changes the meaning.
 
-**Be specific about feelings.** Not "this is concerning" but "there's something unsettling about agents churning away at 3am while nobody's watching."
+**Be precise with supplied feelings.** Strengthen their wording only within the intensity and details the source already provides.
 
 ### Before (clean but soulless):
 > The experiment produced interesting results. The agents generated 3 million lines of code. Some developers were impressed while others were skeptical. The implications remain unclear.
@@ -651,11 +665,11 @@ Do not turn the generic third item into "keeping teams aligned" or similar phras
 > In conclusion, the future looks bright. Exciting times lie ahead as we continue this journey toward excellence. Let me know if you’d like me to expand on any section!
 
 **After (humanized):**
-> AI coding assistants can help with documentation and tests. They can also help with refactors, but weak suggestions often look polished, so the value depends on whether someone reviews the output.
+> AI coding assistants can generate documentation, tests, and refactors.
 >
-> The adoption claims in this draft are hard to judge. "Industry observers" and broad media mentions do not say much without named sources or actual data.
+> The draft says adoption has accelerated, but "industry observers" and media mentions do not establish that claim.
 >
-> The safest summary is simple: these tools may speed up parts of software work, but teams still need human review and tests.
+> It also claims speed and quality improvements without evidence. Hallucinations, bias, and accountability are concerns named in the draft.
 
 **Changes made:**
 - Removed chatbot artifacts ("Great question!", "I hope this helps!", "Let me know if...")

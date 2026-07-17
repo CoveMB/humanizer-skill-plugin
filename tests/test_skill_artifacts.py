@@ -131,6 +131,9 @@ class SkillArtifactTests(unittest.TestCase):
     def test_hard_rules_cover_high_risk_failures(self):
         required_rules = [
             "Do not invent details",
+            "Do not invent benefits or causal explanations",
+            "Prefer the smallest faithful rewrite",
+            "Rewrite mode is not audit mode",
             "No em dashes",
             "No forced rule-of-three lists",
             "No contrast framing",
@@ -141,10 +144,37 @@ class SkillArtifactTests(unittest.TestCase):
             "No self-narration",
             "No chatbot wrapper",
             "No vague attribution",
+            "Preserve epistemic status",
             "Preserve supplied concrete nouns",
         ]
         for required_rule in required_rules:
             self.assertIn(required_rule, self.skill_markdown)
+
+    def test_fact_safe_boundaries_cover_observed_live_failures(self):
+        expected_patterns = [
+            r"saves? time",
+            r"moves? faster",
+            r"reduces? friction",
+            r"makes? work easier",
+            r"improves? quality",
+            r"causal explanation",
+            r"attributed, uncertain, or unsupported claims",
+            r"preferences, feelings, experiences, timing, or evaluations",
+            r"`finally`, `I care about`, or `sounds usable`",
+            r"`value proposition` into `practical value`",
+            r"`Some say` is still vague attribution",
+            r"`documentation` to `docs`",
+            r"`offline mode` to `works offline`",
+            r"`adoption` to `traction`",
+            r"`flights` to `a flight`",
+            r"`helping teams stay on the same page`",
+            r"`reliable starting point`",
+            r"One plain sentence is enough",
+            r"A statement appearing in the source does not make it established fact",
+            r"Attribution and uncertainty are not interchangeable",
+        ]
+        for expected_pattern in expected_patterns:
+            self.assertRegex(self.skill_markdown, expected_pattern)
 
     def test_concrete_noun_rule_preserves_exact_number(self):
         expected_patterns = [

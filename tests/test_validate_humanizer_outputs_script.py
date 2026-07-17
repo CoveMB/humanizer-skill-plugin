@@ -65,7 +65,8 @@ class ValidateHumanizerOutputsScriptTests(unittest.TestCase):
             return (
                 "Teams collaborate better when they stay aligned.\n\n"
                 "Notes: removed inflated phrasing and fake naming.\n\n"
-                "Score: 72/80."
+                "Score: 72/80.\n"
+                "Factual integrity: 9/10."
             )
         if case["mode"] == "translate":
             return "Le produit inclut les commentaires hors ligne et une recherche plus rapide."

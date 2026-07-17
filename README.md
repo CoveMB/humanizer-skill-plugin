@@ -346,9 +346,9 @@ Great question! AI-assisted coding serves as an enduring testament to the transf
 After:
 
 ```text
-AI coding assistants can help with drafts, tests, and routine edits. The useful part is speed, but the output still needs review.
+The draft describes AI-assisted coding as transformative, but it does not support its claims about creativity or better user experiences.
 
-The adoption claim is too vague as written. "Industry observers" does not identify a source or provide data, so the safer version is simple: these tools may speed up parts of software work, but teams still need human review and tests.
+The draft says adoption continues to grow, but "industry observers" does not identify a source or provide data for that claim.
 ```
 
 ## Repository layout
