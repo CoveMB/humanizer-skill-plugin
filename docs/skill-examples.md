@@ -1,12 +1,26 @@
 # Skill examples
 
-This repository ships one skill: `humanizer`.
+This repository ships two related skills:
 
-Use this file when you need a prompt that matches a real editing situation. The skill contract still lives in `skills/humanizer/SKILL.md`; keep this guide in sync when that contract changes.
+- `humanizer` is the existing fact-safe anti-slop editor. It can remove generic or unsupported material, restructure prose, and add voice when the source and context allow it.
+- `humanizer-form` is a conservative form-only editor. It changes wording and flow while preserving every supplied claim, opinion, qualifier, attribution, example, and logical relation.
+
+Use the explicit skill name when the distinction matters.
+
+## Choosing a skill
+
+| Need | Skill |
+|---|---|
+| Remove AI-writing patterns and improve the draft editorially | `humanizer` |
+| Keep the substance exactly as supplied and change only presentation | `humanizer-form` |
+| Audit AI-writing patterns and receive a score | `humanizer` |
+| Preserve vague, promotional, disputed, or unsupported claims without fact-checking them | `humanizer-form` |
+| Match a sample's voice and allow broader editorial shaping | `humanizer` |
+| Match only surface features from a sample without importing its opinions or content | `humanizer-form` |
 
 ## Humanizer
 
-Humanizer edits prose that sounds generated, padded, promotional, or too generic. It preserves the facts, claims, tone, and certainty the user supplied.
+Humanizer edits prose that sounds generated, padded, promotional, or too generic. It preserves the facts, claims, tone, and certainty the user supplied, but it is still an editorial anti-slop workflow rather than a strict form-only transformation.
 
 It does not fact check by default. It also should not invent details, names, numbers, dates, sources, quotes, prices, examples, citations, or claims. If a rewrite needs missing facts, Humanizer should ask for them, keep the sentence general, or remove the unsupported claim.
 
@@ -24,6 +38,7 @@ It does not fact check by default. It also should not invent details, names, num
 - The user asks for fact checking, research, sourcing, or citation lookup without asking for prose cleanup.
 - The draft needs new facts the user has not supplied.
 - Exact legal, medical, financial, or compliance wording matters more than style.
+- The user explicitly requires every claim and qualifier to remain in place; use `humanizer-form` instead.
 
 ### Basic rewrite
 
@@ -114,14 +129,119 @@ Humanizer should:
 - Preserve supplied details in any question, such as "Atlas Note," "adoption," and "last quarter."
 - Remove unsupported certainty such as "proving" and "transforming."
 
-### Deterministic activation
+## Humanizer Form
 
-Use explicit activation when the workflow needs predictable skill use, such as support instructions, reproducible evals, or review handoffs.
+Humanizer Form is for strict form-only rewriting. It treats the source as authoritative and does not decide whether a claim is well supported, useful, specific, tasteful, or persuasive.
+
+It may improve grammar, syntax, transitions, repetition, sentence flow, and punctuation. It must not add, remove, strengthen, weaken, fact-check, reinterpret, or reorganize the substance.
+
+### Good fits
+
+- The user says "humanize the form, not the substance."
+- A legal, scientific, policy, medical, or technical draft needs cautious copy editing.
+- The draft contains opinions or promotional claims that must remain the author's opinions or claims.
+- Every hedge, negation, exception, quantifier, attribution, and example must survive.
+- The user wants minimal edits rather than a full regeneration.
+
+### Poor fits
+
+- The user wants stronger arguments, better evidence, a new structure, or a shorter summary.
+- The user wants facts checked, citations added, or unsupported claims removed.
+- The user wants a distinctive personality, anecdotes, humor, or a new point of view.
+- The purpose is to bypass an AI detector.
+
+### Basic form-only rewrite
 
 ```text
-Use Humanizer to rewrite this:
+Use $humanizer-form. Make the wording read naturally, but preserve every claim, opinion, qualifier, example, and attribution. Return only the rewrite.
+
+Additionally, it is important to note that the platform may potentially reduce setup time for some teams.
+```
+
+Expected rewrite:
+
+```text
+Importantly, the platform may reduce setup time for some teams.
+```
+
+The rewrite preserves importance, uncertainty (`may`), and scope (`some teams`).
+
+### Preserve vague attribution and evaluative force
+
+```text
+Use $humanizer-form. Do not fact-check or delete any claim:
+
+Industry reports suggest adoption is accelerating, highlighting the platform's growing relevance.
+```
+
+Expected rewrite:
+
+```text
+Industry reports suggest that adoption is accelerating, a trend that highlights the platform's growing relevance.
+```
+
+Humanizer Form must not invent a report, remove the vague attribution, or neutralize the claim about relevance.
+
+### Preserve opinion and uncertainty
+
+```text
+Use $humanizer-form. Humanize the form only:
+
+Although I find the change unsettling, it may improve efficiency.
+```
+
+Expected rewrite:
+
+```text
+I find the change unsettling, although it may improve efficiency.
+```
+
+The output keeps both the first-person reaction and the uncertain benefit.
+
+### Preserve technical anchors and claim strength
+
+```text
+Use $humanizer-form on this documentation sentence:
+
+The system serves as a robust foundation for scalable workflows, ensuring that cross-functional teams can coordinate effectively.
+```
+
+Expected rewrite:
+
+```text
+The system is a robust foundation for scalable workflows and ensures that cross-functional teams can coordinate effectively.
+```
+
+The words `robust`, `scalable workflows`, `cross-functional teams`, and the force of `ensures` remain because they are part of the supplied content.
+
+### Audit mode
+
+```text
+Use $humanizer-form to rewrite this and explain only the form changes. Note any wording you deliberately retained to protect the substance:
 
 [paste draft]
 ```
 
-Avoid relying on automatic skill selection when activation matters. Client auto-selection can vary. This repository's live evals force a read of `skills/humanizer/SKILL.md` for positive cases because `codex exec` traces do not expose a separate skill-invocation event.
+Humanizer Form should return:
+
+1. The rewritten text
+2. A brief `Form changes` section
+3. A brief `Preservation notes` section
+
+It should not assign an AI-likeness score.
+
+## Deterministic activation
+
+Use explicit activation when the workflow needs predictable skill selection, such as support instructions, reproducible evals, or review handoffs.
+
+```text
+Use $humanizer to rewrite this:
+[paste draft]
+```
+
+```text
+Use $humanizer-form to humanize the form only:
+[paste draft]
+```
+
+Avoid relying on automatic skill selection when activation matters. Client auto-selection can vary. This repository's existing live evals force a read of `skills/humanizer/SKILL.md` for positive Humanizer cases because `codex exec` traces do not expose a separate skill-invocation event.
