@@ -41,6 +41,7 @@ jobs:
           paths = [
               Path("scripts/run_humanizer_evals.py"),
               Path("tests/test_humanizer_eval_runner.py"),
+              Path("tests/test_skill_artifacts.py"),
           ]
 
           replacements = [
@@ -48,12 +49,14 @@ jobs:
               ("skills/humanizer/SKILL.md", "skills/editorial-humanizer/SKILL.md"),
               ("skills/humanizer-form/SKILL.md", "skills/faithful-humanizer/SKILL.md"),
               ("docs/humanizer-form-research.md", "docs/faithful-humanizer-research.md"),
+              ('"skills", "humanizer", "SKILL.md"', '"skills", "editorial-humanizer", "SKILL.md"'),
               ("Use $humanizer", "Use $editorial-humanizer"),
               ("Use Humanizer", "Use Editorial Humanizer"),
               ("final Humanizer output", "final Editorial Humanizer output"),
               ("Grade this Humanizer eval output", "Grade this Editorial Humanizer eval output"),
               ("Humanizer eval case(s)", "Editorial Humanizer eval case(s)"),
               ("live Codex evals for the Humanizer skill", "live Codex evals for Editorial Humanizer"),
+              ('"start a new Codex session"', '"Start a new Codex session"'),
           ]
 
           for path in paths:
