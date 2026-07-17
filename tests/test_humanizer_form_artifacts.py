@@ -12,17 +12,17 @@ from tests.helpers.skill_artifacts import (
 )
 
 
-FORM_SKILL_PATH = REPO_ROOT / "skills" / "humanizer-form" / "SKILL.md"
-RESEARCH_PATH = REPO_ROOT / "docs" / "humanizer-form-research.md"
+FAITHFUL_SKILL_PATH = REPO_ROOT / "skills" / "faithful-humanizer" / "SKILL.md"
+RESEARCH_PATH = REPO_ROOT / "docs" / "faithful-humanizer-research.md"
 
 
 def normalize_markdown(text):
     return " ".join(text.split())
 
 
-class HumanizerFormArtifactTests(unittest.TestCase):
+class FaithfulHumanizerArtifactTests(unittest.TestCase):
     def setUp(self):
-        self.skill_markdown = read_text(FORM_SKILL_PATH)
+        self.skill_markdown = read_text(FAITHFUL_SKILL_PATH)
         self.normalized_skill = normalize_markdown(self.skill_markdown)
         self.frontmatter = extract_frontmatter(self.skill_markdown)
         self.normalized_frontmatter = normalize_markdown(self.frontmatter.lower())
@@ -31,13 +31,16 @@ class HumanizerFormArtifactTests(unittest.TestCase):
         self.manifest = json.loads(read_text(MANIFEST_PATH))
 
     def test_required_files_exist_and_fit_plugin_skill_root(self):
-        self.assertTrue(FORM_SKILL_PATH.exists(), FORM_SKILL_PATH)
+        self.assertTrue(FAITHFUL_SKILL_PATH.exists(), FAITHFUL_SKILL_PATH)
         self.assertTrue(RESEARCH_PATH.exists(), RESEARCH_PATH)
         self.assertEqual(self.manifest["skills"], "./skills/")
-        self.assertEqual(FORM_SKILL_PATH.parent.parent, REPO_ROOT / "skills")
+        self.assertEqual(FAITHFUL_SKILL_PATH.parent.parent, REPO_ROOT / "skills")
 
     def test_frontmatter_identifies_a_separate_mit_skill(self):
-        self.assertEqual(frontmatter_scalar(self.frontmatter, "name"), "humanizer-form")
+        self.assertEqual(
+            frontmatter_scalar(self.frontmatter, "name"),
+            "faithful-humanizer",
+        )
         self.assertEqual(frontmatter_scalar(self.frontmatter, "version"), "1.0.0")
         self.assertEqual(frontmatter_scalar(self.frontmatter, "license"), "MIT")
         self.assertEqual(
@@ -45,24 +48,25 @@ class HumanizerFormArtifactTests(unittest.TestCase):
             ["Read", "Write", "Edit", "Grep", "Glob"],
         )
 
-    def test_description_triggers_form_only_requests_and_excludes_other_tasks(self):
+    def test_description_triggers_faithful_requests_and_excludes_other_tasks(self):
         required_terms = [
-            "humanize form only",
             "preserve every claim and opinion",
+            "humanize form only",
             "make minimal edits",
             "without adding",
             "fact-checking",
-            "substantive editing",
+            "broader editorial cleanup",
+            "editorial-humanizer",
             "ai-detector",
         ]
         for required_term in required_terms:
             with self.subTest(term=required_term):
                 self.assertIn(required_term, self.normalized_frontmatter)
 
-    def test_skill_is_leaner_than_the_existing_catalog_skill(self):
-        form_lines = len(self.skill_markdown.splitlines())
-        existing_lines = len(read_text(SKILL_PATH).splitlines())
-        self.assertLess(form_lines, existing_lines / 2)
+    def test_skill_is_leaner_than_editorial_humanizer(self):
+        faithful_lines = len(self.skill_markdown.splitlines())
+        editorial_lines = len(read_text(SKILL_PATH).splitlines())
+        self.assertLess(faithful_lines, editorial_lines)
         self.assertNotIn("references/", self.skill_markdown)
 
     def test_contract_preserves_local_semantics_not_only_core_meaning(self):
@@ -78,9 +82,9 @@ class HumanizerFormArtifactTests(unittest.TestCase):
             "Emphasis",
             "Structure-bearing content",
         ]
-        for required_invariant in required_invariants:
-            with self.subTest(invariant=required_invariant):
-                self.assertIn(required_invariant, self.normalized_skill)
+        for invariant in required_invariants:
+            with self.subTest(invariant=invariant):
+                self.assertIn(invariant, self.normalized_skill)
 
     def test_contract_preserves_exact_anchors(self):
         required_anchors = [
@@ -91,9 +95,9 @@ class HumanizerFormArtifactTests(unittest.TestCase):
             "Code, commands, flags, identifiers, API names, version numbers, and file paths",
             "Preserve list items even when a list happens to contain three items",
         ]
-        for required_anchor in required_anchors:
-            with self.subTest(anchor=required_anchor):
-                self.assertIn(required_anchor, self.normalized_skill)
+        for anchor in required_anchors:
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, self.normalized_skill)
 
     def test_forbidden_edits_cover_common_substance_drift(self):
         required_rules = [
@@ -108,9 +112,9 @@ class HumanizerFormArtifactTests(unittest.TestCase):
             "Compress the text into a summary or expand it with explanation",
             "Optimize for perplexity, burstiness, an AI score, or any detector outcome",
         ]
-        for required_rule in required_rules:
-            with self.subTest(rule=required_rule):
-                self.assertIn(required_rule, self.normalized_skill)
+        for rule in required_rules:
+            with self.subTest(rule=rule):
+                self.assertIn(rule, self.normalized_skill)
 
     def test_skill_uses_contextual_judgment_instead_of_blanket_style_bans(self):
         self.assertIn(
@@ -121,28 +125,26 @@ class HumanizerFormArtifactTests(unittest.TestCase):
             "Change them only when they make this particular passage less clear or less natural",
             self.normalized_skill,
         )
-        forbidden_blanket_rules = [
+        for forbidden_rule in [
             "No em dashes.",
             "No forced rule-of-three lists.",
             "Have opinions.",
             "Add soul",
             "all adverbs",
             "Two items beat three",
-        ]
-        for forbidden_rule in forbidden_blanket_rules:
+        ]:
             with self.subTest(rule=forbidden_rule):
                 self.assertNotIn(forbidden_rule, self.normalized_skill)
 
-    def test_workflow_requires_a_bidirectional_semantic_diff_and_restore_on_doubt(self):
-        required_steps = [
+    def test_workflow_requires_bidirectional_semantic_diff_and_restore_on_doubt(self):
+        for step in [
             "Map every source proposition to the rewrite and every rewrite proposition back to the source",
             "If equivalence is uncertain, keep or restore the original wording",
             "No source claim disappeared, and no new claim appeared",
             "no style rule was applied for its own sake",
-        ]
-        for required_step in required_steps:
-            with self.subTest(step=required_step):
-                self.assertIn(required_step, self.normalized_skill)
+        ]:
+            with self.subTest(step=step):
+                self.assertIn(step, self.normalized_skill)
 
     def test_output_is_rewrite_only_by_default_and_has_no_score(self):
         self.assertIn(
@@ -152,6 +154,17 @@ class HumanizerFormArtifactTests(unittest.TestCase):
         self.assertIn("Do not assign an AI-likeness score", self.normalized_skill)
         self.assertIn("`Form changes`", self.skill_markdown)
         self.assertIn("`Preservation notes`", self.skill_markdown)
+
+    def test_skill_explicitly_contrasts_editorial_humanizer(self):
+        for term in [
+            "Use **Editorial Humanizer** instead",
+            "broader anti-slop editing",
+            "removal of weak or generic material",
+            "structural reshaping",
+            "AI-writing audit and score",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, self.normalized_skill)
 
     def test_examples_preserve_hedges_scope_attribution_and_opinion(self):
         expected_examples = [
@@ -163,12 +176,12 @@ class HumanizerFormArtifactTests(unittest.TestCase):
             "That removes the attribution, hedge, and scope",
             "Do not add a named study",
         ]
-        for expected_example in expected_examples:
-            with self.subTest(example=expected_example):
-                self.assertIn(expected_example, self.normalized_skill)
+        for example in expected_examples:
+            with self.subTest(example=example):
+                self.assertIn(example, self.normalized_skill)
 
-    def test_research_documents_a_broad_comparison_and_rejected_choices(self):
-        reviewed_projects = [
+    def test_research_documents_names_and_rejected_choices(self):
+        for project in [
             "CoveMB/humanizer-skill-plugin",
             "blader/humanizer",
             "jpeggdev/humanize-writing",
@@ -181,22 +194,23 @@ class HumanizerFormArtifactTests(unittest.TestCase):
             "brandonwise/humanizer",
             "softaworks/agent-toolkit",
             "humanizerai/agent-skills",
-        ]
-        for reviewed_project in reviewed_projects:
-            with self.subTest(project=reviewed_project):
-                self.assertIn(reviewed_project, self.normalized_research)
+        ]:
+            with self.subTest(project=project):
+                self.assertIn(project, self.normalized_research)
 
-        required_findings = [
-            '"Preserve meaning" is too weak as a safeguard',
-            "Pattern catalogs are better diagnostic cues than hard rules",
+        for finding in [
+            "Naming conclusion",
+            "Editorial Humanizer",
+            "Faithful Humanizer",
+            "“Preserve meaning” is too weak",
+            "Pattern catalogs are diagnostic cues, not universal rules",
             "Unsupported content must remain content",
             "Minimality is a preservation mechanism",
             "Detector optimization should be excluded",
             "Bidirectional semantic diff",
-        ]
-        for required_finding in required_findings:
-            with self.subTest(finding=required_finding):
-                self.assertIn(required_finding, self.normalized_research)
+        ]:
+            with self.subTest(finding=finding):
+                self.assertIn(finding, self.normalized_research)
 
 
 if __name__ == "__main__":
