@@ -167,7 +167,7 @@ For a deterministic workflow, explicitly say `Use Humanizer` or invoke `$humaniz
 
 Humanizer Form has intentionally narrower triggers. Explicitly invoke `$humanizer-form` when preserving substance is the central constraint. Phrases such as "form only," "do not change the substance," and "preserve every claim and opinion" are included in its frontmatter trigger contract.
 
-Do not treat auto-selection as guaranteed. Client behavior varies. In particular, `codex exec` traces do not expose a separate skill-invocation event, so the repository's live Humanizer evals force a read of the expected skill file and verify that path in the trace.
+Do not treat auto-selection as guaranteed. Client behavior varies. In particular, `codex exec` does not expose a separate skill-invocation event, so the repository's live Humanizer evals force a read of the expected skill file and verify that path in the trace.
 
 ## Examples
 
