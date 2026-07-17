@@ -39,7 +39,7 @@ class HumanizerFormArtifactTests(unittest.TestCase):
         )
 
     def test_description_triggers_form_only_requests_and_excludes_other_tasks(self):
-        description = self.frontmatter.lower()
+        description = " ".join(self.frontmatter.lower().split())
         required_terms = [
             "humanize form only",
             "preserve every claim and opinion",
