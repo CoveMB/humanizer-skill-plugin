@@ -28,6 +28,8 @@ jobs:
 
       - name: Complete internal rename
         run: |
+          exec > >(tee /tmp/humanizer-rename.log) 2>&1
+
           if [ ! -d skills/humanizer ] && [ ! -d skills/humanizer-form ]; then
             echo "Rename already complete."
             exit 0
@@ -124,6 +126,13 @@ jobs:
           git add -A
           git commit -m "refactor: complete Editorial and Faithful Humanizer rename"
           git push origin HEAD:agent/add-form-only-humanizer
+
+      - name: Upload rename log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: humanizer-rename-log
+          path: /tmp/humanizer-rename.log
 
   test:
     needs: rename
