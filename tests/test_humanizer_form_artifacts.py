@@ -107,13 +107,14 @@ class HumanizerFormArtifactTests(unittest.TestCase):
                 self.assertIn(required_rule, self.skill_markdown)
 
     def test_skill_uses_contextual_judgment_instead_of_blanket_style_bans(self):
+        normalized_skill = " ".join(self.skill_markdown.split())
         self.assertIn(
             "Em dashes, passive voice, adverbs, three-item lists, title case, technical jargon, and",
-            self.skill_markdown,
+            normalized_skill,
         )
         self.assertIn(
             "Change them only when they make this particular passage less clear or less natural",
-            self.skill_markdown,
+            normalized_skill,
         )
         forbidden_blanket_rules = [
             "No em dashes.",
