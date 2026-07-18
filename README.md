@@ -1,35 +1,39 @@
 # Humanizer Plugin
 
-Humanizer Plugin contains two prose-editing skills with deliberately different
-levels of editorial authority:
+Humanizer Plugin contains exactly two prose-editing skills and exposes three
+user-facing behaviors:
 
-| Skill | Invocation | Core promise |
+| Behavior | Invocation | Core promise |
 |---|---|---|
 | **Editorial Humanizer** | `$editorial-humanizer` | Produce a substantive, voice-oriented editorial rewrite while preserving factual integrity |
-| **Faithful Humanizer** | `$faithful-humanizer` | Make the prose materially less formulaic while preserving every substantive element |
+| **Faithful Humanizer — Structural** (default) | `$faithful-humanizer` or an explicit Structural request | Reconstruct sentence and paragraph form while preserving every substantive element |
+| **Faithful Humanizer — Conservative** (opt-in) | `$faithful-humanizer` with `Conservative`, `minimal`, `light touch`, `stay close`, or equivalent language | Make the smallest useful localized form edits under the same preservation contract |
 
 The names describe what each editor is allowed to do:
 
 - **Editorial** means the skill may decide that material is weak, generic,
   repetitive, unsupported, badly structured, or inconsistent with the intended
   voice. It can remove or reshape that material.
-- **Faithful** means the supplied text remains authoritative. The skill can improve
-  grammar, syntax, punctuation, transitions, repetition, and rhythm, but it cannot
+- **Faithful** means the supplied text remains authoritative. Both modes can improve
+  grammar, syntax, punctuation, transitions, repetition, and rhythm, but neither can
   add, remove, strengthen, weaken, fact-check, neutralize, or reinterpret content.
 
-“Faithful” is more precise than “non-opinionated.” The skill still makes local
-copy-editing judgments, but it cannot impose a new position or editorial agenda.
-It is not a no-op or proofreading-only mode: it rewrites every genuine surface
-problem when a semantically equivalent repair exists.
+“Faithful” is more precise than “non-opinionated.” The skill still makes form
+judgments, but it cannot impose a new position or editorial agenda. Structural is
+the default and can rebuild form; Conservative preserves the current local-first
+behavior. Neither is a no-op or proofreading-only mode.
 
-Editorial Humanizer may change selection, structure, emphasis, and rhetorical
-presentation. Faithful Humanizer may change only surface form.
+Editorial Humanizer may change content selection, argument architecture, emphasis,
+and rhetorical presentation. Faithful Humanizer may change only form. Structural
+may change grammatical subjects, sentence boundaries, local clause order, cohesion,
+and non-meaningful paragraph boundaries without changing semantic invariants.
 
 ## Choose the correct skill
 
-Choose by editorial authority, not by how much rewriting you want. Faithful
-Humanizer can make substantial local improvements, and Editorial Humanizer can
-leave a sound passage nearly unchanged.
+Choose the skill by editorial authority, then choose the Faithful mode by
+intervention strategy. Faithful Structural can make substantial formal changes,
+Faithful Conservative stays local, and Editorial may leave a sound passage nearly
+unchanged.
 
 Use this decision rule:
 
@@ -38,6 +42,7 @@ Use this decision rule:
 
 - **Yes:** use Editorial Humanizer.
 - **No, every supplied idea and qualifier must survive:** use Faithful Humanizer.
+  Use Structural unless you explicitly want Conservative intervention.
 
 If the answer is “only in some places,” the request needs explicit permissions.
 Name what may change and treat everything else as Faithful. For example: “Preserve
@@ -49,39 +54,31 @@ closing call to action.”
 | Your non-negotiable | Use |
 |---|---|
 | Improve the draft as an editor, including deciding what is weak or unnecessary | Editorial Humanizer |
-| Preserve every supplied proposition while making the prose more natural | Faithful Humanizer |
+| Preserve every supplied proposition and rebuild formulaic sentence or paragraph form | Faithful Structural |
+| Preserve every supplied proposition with minimal, stay-close edits | Faithful Conservative |
 | Remove unsupported benefits, vague authority, hype, or repeated conclusions | Editorial Humanizer |
-| Keep approved marketing, legal, policy, or stakeholder language intact in force | Faithful Humanizer |
+| Keep approved marketing, legal, policy, or stakeholder language intact in force | Either Faithful mode |
 | Reorganize an argument, headings, paragraphs, or lists | Editorial Humanizer |
-| Protect order, list membership, examples, conditions, scope, and attribution | Faithful Humanizer |
+| Protect meaningful order, list membership, examples, conditions, scope, and attribution | Either Faithful mode |
 | Produce an editorial-quality audit and optional 80-point score | Editorial Humanizer |
-| Receive only a form-change explanation and preservation notes | Faithful Humanizer |
+| Receive only a form-change explanation and preservation notes | Either Faithful mode |
 
 ### Detailed comparison
 
-| Dimension | Editorial Humanizer | Faithful Humanizer |
-|---|---|---|
-| Source authority | The source supplies the facts and boundaries, but the editor may decide what belongs in the final draft | The source is authoritative in full; every substantive element must survive |
-| Primary goal | Produce stronger, less AI-shaped prose | Produce more natural wording without semantic drift |
-| Content selection | May retain, cut, consolidate, or reshape material using editorial judgment | May not add, delete, merge, or replace a claim, reason, example, caveat, or conclusion |
-| Claims | May remove weak, generic, unsupported, or redundant claims | Must preserve every claim, including weak or unsupported ones |
-| Opinions | May sharpen a supplied point of view, but cannot invent an attitude or experience | Must preserve the same opinion, owner, direction, and emotional valence |
-| Certainty | Must not invent certainty, but may remove a weak claim entirely | Must preserve `may`, `might`, `will`, `must`, and all other modality exactly in force |
-| Attribution | May remove vague attribution or ask for a source | Must preserve vague attribution as vague attribution |
-| Structure | May merge, split, reorder, or replace paragraphs, headings, and lists | Preserves section order, paragraph order, examples, and list membership by default |
-| Voice | May add stronger human texture or match a supplied voice sample broadly | Matches only compatible surface features; never imports opinions or experiences |
-| Rewrite strength | Uses targeted edits first, but may rebuild structurally weak passages | Makes decisive local rewrites and may recast a whole sentence when its form is the problem |
-| Already-natural prose | Preserves it unless a broader structural edit requires a change | Leaves it unchanged |
-| Pattern handling | Treats density, repetition, genre, intent, and meaning as evidence | Changes a pattern only when it is locally awkward and an equivalent repair exists |
-| Scientific register | May tighten and restructure within scientific evidence boundaries | Preserves terminology, hedging, passive constructions, citation language, and statistical meaning |
-| Punctuation | Preserves punctuation suited to the author, genre, locale, and style guide | Treats author-specific punctuation as part of voice |
-| Promotional language | May neutralize or delete it | Preserves its evaluative force if the author supplied it |
-| Fact checking | Does not research by default, but may flag or question unsupported claims | Does not fact-check, correct, challenge, endorse, or rebut |
-| Missing evidence | May ask for evidence, generalize, or remove the claim | Keeps the claim and attribution without inventing evidence |
-| High-stakes text | Use only with clear permission for editorial selection and qualified human review | Safer default for form-only editing, still requiring qualified human review |
-| Default rewrite output | Rewritten text only | Rewritten text only |
-| Detector optimization | Not a goal | Not a goal |
-| Audit and score | Supports an 80-point editorial-quality audit; raw diagnostics are advisory | Supports form-change notes only; no AI-likeness score |
+| Dimension | Editorial Humanizer | Faithful Structural | Faithful Conservative |
+|---|---|---|---|
+| Source authority | Editor may decide what belongs, within factual-integrity limits | Source is authoritative in full | Same as Structural |
+| Content selection | May cut, consolidate, or reshape material | Every proposition, reason, example, caveat, and conclusion survives | Same as Structural |
+| Semantic invariants | Preserves facts and epistemic status that remain | Preserves propositions, stance, attribution, modality, scope, chronology, logic, comparisons, exact anchors, register, and meaningful order | Same as Structural |
+| Form strategy | May alter content selection, argument architecture, emphasis, and voice | Reconstructs sentence and non-meaningful paragraph form from a semantic ledger | Makes the smallest useful localized edit |
+| Subjects and boundaries | May change them editorially | May change grammatical subjects and split or merge sentences when semantically safe | Preserves subjects and boundaries unless a local defect requires change |
+| Clause and paragraph order | May reorganize the argument | May move clauses or non-meaningful paragraph boundaries while preserving chronology, causality, scope, emphasis, and argument order | Preserves existing architecture and ordering by default |
+| Already-natural prose | Preserves it unless an authorized broader edit requires change | Leaves it unchanged | Leaves it unchanged |
+| Scientific register | May tighten and restructure within evidence boundaries | Preservation checks become stricter; the mode does not change silently | Same as Structural |
+| Promotional or weak claims | May neutralize or delete them | Must retain their supplied force | Same as Structural |
+| Default | Separate skill | Default Faithful mode | Opt-in only |
+| Audit and score | Optional 80-point editorial-quality audit | `Form changes:` and `Preservation notes:` only; no AI-likeness score | Same as Structural |
+| Detector optimization | Not a goal | Forbidden | Forbidden |
 
 ### Shared guarantees
 
@@ -94,7 +91,7 @@ Both Humanizers:
 - preserve the epistemic status of claims that remain in the output;
 - respect genre, register, locale, and a supplied style guide rather than treating
   isolated punctuation or vocabulary as proof of AI authorship;
-- prefer targeted edits and leave already-natural prose alone; and
+- leave already-natural prose alone and use the requested intervention strategy; and
 - exclude detector evasion as an objective.
 
 Their common factual-integrity boundary does not make them interchangeable.
@@ -129,6 +126,17 @@ judge: a disputed claim, first-person reaction, vague attribution, promotional
 promise, intentional repetition, or carefully ordered list. It can still repair
 formulaic wording decisively, but it must keep the content and force intact.
 
+Choose **Structural** when sentence or paragraph form is the problem: repetitive
+transition-led sequencing, overloaded sentences, templated subjects, or weak
+information flow. It is the default when a Faithful request does not specify an
+intensity.
+
+Choose **Conservative** when the user asks for minimal edits, a light touch,
+copyediting only, wording that stays close, or preservation of existing sentence
+or paragraph structure. Preserving all claims does not automatically select
+Conservative. High-stakes or scientific register strengthens the preservation
+check but does not silently change the requested mode.
+
 ### Mixed and ambiguous requests
 
 “Preserve the meaning, but improve it editorially” is ambiguous because editorial
@@ -145,60 +153,45 @@ Do not choose Editorial merely because the user asks for a “strong” rewrite.
 choose Faithful merely because the user asks to “keep the general meaning.” The
 relevant question is whether every substantive element must survive.
 
-## Same source, different result
+## Same source, three results
 
 Source:
 
 ```text
-Atlas Draft can generate documentation and tests. Industry observers say it helps developers move faster.
+Atlas Notes provides offline access to saved documents, which enables travelers to review project files without an internet connection, while also allowing administrators to revoke access after a device has been lost, thereby helping organizations balance convenience with security.
 ```
 
 Editorial Humanizer may return:
 
 ```text
-Atlas Draft can generate documentation and tests.
+Atlas Notes keeps saved documents available offline. Administrators can revoke access after a device is lost.
 ```
 
-That is a valid editorial rewrite because it keeps the concrete product behavior
-supplied in the source and removes a vaguely attributed benefit. It does not replace
-the discarded benefit with softer praise or audit commentary.
+That is a valid Editorial rewrite only when the editor has permission to prioritize
+the two concrete controls and omit the traveler use case and balancing claim.
 
-Faithful Humanizer may return:
+Faithful Structural may return:
 
 ```text
-Atlas Draft can generate documentation and tests. Industry observers say it helps developers move faster.
+Saved documents remain available offline in Atlas Notes, so travelers can review project files without an internet connection. If a device is lost, administrators can revoke its access. Together, these features help organizations balance convenience with security.
 ```
 
-That version keeps the unnamed observers and attributed benefit because Faithful
-Humanizer preserves supplied claims rather than evaluating their support.
-
-A second example:
-
-Source:
+Faithful Conservative may return:
 
 ```text
-The system serves as a robust foundation for scalable workflows, ensuring that cross-functional teams can coordinate effectively.
+Atlas Notes provides offline access to saved documents, so travelers can review project files without an internet connection. At the same time, it allows administrators to revoke access after a device has been lost, helping organizations balance convenience with security.
 ```
 
-Editorial Humanizer may simplify the claim:
+The Faithful outputs retain the same propositions and scope. Structural rebuilds
+the sentence architecture; Conservative repairs it locally. The Structural wording
+does not narrow offline access to travelers: travelers are one use case for a
+generally available feature.
 
-```text
-The system supports scalable workflows for cross-functional teams.
-```
-
-Faithful Humanizer keeps the supplied evaluative and causal force:
-
-```text
-The system is a robust foundation for scalable workflows and ensures that cross-functional teams can coordinate effectively.
-```
-
-Neither result is universally better. They answer different editing contracts.
-
-The full library contains 17 paired cases spanning product copy, vague attribution,
-destination copy, executive updates, lists, project updates, release notes,
-technical documentation, scientific prose, policy, finance, health communication,
-internal voice, customer email, social posts, and fundraising:
-[`Paired Humanizer comparison examples`](docs/humanizer-comparison-examples.md).
+The comparison library applies all three behaviors to 12 same-source passages
+spanning opinion, academic/scientific, product, community, policy, medical,
+financial, cybersecurity, technical procedure, customer support, fundraising, and
+workplace contexts:
+[`Three-behavior Humanizer comparison examples`](docs/humanizer-comparison-examples.md).
 
 ## Editorial Humanizer
 
@@ -249,7 +242,8 @@ Put the rewrite first, then concise notes:
 
 Faithful Humanizer is the strict form-only editor. Strict preservation does not mean
 timid editing: it removes fixable AI-shaped surface form and should return prose that
-is materially less formulaic, not merely proofread.
+is materially less formulaic, not merely proofread. It has a default Structural
+mode and an opt-in Conservative mode.
 
 Use it when:
 
@@ -258,8 +252,8 @@ Use it when:
   must not drift;
 - vague attribution must remain attributed rather than being challenged;
 - promotional language belongs to the author's intended message;
-- list items, examples, chronology, and argument order must remain;
-- you want decisive local edits instead of unnecessary paragraph regeneration.
+- list items, examples, chronology, and meaningful argument order must remain; or
+- you want form reconstruction or local copyediting without substantive selection.
 
 It protects:
 
@@ -270,11 +264,12 @@ It protects:
 - quantifiers and scope;
 - causality, comparison, concession, purpose, and sequence;
 - attribution and ownership of claims;
-- chronology, tense, examples, list membership, and ordering;
+- chronology, tense, comparisons, examples, list membership, meaningful ordering,
+  and register constraints;
 - exact names, numbers, dates, units, citations, quotations, URLs, code, identifiers,
   versions, file paths, and domain terminology.
 
-Basic use:
+Default Structural use:
 
 ```text
 Use $faithful-humanizer. Make this read naturally, but preserve every claim,
@@ -284,13 +279,24 @@ rewrite:
 [paste draft]
 ```
 
-Stricter use:
+Explicit Structural use:
 
 ```text
-Use $faithful-humanizer. Humanize the form only. Do not add, remove, fact-check,
-strengthen, soften, summarize, reorganize, or reinterpret any content. Preserve
-all names, numbers, dates, quotations, citations, code, modality, negation, scope,
-causality, attribution, examples, and list items.
+Use $faithful-humanizer in Structural mode. Rebuild the sentence structure and make
+the passage less templated. Preserve every proposition, opinion owner, hedge,
+scope boundary, chronology, causal or logical relation, comparison, exact anchor,
+and meaningful part of the argument order.
+
+[paste draft]
+```
+
+Explicit Conservative use:
+
+```text
+Use $faithful-humanizer in Conservative mode. Give this a minimal, light-touch
+edit. Stay close to the existing subjects, sentence boundaries, paragraph
+architecture, and order. Preserve every claim, qualifier, attribution, example,
+and logical relation.
 
 [paste draft]
 ```
@@ -307,8 +313,8 @@ Note any wording deliberately retained to avoid changing the substance:
 The audit contains:
 
 1. the rewritten text;
-2. `Form changes`;
-3. `Preservation notes`.
+2. `Form changes:`;
+3. `Preservation notes:`.
 
 It does not assign an AI-likeness score.
 
@@ -345,6 +351,24 @@ Humanize the form only. Do not change the substance.
 ```text
 Preserve every claim, hedge, attribution, and example.
 ```
+
+Within Faithful, routing is deterministic:
+
+- an explicitly named mode always wins;
+- `Structural`, `rework/rebuild the sentence structure`, `less formulaic`, `less
+  templated`, and equivalent language select Structural;
+- `Conservative`, `minimal`, `light touch`, `stay close`, `copyedit only`, and
+  preserving existing sentence or paragraph structure select Conservative;
+- a Faithful request without an intensity selects Structural;
+- preserving all claims does not automatically select Conservative; and
+- high-stakes or scientific register strengthens preservation checks without
+  silently changing the mode.
+
+If the requested rewrite conflicts with the Faithful preservation contract, state
+the boundary or use Editorial only when the user authorizes substantive selection,
+compression, reprioritization, or argument restructuring. Detector-evasion requests
+are rejected or reframed as ordinary writing-quality work; neither skill optimizes
+for detector outcomes.
 
 Automatic selection varies by client. Use the client-specific activation form
 whenever the distinction matters. See
@@ -451,15 +475,22 @@ cp -R humanizer-skill-plugin/skills/references/. ~/.config/opencode/skills/refer
 └── tests/
 ```
 
-The eval runner exercises both Editorial Humanizer and Faithful Humanizer.
-Executable Faithful cases check attribution, modality, scope, supplied promotional
-claims, opinion, chronology, logical relations, exact anchors, list membership,
-scientific register, meaningful surface rewriting, already-natural restraint,
-localized mixed-text edits, audit output, voice matching, protected structure, and
-forbidden additions. Separate unforced probes verify automatic selection and the
-boundary with Editorial Humanizer and detector-evasion requests.
-Its dedicated live rubric requires both semantic fidelity and a clearly more
-natural surface rewrite, so cosmetic changes do not satisfy the Faithful contract.
+The eval runner exercises Editorial Humanizer and both Faithful modes. Executable
+Faithful cases share checks for attribution, modality, scope, supplied promotional
+claims, opinion, chronology, logical relations, comparisons, exact anchors, list
+membership, scientific register, audit output, and forbidden additions. Structural
+cases require meaning-driven reconstruction where local substitutions are
+insufficient and reject unnecessary changes to already-natural prose. Conservative
+cases preserve localized intervention and reject unnecessarily broad rewriting. An
+explicit unforced catalog probe verifies named-skill
+behavior, while plugin provenance verifies that the installed Faithful skill is
+present in the model-visible catalog. Neutral implicit and contextual probes verify
+faithful output behavior without assuming that every client exposes automatic or
+client-managed skill-loading traces. Additional probes cover the boundary with
+Editorial Humanizer and detector-evasion requests.
+Its dedicated live rubric keeps semantic fidelity at a minimum 9/10 and adds either
+`structural_initiative` or `conservative_restraint`; the two strategies are not
+averaged into one intervention score.
 Editorial eval summaries also record deterministic pattern diagnostics as advisory
 evidence; those observations do not determine pass/fail or authorship.
 
@@ -484,10 +515,22 @@ Validate the Humanizer eval matrix without invoking a model:
 make eval-humanizer-dry-run
 ```
 
-Preview only Faithful cases across three trials:
+Preview only Faithful Structural cases across three trials:
 
 ```bash
-make eval-humanizer-dry-run EVAL_ARGS='--target-skill faithful-humanizer --trials 3 --rubric-grade --rubric-model gpt-5.5'
+make eval-humanizer-dry-run EVAL_ARGS='--target-skill faithful-humanizer --faithful-mode structural --trials 3 --rubric-grade --rubric-model gpt-5.5'
+```
+
+Preview only Faithful Conservative cases across three trials:
+
+```bash
+make eval-humanizer-dry-run EVAL_ARGS='--target-skill faithful-humanizer --faithful-mode conservative --trials 3 --rubric-grade --rubric-model gpt-5.5'
+```
+
+Validate the seeded rubric-calibration matrix without invoking a model:
+
+```bash
+make eval-humanizer-dry-run EVAL_ARGS='--calibrate-rubric'
 ```
 
 Run saved-output validation:
@@ -508,7 +551,15 @@ env HOME="$eval_home_dir" CODEX_HOME="$eval_codex_dir" \
 
 Summaries include per-skill pass rates, minimum rubric dimension scores, trial
 numbers, models, and failure stages. Existing one-trial commands and case filters
-remain supported.
+remain supported. Live model and rubric subprocesses run from the isolated artifact
+directory so activation probes cannot accidentally discover the repository checkout's
+skill files instead of the installed plugin catalog.
+
+For a model-backed rubric calibration, replace the dry-run Make target with
+`python3 scripts/run_humanizer_evals.py --calibrate-rubric`. The calibration must
+accept mode-appropriate faithful rewrites, reject unchanged or local-only formulaic
+prose in Structural mode, reject broader-than-needed reconstruction in Conservative
+mode, and reject smooth rewrites that change modality or scope in either mode.
 
 ## Research and design rationale
 
@@ -522,9 +573,10 @@ Faithful Humanizer separates those tasks. Its design is based on:
 1. source authority;
 2. explicit semantic invariants;
 3. exact-anchor preservation;
-4. decisive local edits;
-5. a bidirectional semantic diff;
-6. restore-on-doubt behavior.
+4. a shared semantic ledger;
+5. mode-specific reconstruction or localized intervention;
+6. a bidirectional semantic diff;
+7. restore-on-doubt behavior.
 
 The detailed comparison and rejected design choices are documented in
 [`docs/faithful-humanizer-research.md`](docs/faithful-humanizer-research.md).
@@ -534,9 +586,10 @@ The detailed comparison and rejected design choices are documented in
 Neither skill can mathematically guarantee semantic equivalence. Language is
 ambiguous, and a model can still make a bad paraphrase.
 
-Faithful Humanizer reduces that risk through localized edits, explicit invariants,
-exact-anchor preservation, and restore-on-doubt rules. High-stakes legal, medical,
-scientific, financial, security, or policy text still requires human review.
+Faithful Humanizer reduces that risk through a shared semantic ledger, explicit
+invariants, exact-anchor preservation, mode-specific intervention, and
+restore-on-doubt rules. High-stakes legal, medical, scientific, financial,
+security, or policy text still requires human review.
 
 Neither skill guarantees that an AI detector will classify the output as
 human-written. Detector evasion is not the objective.

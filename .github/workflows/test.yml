@@ -56,3 +56,8 @@ jobs:
           make eval-humanizer-dry-run
           EVAL_ARGS='--target-skill faithful-humanizer --trials 3
           --rubric-grade --rubric-model gpt-5.5'
+
+      - name: Check rubric calibration matrix
+        run: >-
+          make eval-humanizer-dry-run
+          EVAL_ARGS='--calibrate-rubric'

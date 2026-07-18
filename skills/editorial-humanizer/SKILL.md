@@ -33,9 +33,11 @@ Rewrite AI-drafted or AI-sounding prose so it reads like deliberate human writin
 This is the substantive, voice-oriented Humanizer: use editorial judgment rather
 than limiting changes to surface form.
 
-**Direct distinction:** Editorial Humanizer may change selection, structure,
-emphasis, and rhetorical presentation. Faithful Humanizer may change only surface
-form.
+**Direct distinction:** Editorial Humanizer may change content selection, argument
+architecture, emphasis, and rhetorical presentation. Faithful Humanizer may change
+only form. Faithful's default Structural mode may rebuild sentence and paragraph
+form, but it must preserve every substantive element, its force, and its meaningful
+order; its opt-in Conservative mode stays local-first.
 
 Editorial Humanizer may:
 
@@ -51,6 +53,9 @@ It must not invent facts, sources, quotations, examples, or experiences.
 
 Use **Faithful Humanizer** instead when the user requires every claim, opinion,
 hedge, negation, attribution, example, list item, and logical relation to survive.
+Choose Faithful Structural unless the user explicitly asks for Conservative,
+minimal, light-touch, stay-close, or copyedit-only intervention. A request to
+preserve all claims does not by itself select Conservative.
 
 ## Core task
 
@@ -118,6 +123,12 @@ When given text to humanize:
 17. **Do not silently strengthen claims.** Editorial cleanup may remove weak or
     unsupported material, but it may not convert uncertainty into certainty or
     correlation into causation.
+18. **Make voice stronger through form, not invention.** Use selection, direct
+    syntax, and concrete source-backed language. Do not introduce a judgment such
+    as `should be judged`, a ranking such as `most useful` or `best`, an enabling
+    condition such as `when the team provides enough context`, or any new attitude
+    merely to make the prose sound decisive. Do not add a skeptical or approving
+    frame such as `beyond the hype` unless that stance is present in the source.
 
 ## Editorial latitude
 

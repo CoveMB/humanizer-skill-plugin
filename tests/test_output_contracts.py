@@ -53,13 +53,44 @@ class OutputContractTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "changed already-natural source"):
             validate_case_output(case, "This sentence already sounds natural.")
 
-    def test_faithful_contract_mutations_prove_each_guard(self):
-        faithful_cases = [
-            case for case in load_fixture_cases() if case["id"].startswith("faithful_")
+    def test_enforces_structural_sentence_count_bounds_on_rewrite_only(self):
+        case = {
+            "id": "structural_reconstruction",
+            "constraints": {
+                "minimum_sentence_count": 3,
+                "maximum_sentence_count": 4,
+            },
+        }
+
+        validate_case_output(case, "One sentence. A second sentence. The third sentence.")
+        with self.assertRaisesRegex(AssertionError, "expected at least 3"):
+            validate_case_output(case, "One sentence. A second sentence.")
+        with self.assertRaisesRegex(AssertionError, "expected at most 4"):
+            validate_case_output(
+                case,
+                "One. Two. Three. Four. Five.",
+            )
+
+    def test_sentence_count_bounds_ignore_requested_audit_sections(self):
+        case = {
+            "id": "structural_audit",
+            "constraints": {"minimum_sentence_count": 2},
+        }
+
+        validate_case_output(
+            case,
+            "First sentence. Second sentence.\n\nForm changes:\nSplit one sentence.",
+        )
+
+    def test_fixture_mutations_prove_each_declared_guard(self):
+        mutation_cases = [
+            case
+            for case in load_fixture_cases()
+            if "passing_output" in case or "failing_outputs" in case
         ]
 
-        self.assertTrue(faithful_cases)
-        for case in faithful_cases:
+        self.assertTrue(mutation_cases)
+        for case in mutation_cases:
             with self.subTest(case=case["id"], output="passing"):
                 validate_case_output(case, case["passing_output"])
             for failure in case["failing_outputs"]:

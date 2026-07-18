@@ -102,8 +102,10 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         normalized = " ".join(self.skill_markdown.split())
         for term in [
             "substantive, voice-oriented Humanizer",
-            "Editorial Humanizer may change selection, structure, emphasis, and rhetorical presentation",
-            "Faithful Humanizer may change only surface form",
+            "Editorial Humanizer may change content selection, argument architecture, emphasis, and rhetorical presentation",
+            "Faithful Humanizer may change only form",
+            "Faithful's default Structural mode",
+            "opt-in Conservative mode",
         ]:
             with self.subTest(term=term):
                 self.assertIn(term, normalized)
@@ -128,6 +130,10 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "No vague attribution presented as evidence",
             "Preserve supplied concrete nouns",
             "Do not silently strengthen claims",
+            "Make voice stronger through form, not invention",
+            "a ranking such as `most useful` or `best`",
+            "an enabling condition such as `when the team provides enough context`",
+            "a skeptical or approving frame such as `beyond the hype`",
             "Do not add a more specific fact than the source supports",
         ]
         for term in required_terms:
@@ -239,46 +245,69 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             self.assertLessEqual(len(prompt), 128)
 
     def test_readme_clearly_distinguishes_the_skills(self):
+        normalized_readme = " ".join(self.readme_markdown.split())
         required_terms = [
             "Editorial Humanizer",
             "Faithful Humanizer",
+            "exactly two prose-editing skills",
+            "three user-facing behaviors",
+            "Faithful Humanizer — Structural",
+            "Faithful Humanizer — Conservative",
+            "Structural is the default",
+            "Conservative mode. Give this a minimal, light-touch edit",
             "$editorial-humanizer",
             "$faithful-humanizer",
             "Detailed comparison",
-            "Same source, different result",
+            "Same source, three results",
             "Would you accept the editor deleting a weak sentence",
             "every supplied idea and qualifier must survive",
         ]
         for term in required_terms:
             with self.subTest(term=term):
-                self.assertIn(term, self.readme_markdown)
+                self.assertIn(term, normalized_readme)
 
-    def test_paired_examples_cover_both_contracts_across_genres(self):
+    def test_comparison_examples_cover_all_three_behaviors_across_contexts(self):
         examples = self.comparison_examples_markdown
         normalized_documentation = " ".join(
             (examples + self.readme_markdown).split()
         )
         for heading in [
-            "## Content selection and evidence",
-            "## Structure and presentation",
-            "## Technical and high-stakes prose",
-            "## Voice and audience",
+            "## 1. Opinion and mixed stance",
+            "## 2. Academic limitation and causal boundary",
+            "## 3. Product and technical scope",
+            "## 4. Multi-sentence community program",
+            "## 5. Policy deadline and documented exception",
+            "## 6. Medical instruction with time and escalation conditions",
+            "## 7. Financial forecast with assumptions and exclusions",
+            "## 8. Cybersecurity incident chronology and unresolved status",
+            "## 9. Technical upgrade procedure with exact anchors",
+            "## 10. Customer support with pending-payment uncertainty",
+            "## 11. Fundraising appeal with a promotional belief claim",
+            "## 12. Workplace update with criticism and early evidence",
         ]:
             with self.subTest(heading=heading):
                 self.assertIn(heading, examples)
 
-        self.assertEqual(examples.count("#### Source"), 17)
-        self.assertEqual(examples.count("#### Editorial Humanizer"), 17)
-        self.assertEqual(examples.count("#### Faithful Humanizer"), 17)
-        self.assertEqual(examples.count("Best default:"), 17)
-        self.assertEqual(examples.count("**Why"), 17)
+        self.assertEqual(examples.count("#### Source"), 12)
+        self.assertEqual(examples.count("#### Editorial Humanizer"), 12)
+        self.assertEqual(examples.count("#### Faithful Structural"), 12)
+        self.assertEqual(examples.count("#### Faithful Conservative"), 12)
+        self.assertEqual(examples.count("**Why they differ:**"), 12)
 
         for term in [
-            "not proof of authorship",
-            "not fixed golden responses",
-            "Scientific methods where both outputs should converge",
-            "Policy notice with modality, deadline, and exception",
-            "When a request needs both strict preservation and selected substantive changes",
+            "style anchors, not golden outputs",
+            "Editorial is not automatically better",
+            "generally available feature to one use case",
+            "High-stakes or scientific register strengthens the preservation review",
+            "Structural is the default",
+            "30 calendar days",
+            "some patients",
+            "$18 million",
+            "14:20 UTC",
+            "`/var/backups/controller.json`",
+            "3–5 business days",
+            "every $75",
+            "12% faster than in May",
             "docs/humanizer-comparison-examples.md",
         ]:
             with self.subTest(term=term):
@@ -409,6 +438,8 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "--target-skill faithful-humanizer",
             "--trials 3",
             "--rubric-model gpt-5.5",
+            "Check rubric calibration matrix",
+            "--calibrate-rubric",
         ]:
             with self.subTest(command=command):
                 self.assertIn(command, workflow)

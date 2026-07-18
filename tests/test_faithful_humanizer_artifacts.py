@@ -52,11 +52,15 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
 
     def test_description_triggers_faithful_requests_and_excludes_other_tasks(self):
         required_terms = [
+            "use whenever the user explicitly invokes `$faithful-humanizer`",
             "preserve every claim and opinion",
+            "keep approved claims or all substance",
+            "preserve propositions, hedges, scope qualifiers",
             "humanize form only",
-            "make minimal edits",
             "without adding",
             "fact-checking",
+            "structural mode is the default",
+            "conservative mode is opt-in",
             "broader editorial cleanup",
             "editorial-humanizer",
             "ai-detector",
@@ -65,21 +69,19 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
             with self.subTest(term=required_term):
                 self.assertIn(required_term, self.normalized_frontmatter)
 
-    def test_skill_is_leaner_than_editorial_humanizer(self):
-        faithful_lines = len(self.skill_markdown.splitlines())
-        editorial_lines = len(read_text(SKILL_PATH).splitlines())
-        self.assertLess(faithful_lines, editorial_lines)
+    def test_skill_uses_only_shared_register_reference(self):
+        self.assertTrue(read_text(SKILL_PATH))
         self.assertIn("../references/registers/scientific-writing.md", self.skill_markdown)
         self.assertNotIn("pattern-catalog.md", self.skill_markdown)
 
-    def test_faithful_is_local_but_not_timid(self):
+    def test_faithful_is_mode_appropriate_but_not_timid(self):
         for term in [
             "Faithful does not mean literal or timid",
-            "rewrite every problematic span for a clearly more natural result",
-            "Minimal means localized",
+            "Structural mode may rebuild the form",
+            "Conservative mode remains local-first",
             "Do not return the source unchanged merely because preservation is strict",
             "The result should be materially less formulaic, not merely proofread",
-            "choose the one that removes more of the local AI-shaped form",
+            "equally appropriate for the selected mode",
             "redundant modal pairs such as `may potentially` or `could possibly`",
             "keep `may` or `could`",
         ]:
@@ -96,8 +98,11 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
             "Logical relations",
             "Attribution",
             "Chronology",
+            "Comparison",
             "Emphasis",
+            "Meaningful information and argument order",
             "Structure-bearing content",
+            "Register constraints",
         ]
         for invariant in required_invariants:
             with self.subTest(invariant=invariant):
@@ -179,9 +184,64 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
             "No source claim disappeared, and no new claim appeared",
             "no style rule was applied for its own sake",
             "Every genuine form problem with a safe equivalent was repaired",
+            "The intervention matches the selected mode",
         ]:
             with self.subTest(step=step):
                 self.assertIn(step, self.normalized_skill)
+
+    def test_mode_selection_is_explicit_and_structural_is_default(self):
+        for term in [
+            "An explicitly named mode always wins",
+            "A Faithful request that does not choose an intensity also selects Structural",
+            "rework or rebuild sentence structure",
+            "less formulaic or less templated",
+            "minimal editing, a light touch, copyediting only",
+            "A request to preserve every claim does not by itself select Conservative",
+            "does not silently switch the selected mode",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, self.normalized_skill)
+
+    def test_structural_and_conservative_share_one_ledger_but_distinct_workflows(self):
+        for term in [
+            "Shared semantic ledger",
+            "each factual and evaluative proposition",
+            "stance and opinion ownership",
+            "causal, conditional, contrastive, and concessive relationships",
+            "Structural workflow",
+            "Reconstruct from the ledger",
+            "Compare proposition by proposition",
+            "known-to-new flow",
+            "Conservative workflow",
+            "Diagnose local surface problems",
+            "Edit the smallest sufficient span",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, self.normalized_skill)
+
+    def test_structural_mode_reconstructs_form_without_detector_heuristics(self):
+        for term in [
+            "change grammatical subjects",
+            "split or merge sentences",
+            "move qualifications closer to the claims they govern",
+            "change clause order when chronology, causality, scope, emphasis",
+            "repetitive transition-led sequencing with cohesive known-to-new flow",
+            "change paragraph boundaries when they do not encode a meaningful grouping",
+            "Do not create arbitrary fragments, random sentence lengths, fake informality",
+            "Never optimize for an AI-detector score",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, self.normalized_skill)
+
+    def test_conservative_mode_preserves_local_first_behavior(self):
+        for term in [
+            "prefer the smallest useful localized intervention",
+            "preserve subjects, sentence boundaries, paragraph architecture, and ordering",
+            "retain already-natural wording",
+            "avoid broad reconstruction when a smaller safe change works",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, self.normalized_skill)
 
     def test_output_is_rewrite_only_by_default_and_has_no_score(self):
         self.assertIn(
@@ -191,13 +251,21 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
         self.assertIn("Do not assign an AI-likeness score", self.normalized_skill)
         self.assertIn("`Form changes`", self.skill_markdown)
         self.assertIn("`Preservation notes`", self.skill_markdown)
+        self.assertIn(
+            "Always include both labels exactly as `Form changes:` and `Preservation notes:`",
+            self.normalized_skill,
+        )
+        self.assertIn(
+            "Do not merge the two sections, replace them with an unlabeled explanation",
+            self.normalized_skill,
+        )
 
     def test_skill_explicitly_contrasts_editorial_humanizer(self):
         for term in [
             "Use **Editorial Humanizer** instead",
             "broader anti-slop editing",
             "removal of weak or generic material",
-            "structural reshaping",
+            "argument restructuring",
             "editorial-quality audit and score",
         ]:
             with self.subTest(term=term):
@@ -206,13 +274,15 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
     def test_examples_preserve_hedges_scope_attribution_and_opinion(self):
         expected_examples = [
             "Importantly, the platform may reduce setup time for some teams.",
+            "The findings suggest that remote work may improve retention for some employees.",
+            "The survey, however, included only staff",
             "Industry reports suggest that adoption is accelerating",
             "The system is a robust foundation for scalable workflows",
             "I find the change unsettling, although it may improve efficiency.",
             "The policy improves outcomes for patients.",
             "That removes the attribution, hedge, and scope",
             "Do not add a named study",
-            "The committee is currently evaluating the proposal.",
+            "Structural changes sentence form and information flow",
         ]
         for example in expected_examples:
             with self.subTest(example=example):
@@ -243,7 +313,16 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
             "“Preserve meaning” is too weak",
             "Pattern catalogs are diagnostic cues, not universal rules",
             "Unsupported content must remain content",
-            "Minimality is a preservation mechanism",
+            "Minimality is one preservation mechanism",
+            "Faithful Humanizer — Structural",
+            "Faithful Humanizer — Conservative",
+            "Sentence form carries meaning-adjacent signals",
+            "Syntax and semantics can be treated separately",
+            "Corpus patterns are guidance, not individual-text targets",
+            "Gude et al., ACL 2026",
+            "Purdue OWL: Sentence Structure, Variety, and Clarity",
+            "George Mason Writing Center: Known/New Contract",
+            "Huang and Chang, EACL 2021",
             "Detector optimization should be excluded",
             "Bidirectional semantic diff",
         ]:

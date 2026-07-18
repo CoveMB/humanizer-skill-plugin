@@ -39,6 +39,9 @@ TARGET_SKILL_DISPLAY_NAMES = {
     "editorial-humanizer": "Editorial Humanizer",
     "faithful-humanizer": "Faithful Humanizer",
 }
+FAITHFUL_TARGET_SKILL = "faithful-humanizer"
+VALID_FAITHFUL_MODES = ("structural", "conservative")
+FAITHFUL_MODE_DIMENSIONS_KEY = "faithful_mode_dimensions"
 EDITORIAL_PATTERN_CATALOG_PATH = (
     "skills/editorial-humanizer/references/pattern-catalog.md"
 )
@@ -436,6 +439,17 @@ def validate_eval_case(case):
     target_skill = case.get("target_skill", DEFAULT_TARGET_SKILL)
     if target_skill not in TARGET_SKILL_DISPLAY_NAMES:
         raise ValueError(f"{case['id']}: unsupported target_skill {target_skill!r}")
+    faithful_mode = case.get("faithful_mode")
+    if target_skill == FAITHFUL_TARGET_SKILL:
+        if faithful_mode not in VALID_FAITHFUL_MODES:
+            raise ValueError(
+                f"{case['id']}: faithful_mode must be one of "
+                f"{', '.join(VALID_FAITHFUL_MODES)}"
+            )
+    elif faithful_mode is not None:
+        raise ValueError(
+            f"{case['id']}: faithful_mode is only valid for {FAITHFUL_TARGET_SKILL}"
+        )
     for reference_path in reference_paths_for_case(case):
         supported_targets = REFERENCE_TARGET_SKILLS.get(reference_path)
         if supported_targets is None:
@@ -511,6 +525,23 @@ def validate_output_contract_sources(cases, output_contract_cases):
         raise ValueError("output contract source mismatch: " + ", ".join(mismatches))
 
 
+def validate_output_contract_modes(cases, output_contract_cases):
+    mismatches = []
+    for case in cases:
+        output_contract_case_id = case.get("output_contract_case_id")
+        if not output_contract_case_id:
+            continue
+
+        contract_mode = output_contract_cases[output_contract_case_id].get(
+            "faithful_mode"
+        )
+        if case.get("faithful_mode") != contract_mode:
+            mismatches.append(f"{case['id']} -> {output_contract_case_id}")
+
+    if mismatches:
+        raise ValueError("output contract faithful_mode mismatch: " + ", ".join(mismatches))
+
+
 def require_rubric_score_threshold(rubric_id, rubric, key):
     value = rubric.get(key)
     if not is_positive_integer(value):
@@ -551,6 +582,56 @@ def validate_dimension_score_thresholds(
     return normalized_thresholds
 
 
+def validate_rubric_dimension(rubric_id, dimension, label):
+    if not isinstance(dimension, dict):
+        raise ValueError(f"{rubric_id}: rubric {label} must be an object")
+
+    name = dimension.get("name")
+    question = dimension.get("question")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError(f"{rubric_id}: rubric {label} missing name")
+    if not isinstance(question, str) or not question.strip():
+        raise ValueError(f"{rubric_id}: rubric dimension {name} missing question")
+    return {"name": name, "question": question}
+
+
+def validate_faithful_mode_dimensions(rubric_id, rubric, shared_dimension_names):
+    mode_dimensions = rubric.get(FAITHFUL_MODE_DIMENSIONS_KEY)
+    if mode_dimensions is None:
+        return {}
+    if not isinstance(mode_dimensions, dict):
+        raise ValueError(
+            f"{rubric_id}: rubric {FAITHFUL_MODE_DIMENSIONS_KEY} must be an object"
+        )
+
+    missing_modes = set(VALID_FAITHFUL_MODES) - set(mode_dimensions)
+    unknown_modes = set(mode_dimensions) - set(VALID_FAITHFUL_MODES)
+    if missing_modes or unknown_modes:
+        raise ValueError(
+            f"{rubric_id}: rubric {FAITHFUL_MODE_DIMENSIONS_KEY} must define "
+            + ", ".join(VALID_FAITHFUL_MODES)
+        )
+
+    normalized_dimensions = {
+        mode: validate_rubric_dimension(
+            rubric_id,
+            mode_dimensions[mode],
+            f"{mode} mode dimension",
+        )
+        for mode in VALID_FAITHFUL_MODES
+    }
+    mode_dimension_names = [
+        dimension["name"] for dimension in normalized_dimensions.values()
+    ]
+    if set(mode_dimension_names) & set(shared_dimension_names):
+        raise ValueError(
+            f"{rubric_id}: mode dimension names must differ from shared dimensions"
+        )
+    if len(mode_dimension_names) != len(set(mode_dimension_names)):
+        raise ValueError(f"{rubric_id}: mode dimension names must be unique")
+    return normalized_dimensions
+
+
 def validate_rubric_definition(rubric_id, rubric):
     if not isinstance(rubric, dict):
         raise ValueError(f"{rubric_id}: rubric must be an object")
@@ -562,18 +643,13 @@ def validate_rubric_definition(rubric_id, rubric):
     dimension_names = []
     normalized_dimensions = []
     for index, dimension in enumerate(dimensions):
-        if not isinstance(dimension, dict):
-            raise ValueError(f"{rubric_id}: rubric dimension {index} must be an object")
-
-        name = dimension.get("name")
-        question = dimension.get("question")
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError(f"{rubric_id}: rubric dimension {index} missing name")
-        if not isinstance(question, str) or not question.strip():
-            raise ValueError(f"{rubric_id}: rubric dimension {name} missing question")
-
-        dimension_names.append(name)
-        normalized_dimensions.append({"name": name, "question": question})
+        normalized_dimension = validate_rubric_dimension(
+            rubric_id,
+            dimension,
+            f"dimension {index}",
+        )
+        dimension_names.append(normalized_dimension["name"])
+        normalized_dimensions.append(normalized_dimension)
 
     if len(dimension_names) != len(set(dimension_names)):
         raise ValueError(f"{rubric_id}: rubric dimension names must be unique")
@@ -595,8 +671,14 @@ def validate_rubric_definition(rubric_id, rubric):
         rubric,
         dimension_names,
     )
+    faithful_mode_dimensions = validate_faithful_mode_dimensions(
+        rubric_id,
+        rubric,
+        dimension_names,
+    )
 
-    maximum_total_score = len(normalized_dimensions) * RUBRIC_MAX_DIMENSION_SCORE
+    dimension_count = len(normalized_dimensions) + bool(faithful_mode_dimensions)
+    maximum_total_score = dimension_count * RUBRIC_MAX_DIMENSION_SCORE
     if minimum_total_score > maximum_total_score:
         raise ValueError(f"{rubric_id}: rubric minimum_total_score is too high")
 
@@ -605,6 +687,7 @@ def validate_rubric_definition(rubric_id, rubric):
         "minimum_dimension_score": minimum_dimension_score,
         "minimum_dimension_scores": minimum_dimension_scores,
         "dimensions": normalized_dimensions,
+        FAITHFUL_MODE_DIMENSIONS_KEY: faithful_mode_dimensions,
     }
 
 
@@ -625,7 +708,24 @@ def attach_case_rubric(case, rubrics):
         return case
     if rubric_id not in rubrics:
         raise ValueError(f"{case['id']}: unknown rubric id {rubric_id!r}")
-    return {**case, "rubric": rubrics[rubric_id]}
+    rubric = rubrics[rubric_id]
+    mode_dimensions = rubric.get(FAITHFUL_MODE_DIMENSIONS_KEY, {})
+    if not mode_dimensions:
+        return {**case, "rubric": rubric}
+    if target_skill_for_case(case) != FAITHFUL_TARGET_SKILL:
+        raise ValueError(
+            f"{case['id']}: rubric {rubric_id!r} requires a Faithful target"
+        )
+    faithful_mode = case["faithful_mode"]
+    selected_rubric = {
+        **rubric,
+        "dimensions": [
+            *rubric["dimensions"],
+            mode_dimensions[faithful_mode],
+        ],
+        "faithful_mode": faithful_mode,
+    }
+    return {**case, "rubric": selected_rubric}
 
 
 def load_eval_cases(path=DEFAULT_CASES_PATH, output_contract_cases=None):
@@ -654,6 +754,7 @@ def load_eval_cases(path=DEFAULT_CASES_PATH, output_contract_cases=None):
     )
     validate_output_contract_references(validated_cases, contracts)
     validate_output_contract_sources(validated_cases, contracts)
+    validate_output_contract_modes(validated_cases, contracts)
     return validated_cases
 
 
@@ -680,8 +781,18 @@ def load_rubric_calibrations(path=DEFAULT_CASES_PATH):
         if calibration_id in seen_ids:
             raise ValueError(f"duplicate rubric calibration id: {calibration_id}")
         seen_ids.add(calibration_id)
+        rubric = rubrics[rubric_id]
+        normalized_calibration = dict(calibration)
+        if rubric.get(FAITHFUL_MODE_DIMENSIONS_KEY):
+            faithful_mode = calibration.get("faithful_mode")
+            if faithful_mode not in VALID_FAITHFUL_MODES:
+                raise ValueError(
+                    f"{calibration_id}: faithful_mode must be one of "
+                    f"{', '.join(VALID_FAITHFUL_MODES)}"
+                )
+            normalized_calibration["target_skill"] = FAITHFUL_TARGET_SKILL
         validated_calibrations.append(
-            {**calibration, "rubric": rubrics[rubric_id]}
+            attach_case_rubric(normalized_calibration, rubrics)
         )
     return validated_calibrations
 
@@ -692,6 +803,12 @@ def load_output_contract_cases():
 
 def target_skill_for_case(case):
     return case.get("target_skill", DEFAULT_TARGET_SKILL)
+
+
+def faithful_mode_for_case(case):
+    if target_skill_for_case(case) != FAITHFUL_TARGET_SKILL:
+        return None
+    return case.get("faithful_mode")
 
 
 def editorial_diagnostics_for_case(case, text):
@@ -724,7 +841,9 @@ def build_codex_prompt(case, plugin_root=None):
         prompt_lines.extend(
             [
                 f"Read `{skill_path}` before answering.",
-                "Reading the skill file is essential for this eval.",
+                "Read the complete skill file from its first line through EOF; "
+                "if output is truncated or paginated, continue until EOF.",
+                "Reading every section of the skill file is essential for this eval.",
                 "",
             ]
         )
@@ -735,7 +854,9 @@ def build_codex_prompt(case, plugin_root=None):
         prompt_lines.extend(
             [
                 f"Read `{reference_path}` before answering.",
-                "Reading this reference is essential for this eval.",
+                "Read the complete reference from its first line through EOF; "
+                "if output is truncated or paginated, continue until EOF.",
+                "Reading every section of this reference is essential for this eval.",
                 "",
             ]
         )
@@ -787,18 +908,35 @@ def build_rubric_prompt(case, output_text):
         "passed": "boolean",
         "issues": ["short issue strings, empty if none"],
     }
-    return "\n".join(
-        [
+    prompt_lines = [
             "Grade this Humanizer eval output against the rubric.",
-            "Use only the source and output below. Do not infer outside facts.",
+            "Use only the user request, source, and output below. Do not infer outside facts.",
+            "Evaluate rewritten prose against the source and evaluate explanatory or "
+            "audit sections against the user request.",
+            "Do not treat user-requested labels or audit explanations as added source "
+            "propositions, broader rewriting, or a voice change. Do penalize any "
+            "unsupported claim inside those sections.",
             f"Minimum total score: {rubric['minimum_total_score']}",
             f"Minimum dimension score: {rubric['minimum_dimension_score']}",
             "Minimum score by dimension: "
             + json.dumps(minimum_scores_by_dimension, sort_keys=True),
+    ]
+    faithful_mode = faithful_mode_for_case(case)
+    if faithful_mode:
+        prompt_lines.append(f"Faithful intervention mode: {faithful_mode}.")
+    prompt_lines.extend(
+        [
             "",
             "<rubric>",
             json.dumps(rubric["dimensions"], indent=2),
             "</rubric>",
+            "",
+            "<user_request>",
+            case.get(
+                "prompt",
+                "Rewrite the source faithfully while improving only its surface form.",
+            ).strip(),
+            "</user_request>",
             "",
             "<source>",
             case["source"].strip(),
@@ -812,6 +950,7 @@ def build_rubric_prompt(case, output_text):
             json.dumps(expected_schema, indent=2),
         ]
     )
+    return "\n".join(prompt_lines)
 
 
 def parse_jsonl_events(jsonl_text):
@@ -839,10 +978,9 @@ def iter_trace_observation_strings(event):
         yield path
 
     if item.get("type") == "command_execution":
-        for key in ("command", "aggregated_output"):
-            value = item.get(key)
-            if isinstance(value, str):
-                yield value
+        command = item.get("command")
+        if isinstance(command, str):
+            yield command
 
 
 def trace_contains_term(events, term):
@@ -908,7 +1046,7 @@ def check_stderr_expectations(case, stderr_text):
 
 def build_codex_command(
     codex_bin,
-    repo_root,
+    working_directory,
     output_path,
     prompt,
     model=None,
@@ -920,11 +1058,12 @@ def build_codex_command(
         "--ignore-user-config",
         "--ignore-rules",
         "--ephemeral",
+        "--skip-git-repo-check",
         "--json",
         "--sandbox",
         "read-only",
         "--cd",
-        str(repo_root),
+        str(working_directory),
         "--output-last-message",
         str(output_path),
     ]
@@ -1119,10 +1258,13 @@ def validate_rubric_grade(case, grade, require_pass=True):
             f"{case_id}: rubric issues must be a list of strings"
         )
 
-    if schema_violations:
-        raise AssertionError("\n".join(schema_violations))
-    if require_pass and score_violations:
-        raise AssertionError("\n".join(score_violations))
+    validation_violations = (
+        [*score_violations, *schema_violations]
+        if require_pass
+        else schema_violations
+    )
+    if validation_violations:
+        raise AssertionError("\n".join(validation_violations))
     return {
         "rubric_passed": computed_passed,
         "rubric_total_score": total_score,
@@ -1162,7 +1304,7 @@ def run_rubric_grade(
     remove_file_if_exists(rubric_output_path)
     command = build_codex_command(
         codex_bin,
-        REPO_ROOT,
+        artifact_dirs["rubric_prompts"].parent.resolve(),
         rubric_output_path,
         prompt,
         model=model,
@@ -1268,6 +1410,7 @@ def run_eval_case(
         "id": case["id"],
         "category": case["category"],
         "target_skill": target_skill_for_case(case),
+        "faithful_mode": faithful_mode_for_case(case),
         "activation_probe": case.get("activation_probe", False),
         "trial": trial,
         "model": model,
@@ -1295,7 +1438,7 @@ def run_eval_case(
     remove_file_if_exists(output_path)
     command = build_codex_command(
         codex_bin,
-        REPO_ROOT,
+        artifact_dirs["prompts"].parent.resolve(),
         output_path,
         prompt,
         model=model,
@@ -1362,7 +1505,7 @@ def run_eval_case(
     return summary
 
 
-def select_cases(cases, filters, target_skills=None):
+def select_cases(cases, filters, target_skills=None, faithful_modes=None):
     selected_ids = set(filters)
     if selected_ids:
         selected_cases = [case for case in cases if case["id"] in selected_ids]
@@ -1381,22 +1524,45 @@ def select_cases(cases, filters, target_skills=None):
         ]
         if not selected_cases:
             raise ValueError("no eval cases match the selected target skill(s)")
+
+    selected_faithful_modes = set(faithful_modes or [])
+    if selected_faithful_modes:
+        selected_cases = [
+            case
+            for case in selected_cases
+            if faithful_mode_for_case(case) in selected_faithful_modes
+        ]
+        if not selected_cases:
+            raise ValueError("no eval cases match the selected Faithful mode(s)")
     return selected_cases
+
+
+def summarize_pass_rate(summaries):
+    run_count = len(summaries)
+    passed_count = sum(1 for summary in summaries if summary.get("passed"))
+    return {
+        "runs": run_count,
+        "passed": passed_count,
+        "pass_rate": passed_count / run_count if run_count else 0,
+    }
 
 
 def aggregate_summaries(summaries):
     grouped_summaries = {}
+    faithful_mode_summaries = {}
     failure_stages = {}
     for summary in summaries:
         target_skill = summary.get("target_skill", "unknown")
         grouped_summaries.setdefault(target_skill, []).append(summary)
+        faithful_mode = summary.get("faithful_mode")
+        if faithful_mode:
+            faithful_mode_summaries.setdefault(faithful_mode, []).append(summary)
         failure_stage = summary.get("failure_stage")
         if failure_stage:
             failure_stages[failure_stage] = failure_stages.get(failure_stage, 0) + 1
 
     by_target_skill = {}
     for target_skill, skill_summaries in sorted(grouped_summaries.items()):
-        passed_count = sum(1 for summary in skill_summaries if summary.get("passed"))
         dimension_scores = {}
         for summary in skill_summaries:
             for dimension, score in (
@@ -1404,22 +1570,22 @@ def aggregate_summaries(summaries):
             ).items():
                 dimension_scores.setdefault(dimension, []).append(score)
         by_target_skill[target_skill] = {
-            "runs": len(skill_summaries),
-            "passed": passed_count,
-            "pass_rate": passed_count / len(skill_summaries),
+            **summarize_pass_rate(skill_summaries),
             "minimum_rubric_dimension_scores": {
                 dimension: min(scores)
                 for dimension, scores in sorted(dimension_scores.items())
             },
         }
 
-    passed_count = sum(1 for summary in summaries if summary.get("passed"))
+    by_faithful_mode = {
+        faithful_mode: summarize_pass_rate(mode_summaries)
+        for faithful_mode, mode_summaries in sorted(faithful_mode_summaries.items())
+    }
     return {
-        "runs": len(summaries),
-        "passed": passed_count,
-        "pass_rate": passed_count / len(summaries) if summaries else 0,
+        **summarize_pass_rate(summaries),
         "failure_stages": dict(sorted(failure_stages.items())),
         "by_target_skill": by_target_skill,
+        "by_faithful_mode": by_faithful_mode,
     }
 
 
@@ -1504,9 +1670,12 @@ def print_dry_run(cases, trials=1):
     )
     for case in cases:
         trigger_label = "trigger" if case["should_trigger"] else "no-trigger"
+        faithful_mode = faithful_mode_for_case(case)
+        mode_label = f", {faithful_mode}" if faithful_mode else ""
         print(
             f"- {case['id']} "
-            f"[{target_skill_for_case(case)}, {case['category']}, {trigger_label}]"
+            f"[{target_skill_for_case(case)}{mode_label}, "
+            f"{case['category']}, {trigger_label}]"
         )
 
 
@@ -1543,6 +1712,12 @@ def build_parser():
         "--target-skill",
         action="append",
         choices=sorted(TARGET_SKILL_DISPLAY_NAMES),
+        default=[],
+    )
+    parser.add_argument(
+        "--faithful-mode",
+        action="append",
+        choices=VALID_FAITHFUL_MODES,
         default=[],
     )
     parser.add_argument("--trials", type=positive_integer, default=1)
@@ -1589,6 +1764,7 @@ def main(argv):
             load_eval_cases(args.cases),
             args.filter,
             target_skills=args.target_skill,
+            faithful_modes=args.faithful_mode,
         )
     except (OSError, ValueError) as error:
         print(str(error), file=sys.stderr)

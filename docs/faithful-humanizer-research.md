@@ -1,6 +1,6 @@
 # Research notes: Faithful Humanizer
 
-Date reviewed: 2026-07-17
+Date reviewed: 2026-07-18
 
 ## Research question
 
@@ -14,11 +14,14 @@ false-positive protections, output contracts, and detector-oriented behavior.
 
 ## Naming conclusion
 
-The plugin now uses two names that describe editorial authority rather than an
-implementation detail:
+The plugin uses two skill names that describe editorial authority rather than an
+implementation detail, while Faithful exposes two intervention strategies:
 
 - **Editorial Humanizer** applies broader editorial judgment.
-- **Faithful Humanizer** preserves the supplied substance and edits only its form.
+- **Faithful Humanizer — Structural** preserves the supplied substance and
+  reconstructs its form. It is the default Faithful behavior.
+- **Faithful Humanizer — Conservative** preserves the same substance through the
+  smallest useful localized intervention. It is opt-in.
 
 “Opinionated” and “non-opinionated” are useful informal descriptions, but they are
 not precise product names. Faithful Humanizer still makes copy-editing judgments;
@@ -41,6 +44,10 @@ was also too technical and did not clearly communicate the user-facing guarantee
 | [brandonwise/humanizer](https://github.com/brandonwise/humanizer) | Transparent pattern grouping and automated checks | Statistical scoring, vocabulary bans, personality injection, and invented specifics in examples |
 | [softaworks/agent-toolkit](https://github.com/softaworks/agent-toolkit) | Progressive disclosure and compact clarity guidance | Active voice and concreteness are editorial defaults, not semantic invariants |
 | [humanizerai/agent-skills](https://github.com/humanizerai/agent-skills) and detector-oriented variants | Distinct trigger vocabulary and market category | Detector bypass is a different objective and rewards unnecessary transformation |
+| [Gude et al., ACL 2026](https://aclanthology.org/2026.acl-long.1803/) | Evidence that newer instruction-tuned models in the study's English news sample showed reduced syntactic and lexical diversity | Corpus-level, news-specific evidence cannot diagnose an individual passage or justify fixed surface targets |
+| [Purdue OWL: Sentence Structure, Variety, and Clarity](https://owl.purdue.edu/owl/graduate_writing/introduction_to_writing/documents/revising-and-editing/sentence-structure-activity.pdf) | Sentence structure can express emphasis, balance, and relationships among ideas; variation should be purposeful | Does not support random sentence-length variation, fragments, or universal style rules |
+| [George Mason Writing Center: Known/New Contract](https://writingcenter.gmu.edu/writing-resources/grammar-style/improving-cohesion-the-known-new-contract) | Known-to-new information flow can improve cohesion and place emphasis deliberately | A cohesion technique is not permission to reorder chronology, causality, scope, or argument progression |
+| [Huang and Chang, EACL 2021](https://aclanthology.org/2021.eacl-main.88/) | Demonstrates that semantic and syntactic representations can be separated for controlled paraphrase generation | Model-level paraphrase results do not guarantee that any particular rewrite is semantically equivalent |
 
 ## Follow-up implementation review
 
@@ -65,6 +72,13 @@ they can change agency, register, emphasis, or valid scientific form.
 The resulting implementation uses a shared scientific-register reference with
 skill-specific authority. Faithful treats it as preservation constraints; Editorial
 uses it as genre-specific guidance within factual and epistemic boundaries.
+
+The review also adopted the diagnose-then-reconstruct sequence from
+[theclaymethod/unslop](https://raw.githubusercontent.com/theclaymethod/unslop/main/references/commands/rewrite.md)
+for Structural mode, but not that project's broader content latitude, presets, or
+scoring gates. Detector-oriented structure signals in Avoid AI Writing remain
+diagnostic context only; its fixed targets and detector framing are outside the
+Faithful contract.
 
 ## Main findings
 
@@ -114,18 +128,20 @@ For a faithful rewrite:
 - no source is invented;
 - fact checking remains a separate task.
 
-### 5. Minimality is a preservation mechanism
+### 5. Minimality is one preservation mechanism
 
-Whole-paragraph regeneration creates more opportunities for drift than local edits.
-Faithful Humanizer therefore protects exact spans first, changes the smallest useful
+Localized editing reduces opportunities for drift and remains the defining strategy
+of Conservative mode. It protects exact spans first, changes the smallest useful
 span, leaves natural passages untouched, and restores original wording whenever
 equivalence is uncertain.
 
-Minimality does not justify an unchanged or cosmetic result when a safe surface
-rewrite exists. Faithful Humanizer must repair every genuine form problem, may
-recast a whole sentence when its syntax is the problem, and should produce prose
-that is materially less formulaic. The intervention remains local so that stronger
-rewriting does not become substantive rewriting.
+Minimality can also leave a passage's formulaic architecture intact. Structural
+mode addresses that limitation by rebuilding form from a semantic ledger and then
+checking the result proposition by proposition. Its wider intervention surface
+requires stricter comparison, not broader semantic authority.
+
+Neither mode permits an unchanged or cosmetic result when a safe, mode-appropriate
+repair exists. Both leave already-natural passages alone.
 
 ### 6. Register guards are necessary
 
@@ -145,21 +161,57 @@ structures, and vocabulary clusters are raw diagnostic evidence. They do not
 determine authorship, set an editorial score mechanically, or apply to Faithful as
 humanness targets.
 
+### 8. Sentence form carries meaning-adjacent signals
+
+Purdue's guidance treats sentence structure as a way to express emphasis, balance,
+and relationships among ideas. A dependent clause and an independent clause do not
+necessarily carry equal weight. Structural rewriting therefore cannot vary syntax
+arbitrarily: it must preserve the source's weighting and logical relationships.
+
+George Mason's known-new guidance provides one useful cohesion strategy. It can
+support moving familiar context toward sentence openings and newer information
+toward sentence endings, but only when that movement preserves chronology,
+causality, scope, emphasis, and meaningful argument order.
+
+### 9. Syntax and semantics can be treated separately, but not assumed equivalent
+
+Huang and Chang's syntactically controlled paraphrase work supports the design
+premise that syntax can change while semantic content is held apart. Faithful
+Structural operationalizes that premise conservatively: it uses a semantic ledger,
+bidirectional proposition mapping, and restore-on-doubt behavior rather than
+assuming that a smoother paraphrase is faithful.
+
+### 10. Corpus patterns are guidance, not individual-text targets
+
+Gude et al. found reduced syntactic and especially lexical diversity in newer
+instruction-tuned models within their English news comparison. The result motivates
+attention to structural regularity, but it is not an individual-text detector and
+does not justify fixed sentence lengths, required "burstiness," random fragments,
+manufactured errors, or detector-score optimization.
+
 ## Adopted design
 
-Faithful Humanizer uses six controls:
+Faithful Humanizer uses seven shared controls and two intervention strategies:
 
 1. **Source authority:** the supplied text defines the content.
 2. **Explicit semantic invariants:** claims, stance, modality, negation, scope,
    logic, attribution, chronology, emphasis, examples, and list membership survive.
 3. **Exact anchors:** names, numbers, dates, units, quotes, citations, URLs, code,
    identifiers, and domain terms remain unchanged.
-4. **Decisive local edits:** every genuine surface problem with a safe equivalent is
-   repaired; only wording, syntax, grammar, punctuation, transitions, repetition,
-   and rhythm may change.
-5. **Bidirectional semantic diff:** every source proposition maps to the output and
+4. **Semantic ledger:** each proposition, owner, stance, modality, scope, anchor,
+   comparison, chronology, logical relation, meaningful order, and register
+   constraint is recorded before rewriting.
+5. **Mode-specific intervention:** Structural reconstructs from the ledger;
+   Conservative repairs the smallest sufficient span.
+6. **Bidirectional semantic diff:** every source proposition maps to the output and
    every output proposition maps back to the source.
-6. **Restore on doubt:** uncertain paraphrases revert to source wording.
+7. **Restore on doubt:** uncertain paraphrases revert to source wording.
+
+Structural may change subjects, split or merge sentences, move qualifications,
+change safe clause order, improve known-to-new flow, and change non-meaningful
+paragraph boundaries. Conservative preserves subjects, sentence boundaries,
+paragraph architecture, and ordering unless a local defect cannot otherwise be
+resolved. Both preserve the same semantic invariants.
 
 ## Rejected design choices
 

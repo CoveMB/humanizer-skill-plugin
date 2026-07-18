@@ -29,6 +29,7 @@ REQUIRED_TAGS = {
     "faithful_audit_mode",
     "faithful_voice_matching",
     "faithful_structure_preservation",
+    "faithful_structural_reconstruction",
 }
 
 SOURCE_AWARE_CONSTRAINT_KEYS = {
@@ -174,6 +175,10 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 "faithful_voice_matching",
                 "faithful_structure_and_protected_spans",
                 "faithful_conditions_exceptions_comparison",
+                "faithful_structural_product_reconstruction",
+                "faithful_structural_academic_reconstruction",
+                "faithful_structural_opinion_reconstruction",
+                "faithful_structural_already_natural_restraint",
             },
         )
         covered_tags = {
@@ -198,10 +203,15 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 "faithful_audit_mode",
                 "faithful_voice_matching",
                 "faithful_structure_preservation",
+                "faithful_structural_reconstruction",
             }.issubset(covered_tags)
         )
         for case in faithful_cases.values():
             with self.subTest(case=case["id"]):
+                self.assertIn(
+                    case["faithful_mode"],
+                    {"structural", "conservative"},
+                )
                 constraints = case["constraints"]
                 if case["mode"] == "rewrite":
                     self.assertTrue(constraints["rewrite_only"])
@@ -219,6 +229,27 @@ class ContractFixtureQualityTests(unittest.TestCase):
                         set(failure),
                         {"label", "output", "expected_error"},
                     )
+
+        structural_cases = {
+            case_id
+            for case_id, case in faithful_cases.items()
+            if case["faithful_mode"] == "structural"
+        }
+        conservative_cases = {
+            case_id
+            for case_id, case in faithful_cases.items()
+            if case["faithful_mode"] == "conservative"
+        }
+        self.assertEqual(
+            structural_cases,
+            {
+                "faithful_structural_product_reconstruction",
+                "faithful_structural_academic_reconstruction",
+                "faithful_structural_opinion_reconstruction",
+                "faithful_structural_already_natural_restraint",
+            },
+        )
+        self.assertTrue(conservative_cases)
 
 
 if __name__ == "__main__":

@@ -2,13 +2,17 @@
 name: faithful-humanizer
 version: 1.0.0
 description: |
-  Conservatively rewrite AI-sounding prose so it reads more naturally without
-  changing its substance. Use when the user asks to preserve every claim and
-  opinion, humanize form only, make minimal edits, or improve wording without
-  adding, removing, fact-checking, strengthening, softening, or reinterpreting
-  content. Do not use for broader editorial cleanup, summarization, invented voice,
-  or AI-detector evasion; use editorial-humanizer when substantive editorial
-  judgment is wanted.
+  Rewrite AI-sounding prose so it reads more naturally without changing its
+  substance. Use whenever the user explicitly invokes `$faithful-humanizer`, or
+  asks to preserve every claim and opinion, keep approved claims or all substance,
+  preserve propositions, hedges, scope qualifiers, or relations, humanize form
+  only, make prose less formulaic, or improve wording without adding, removing,
+  fact-checking, strengthening, softening, or reinterpreting content. Structural
+  mode is the default and may reconstruct sentence and paragraph form.
+  Conservative mode is opt-in for minimal, local edits that stay close to the
+  existing structure. Do not use for broader editorial cleanup, summarization,
+  invented voice, or AI-detector evasion; use editorial-humanizer when substantive
+  editorial judgment is wanted.
 license: MIT
 compatibility: claude-code opencode codex
 allowed-tools:
@@ -26,39 +30,72 @@ sources:
 
 ## Purpose
 
-Make prose read more naturally through the smallest useful changes to wording,
-syntax, rhythm, and punctuation. Preserve what the source says, who says it, and
-how strongly it says it.
+Make prose read more naturally by improving its wording and form. Preserve what
+the source says, who says it, how strongly it says it, and how its ideas relate.
+
+Faithful Humanizer has two intervention strategies under one preservation
+contract:
+
+- **Structural mode (default)** reconstructs sentence and paragraph form when a
+  local edit would leave the passage formulaic or poorly connected.
+- **Conservative mode (opt-in)** makes the smallest useful localized intervention
+  and stays close to the source's subjects, boundaries, architecture, and order.
 
 A faithful sentence that remains slightly artificial is better than a smoother
 sentence that changes the substance.
 
-Faithful does not mean literal or timid. When a sentence has genuine surface-level
-AI patterns, rewrite every problematic span for a clearly more natural result when
-a semantically equivalent repair exists. Minimal means localized: it does not mean
-leaving fixable formulaic prose untouched.
+Faithful does not mean literal or timid. When a passage has genuine surface-level
+AI patterns, make a clearly more natural rewrite when a semantically equivalent
+repair exists. Structural mode may rebuild the form; Conservative mode remains
+local-first. Neither mode may leave fixable formulaic prose untouched merely to
+avoid changing words.
 
-**Direct distinction:** Editorial Humanizer may change selection, structure,
-emphasis, and rhetorical presentation. Faithful Humanizer may change only surface
-form.
+**Direct distinction:** Editorial Humanizer may change content selection, argument
+architecture, emphasis, and rhetorical presentation. Faithful Humanizer may change
+only form. In Structural mode, form includes grammatical subjects, clause and
+sentence boundaries, local clause order, cohesion, and non-meaningful paragraph
+boundaries; it does not include changing claims, force, meaningful order, or
+emphasis.
 
 Use **Editorial Humanizer** instead when the user wants broader anti-slop editing,
-removal of weak or generic material, structural reshaping, stronger voice, or an
-editorial-quality audit and score.
+removal of weak or generic material, argument restructuring, stronger voice, or
+an editorial-quality audit and score.
 
-## Default contract
+## Shared preservation contract
 
 Treat the source text as authoritative. Edit presentation, not content.
 
 - Preserve every claim, argument, opinion, example, caveat, and conclusion.
 - Preserve the source's tone, register, point of view, and emotional valence.
 - Preserve the degree of certainty, doubt, importance, praise, criticism, and urgency.
-- Make decisive local edits to every genuine form problem. Leave already-natural
-  passages unchanged.
+- Resolve every genuine form problem with the intervention strategy selected for
+  the request. Leave already-natural passages unchanged in both modes.
 - Return only the rewritten text unless the user asks for an audit or explanation.
 
-This skill is a conservative copy editor. It is not a fact checker, researcher,
-summarizer, developmental editor, ghostwriter, or detector-evasion tool.
+This skill is a form-only editor. It is not a fact checker, researcher, summarizer,
+developmental editor, ghostwriter, or detector-evasion tool.
+
+## Deterministic mode selection
+
+Choose the mode before rewriting. An explicitly named mode always wins.
+
+Select **Structural** when the user names Structural mode or asks to rework or
+rebuild sentence structure, make the prose less formulaic or less templated, or
+uses equivalent language. A Faithful request that does not choose an intensity
+also selects Structural.
+
+Select **Conservative** when the user names Conservative mode or asks for minimal
+editing, a light touch, copyediting only, wording that stays close to the source,
+or preservation of the existing sentence or paragraph structure.
+
+A request to preserve every claim does not by itself select Conservative. A
+scientific, legal, medical, financial, security, policy, or other high-stakes
+register strengthens the semantic and register checks but does not silently switch
+the selected mode.
+
+If a requested transformation conflicts with the shared preservation contract,
+explain the boundary. Route to Editorial Humanizer only when the user authorizes
+substantive selection, compression, reprioritization, or argument restructuring.
 
 ## Substance invariants
 
@@ -81,10 +118,16 @@ survive with the same meaning.
 7. **Attribution**: Preserve the speaker, source, quoted party, and boundaries
    between the author's claim and someone else's claim.
 8. **Chronology**: Preserve dates, tense, order of events, and temporal qualifiers.
-9. **Emphasis**: Preserve deliberate importance, contrast, repetition, and ordering
-   when they affect the point being made.
-10. **Structure-bearing content**: Preserve headings, list membership, examples,
-    section order, and paragraph order unless the user explicitly allows restructuring.
+9. **Comparison**: Preserve comparison sets, direction, baselines, degree, and what
+   is being compared.
+10. **Emphasis**: Preserve deliberate importance, contrast, repetition, and ordering
+    when they affect the point being made.
+11. **Meaningful information and argument order**: Preserve sequence when it carries
+    chronology, causality, scope, emphasis, grouping, or argumentative progression.
+12. **Structure-bearing content**: Preserve headings, list membership, examples,
+    section order, and paragraph groupings that encode meaning.
+13. **Register constraints**: Preserve genre-specific formality, terminology,
+    conventions, and precision.
 
 ## Exact anchors
 
@@ -108,16 +151,22 @@ Use judgment rather than a banned-word catalog. Appropriate changes include:
 - Replacing needlessly indirect syntax with a more natural equivalent
 - Removing true redundancy while retaining any emphasis or qualification it carried
 - Recasting repetitive transitions without changing the logical relationship
-- Splitting or combining sentences within the same passage when meaning and emphasis stay stable
+- Splitting or combining sentences when meaning and emphasis stay stable
 - Improving sentence flow and modestly varying rhythm without manufacturing drama
 - Replacing a locally awkward AI-associated phrase only when the replacement is semantically equivalent
+- Changing grammatical subjects without changing agency, scope, attribution, or emphasis
+- Moving qualifications closer to the claims they govern
+- Changing clause order when chronology, causality, scope, emphasis, and meaningful
+  argument order remain intact
+- Replacing repetitive transition-led sequencing with cohesive known-to-new flow
+- Changing paragraph boundaries that do not encode a meaningful grouping
 
 Do not change a word merely because it appears on an AI-writing checklist. Em
 dashes, passive voice, adverbs, three-item lists, title case, technical jargon, and
 curly quotes can all be legitimate. Change them only when they make this particular
 passage less clear or less natural.
 
-## Meaningful faithful rewriting
+## Shared rewriting standard
 
 Do not return the source unchanged merely because preservation is strict. After
 protecting the substance, actively repair surface patterns such as:
@@ -131,15 +180,49 @@ protecting the substance, actively repair surface patterns such as:
 - empty metadiscourse that can be expressed as natural emphasis; and
 - awkward punctuation or sentence boundaries.
 
-Usually edit a phrase or clause. Rewrite the whole sentence when its syntax is the
-problem. A paragraph-level rewrite is permitted when a repeated surface pattern
-spans the paragraph, but every proposition, relation, emphasis, example, and item
-must remain in the same order. The result should be materially less formulaic, not
-merely proofread.
+The result should be materially less formulaic, not merely proofread. Structural
+mode should solve structural patterns through safe reconstruction. Conservative
+mode should change the smallest span that fully resolves each local problem.
 
-If two natural rewrites are equally faithful, choose the one that removes more of
-the local AI-shaped form. If no natural equivalent preserves the substance, retain
-the source wording.
+If two natural rewrites are equally faithful and equally appropriate for the
+selected mode, choose the one that removes more of the AI-shaped form. If no
+natural equivalent preserves the substance, retain the source wording. If
+equivalence is uncertain, keep or restore the original wording.
+
+## Structural mode
+
+Use Structural mode by default. Reconstruct sentence and paragraph form from the
+semantic ledger rather than editing the source linearly when its structure is
+formulaic.
+
+Structural mode may:
+
+- change grammatical subjects;
+- split or merge sentences;
+- move qualifications closer to the claims they govern;
+- change clause order when chronology, causality, scope, emphasis, and meaningful
+  argument order remain intact;
+- replace repetitive transition-led sequencing with cohesive known-to-new flow; and
+- change paragraph boundaries when they do not encode a meaningful grouping.
+
+Structural mode is not permission to paraphrase for its own sake. Leave
+already-natural form alone. Do not create arbitrary fragments, random sentence
+lengths, fake informality, grammatical errors, or punctuation bans. Sentence
+variation must follow meaning, emphasis, cohesion, or the relationships among
+ideas. Never optimize for an AI-detector score.
+
+## Conservative mode
+
+Use Conservative mode only when the user selects it through explicit naming or
+clear minimal-intervention language. Preserve the current local-first behavior:
+
+- prefer the smallest useful localized intervention;
+- remove formulaic wording and repair local awkwardness;
+- rewrite a phrase, clause, or sentence when necessary;
+- preserve subjects, sentence boundaries, paragraph architecture, and ordering
+  unless a local defect cannot otherwise be resolved;
+- retain already-natural wording; and
+- avoid broad reconstruction when a smaller safe change works.
 
 ## Forbidden substance edits
 
@@ -189,25 +272,62 @@ explicit. Do not remove `may`, `suggests`, or `is associated with` to make a cla
 more forceful. Do not vary an exact technical term merely for rhythm. Do not make
 scientific prose conversational merely to make it sound human.
 
+## Shared semantic ledger
+
+Before rewriting in either mode, create a private ledger that accounts for:
+
+- each factual and evaluative proposition;
+- the speaker or source of each proposition;
+- stance and opinion ownership;
+- modality and epistemic strength;
+- scope, quantities, dates, names, negation, and comparisons;
+- chronology;
+- causal, conditional, contrastive, and concessive relationships;
+- exact anchors;
+- meaningful information or argument order; and
+- register constraints.
+
+The numbered invariants and exact-anchor rules above define what each ledger item
+must preserve. Do not duplicate or weaken that contract when applying a mode.
+
+## Structural workflow
+
+Run this process internally in Structural mode:
+
+1. **Set boundaries.** Identify editable prose and protect quotations, code,
+   citations, identifiers, and exact anchors.
+2. **Diagnose structure.** Find formulaic sequencing, repetitive transition-led
+   sentences, weak information flow, overloaded sentences, and boundaries that
+   obscure relationships among ideas.
+3. **Build the ledger.** Record every shared semantic and register constraint.
+4. **Reconstruct from the ledger.** Rebuild the passage instead of editing it
+   linearly. Use sentence and paragraph form that expresses the same relationships,
+   emphasis, and meaningful order more naturally.
+5. **Compare proposition by proposition.** Map every source proposition to the
+   rewrite and every rewrite proposition back to the source.
+6. **Run a naturalness and cohesion pass.** Confirm that the result is materially
+   less formulaic and that known-to-new flow or another meaning-driven structure
+   improves the passage.
+7. **Restore on doubt.** Restore or revise any transformation whose semantic safety
+   is uncertain.
+8. **Deliver.** Return the rewrite without commentary unless commentary was requested.
+
 ## Conservative workflow
 
-Run this process internally:
+Run this process internally in Conservative mode:
 
-1. **Set boundaries.** Identify the editable prose and protect quotations, code,
+1. **Set boundaries.** Identify editable prose and protect quotations, code,
    citations, identifiers, and exact anchors.
-2. **Map substance.** Record claims, stance, modality, negation, scope, logic,
-   attribution, chronology, examples, and order.
-3. **Find all form friction.** Mark wording, syntax, repetition, transition, rhythm,
-   grammar, or punctuation that makes the passage formulaic or unnatural.
-4. **Edit decisively and locally.** Change the smallest span that fully resolves
-   each problem. Rewrite a whole sentence when clause-level patching cannot make it
-   natural.
-5. **Run a semantic diff.** Map every source proposition to the rewrite and every
-   rewrite proposition back to the source.
-6. **Run a naturalness pass.** Confirm that fixable AI-shaped surface form did not
-   survive merely because the contract is strict.
-7. **Restore on doubt.** If equivalence is uncertain, keep or restore the original wording.
-8. **Deliver.** Return the rewrite without commentary unless commentary was requested.
+2. **Diagnose local surface problems.** Mark wording, syntax, repetition,
+   transitions, grammar, rhythm, or punctuation that is locally formulaic or
+   unnatural.
+3. **Build the ledger.** Record every shared semantic and register constraint.
+4. **Edit the smallest sufficient span.** Rewrite a whole sentence only when a
+   smaller repair cannot resolve the local defect.
+5. **Compare proposition by proposition.** Map every source proposition to the
+   rewrite and every rewrite proposition back to the source.
+6. **Restore on doubt.** Restore any edit whose equivalence is uncertain.
+7. **Deliver.** Return the rewrite without commentary unless commentary was requested.
 
 ## Final semantic diff
 
@@ -219,11 +339,14 @@ Before responding, verify all of the following:
 - Negation, exceptions, conditions, comparisons, and causal strength remain unchanged.
 - Quantifiers, scope, time, sequence, and attribution remain unchanged.
 - Exact anchors and every list item are present and unaltered.
+- Meaningful information order, argument order, grouping, and emphasis remain intact.
 - The rewrite does not introduce a more casual, forceful, emotional, promotional,
   skeptical, or confident stance.
 - Every edit has a form-based reason; no style rule was applied for its own sake.
 - Every genuine form problem with a safe equivalent was repaired; minimality did
   not become a reason for a cosmetic or unchanged result.
+- The intervention matches the selected mode: Structural reconstruction is
+  meaning-driven, or Conservative editing remains as local as the defect permits.
 
 If any check fails, revise or restore the source wording.
 
@@ -239,6 +362,11 @@ Return the rewritten text first, then two brief sections:
 
 - `Form changes`: the kinds of surface edits made
 - `Preservation notes`: any wording deliberately retained to avoid changing substance
+
+Always include both labels exactly as `Form changes:` and `Preservation notes:`.
+Do not merge the two sections, replace them with an unlabeled explanation, or
+omit either label. The required order is rewrite, `Form changes:`, then
+`Preservation notes:`.
 
 Do not assign an AI-likeness score.
 
@@ -269,6 +397,24 @@ The rewrite keeps the emphasis (`Importantly`), uncertainty (`may`), and scope
 
 The proposition, actor, tense, and object remain, while the sentence loses its
 formulaic scaffolding. Faithful editing does not require preserving awkward syntax.
+
+### One contract, two intervention strategies
+
+**Before**
+
+> The findings suggest that remote work may improve retention for some employees. However, because the survey included only staff who had remained with the company for at least six months, the results should not be interpreted as evidence that remote work causes lower turnover. Taken together, these observations highlight the importance of conducting further research across a wider range of roles and tenure levels.
+
+**Structural**
+
+> The findings suggest that remote work may improve retention for some employees. The survey, however, included only staff who had remained with the company for at least six months. Its results should therefore not be interpreted as evidence that remote work causes lower turnover. Taken together, these observations show why further research across a wider range of roles and tenure levels is important.
+
+**Conservative**
+
+> The findings suggest that remote work may improve retention among some employees. However, because the survey included only staff who had remained with the company for at least six months, the results should not be taken as evidence that remote work causes lower turnover. Together, these observations highlight the importance of further research across a wider range of roles and tenure levels.
+
+Both rewrites preserve the same propositions, uncertainty, sample limitation,
+causal boundary, and research recommendation. Structural changes sentence form and
+information flow; Conservative repairs the wording locally.
 
 ### Vague attribution remains vague
 

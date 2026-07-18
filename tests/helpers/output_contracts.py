@@ -31,10 +31,14 @@ SUPPORTED_CONSTRAINT_KEYS = {
     "rewrite_only",
     "max_question_marks",
     "minimum_score_out_of_80",
+    "minimum_sentence_count",
+    "maximum_sentence_count",
 }
 
 REWRITE_SECTION_BOUNDARY_PATTERN = re.compile(
-    r"(?im)^\s*(?:brief\s+notes|notes|score|form\s+changes|preservation\s+notes)\s*:"
+    r"(?im)^\s*(?:#{1,6}\s*)?(?:\*\*)?"
+    r"(?:brief\s+notes|notes|score|form\s+changes|preservation\s+notes)"
+    r"(?:\*\*)?(?:\s*:\s*|\s*$)"
 )
 
 NUMBER_PATTERN = re.compile(
@@ -108,6 +112,8 @@ REWRITE_ONLY_META_FRAGMENTS = (
     "rewrite:",
     "rewritten text:",
 )
+
+SENTENCE_END_PATTERN = re.compile(r"[.!?]+(?:[\"'”’)]*)?(?=\s|$)")
 
 
 def normalize_text(text):
@@ -426,6 +432,29 @@ def enforce_minimum_score_out_of_80(case_id, output, minimum_score):
         )
 
 
+def count_sentences(text):
+    return len(SENTENCE_END_PATTERN.findall(text.strip()))
+
+
+def require_sentence_count_bound(case_id, output, expected_count, relation):
+    if type(expected_count) is not int or expected_count < 1:
+        raise AssertionError(
+            f"{case_id}: {relation}_sentence_count must be a positive integer"
+        )
+
+    actual_count = count_sentences(extract_rewrite_section(output))
+    if relation == "minimum" and actual_count < expected_count:
+        raise AssertionError(
+            f"{case_id}: found {actual_count} sentence(s); expected at least "
+            f"{expected_count}"
+        )
+    if relation == "maximum" and actual_count > expected_count:
+        raise AssertionError(
+            f"{case_id}: found {actual_count} sentence(s); expected at most "
+            f"{expected_count}"
+        )
+
+
 def collect_violation(violations, check_function, *args):
     try:
         check_function(*args)
@@ -460,7 +489,7 @@ def validate_case_output(case, output):
         violations,
         require_patterns,
         case_id,
-        normalized_output,
+        output,
         constraints.get("must_match", []),
     )
     collect_violation(
@@ -481,7 +510,7 @@ def validate_case_output(case, output):
         violations,
         reject_patterns,
         case_id,
-        normalized_output,
+        output,
         constraints.get("must_not_match", []),
     )
 
@@ -566,6 +595,18 @@ def validate_case_output(case, output):
             normalized_output,
             constraints["minimum_score_out_of_80"],
         )
+
+    for relation in ("minimum", "maximum"):
+        constraint_key = f"{relation}_sentence_count"
+        if constraint_key in constraints:
+            collect_violation(
+                violations,
+                require_sentence_count_bound,
+                case_id,
+                output,
+                constraints[constraint_key],
+                relation,
+            )
 
     if violations:
         raise AssertionError("\n".join(violations))

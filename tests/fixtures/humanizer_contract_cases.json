@@ -83,6 +83,58 @@
       }
     },
     {
+      "id": "editorial_broader_boundary",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "no_chatbot_wrapper",
+        "no_self_narration"
+      ],
+      "prompt": "Remove generic or weak claims, reorganize the argument, and give this a stronger voice. Return only the rewritten text.",
+      "source": "Great question! Here is an overview. AI coding assistants serve as an enduring testament to the transformative potential of large language models, marking a pivotal moment in the rapidly evolving landscape of software development. At its core, the value proposition is clear: streamlining documentation, enhancing tests, and fostering alignment. It is not just about autocomplete; it is about unlocking creativity at scale. Industry observers have noted adoption is rising. Let me know if you want more detail.",
+      "constraints": {
+        "must_include": [
+          "AI coding assistants",
+          "doc",
+          "test"
+        ],
+        "must_not_include": [
+          "Great question",
+          "Here is an overview",
+          "enduring testament",
+          "transformative potential",
+          "pivotal moment",
+          "rapidly evolving landscape",
+          "At its core",
+          "value proposition",
+          "not just",
+          "unlocking creativity",
+          "Industry observers",
+          "Let me know"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "AI coding assistants are broader than autocomplete. Their clearest uses are drafting documentation and improving tests.",
+      "failing_outputs": [
+        {
+          "label": "leaves the formulaic wrapper unchanged",
+          "output": "Great question! Here is an overview. AI coding assistants help with documentation and tests.",
+          "expected_error": "forbidden fragment"
+        },
+        {
+          "label": "invents a quantified benefit",
+          "output": "AI coding assistants cut documentation and testing time by 10%.",
+          "expected_error": "introduced number"
+        }
+      ]
+    },
+    {
       "id": "missing_source_handling",
       "mode": "rewrite",
       "tags": [
@@ -465,6 +517,7 @@
     },
     {
       "id": "faithful_attribution_modality_scope",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -505,6 +558,7 @@
     },
     {
       "id": "faithful_promotional_opinion_chronology",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -557,6 +611,7 @@
     },
     {
       "id": "faithful_exact_anchors_and_list_membership",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -600,6 +655,7 @@
     },
     {
       "id": "faithful_meaningful_local_rewrite",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -648,6 +704,7 @@
     },
     {
       "id": "faithful_scientific_register",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -697,6 +754,7 @@
     },
     {
       "id": "faithful_already_natural_restraint",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -725,6 +783,7 @@
     },
     {
       "id": "faithful_mixed_local_edit",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -773,6 +832,7 @@
     },
     {
       "id": "faithful_audit_mode",
+      "faithful_mode": "conservative",
       "mode": "audit",
       "tags": [
         "audit_output",
@@ -786,21 +846,28 @@
       "source": "At this point in time, Atlas Note may potentially reduce setup time for some teams.",
       "constraints": {
         "must_include": [
-          "Atlas Note may reduce setup time for some teams",
-          "Form changes:",
-          "Preservation notes:"
+          "Atlas Note",
+          "may",
+          "reduce setup time",
+          "some teams"
         ],
-        "must_not_include": [
+        "rewrite_must_not_include": [
           "At this point in time",
           "may potentially"
         ],
         "must_not_match": [
-          "(?i)\\bscore\\s*:"
+          "(?i)\\bscore\\s*:",
+          "(?i)\\bwill reduce setup time\\b",
+          "(?i)\\bmost teams\\b"
+        ],
+        "must_match": [
+          "(?im)^\\s*(?:#{1,6}\\s*)?(?:\\*\\*)?Form changes:(?:\\*\\*)?(?:\\s+.*)?$",
+          "(?im)^\\s*(?:#{1,6}\\s*)?(?:\\*\\*)?Preservation notes:(?:\\*\\*)?(?:\\s+.*)?$"
         ],
         "ordered_fragments": [
-          "Atlas Note may reduce setup time for some teams",
-          "Form changes:",
-          "Preservation notes:"
+          "Atlas Note",
+          "reduce setup time",
+          "some teams"
         ],
         "must_differ_from_source": true,
         "no_chatbot_wrapper": true,
@@ -808,12 +875,12 @@
         "no_new_numbers": true,
         "no_new_named_entities": true
       },
-      "passing_output": "Atlas Note may reduce setup time for some teams.\n\nForm changes: Removed redundant temporal and modal scaffolding.\n\nPreservation notes: Retained ‘may’ and ‘some teams’ to preserve uncertainty and scope.",
+      "passing_output": "Atlas Note may currently reduce setup time for some teams.\n\n**Form changes:**\nRemoved redundant modal scaffolding and shortened the time phrase.\n\n**Preservation notes:**\nRetained ‘may’ and ‘some teams’ to preserve uncertainty and scope.",
       "failing_outputs": [
         {
           "label": "omits required explanation sections",
           "output": "Atlas Note may reduce setup time for some teams.",
-          "expected_error": "missing required fragment"
+          "expected_error": "required pattern missing"
         },
         {
           "label": "adds forbidden score",
@@ -824,6 +891,7 @@
     },
     {
       "id": "faithful_voice_matching",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -871,6 +939,7 @@
     },
     {
       "id": "faithful_structure_and_protected_spans",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -921,6 +990,7 @@
     },
     {
       "id": "faithful_conditions_exceptions_comparison",
+      "faithful_mode": "conservative",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
@@ -936,16 +1006,18 @@
       "source": "Although most reviewers support the proposal, the committee will approve it only if Legal signs off before Friday. Unless Legal responds, the committee may reject some sections, but it will not reject Appendix A.",
       "constraints": {
         "must_include": [
-          "Although most reviewers support the proposal",
+          "most reviewers support the proposal",
           "will approve it only if Legal signs off before Friday",
-          "Unless Legal responds",
           "may reject some sections",
           "will not reject Appendix A"
         ],
+        "must_match": [
+          "(?i)(?:Unless Legal responds|If Legal does not respond)",
+          "(?is)(?:(?:Although|While) most reviewers support the proposal|Most reviewers support the proposal, but the committee)"
+        ],
         "ordered_fragments": [
-          "Although most reviewers support the proposal",
+          "most reviewers support the proposal",
           "will approve it only if Legal signs off before Friday",
-          "Unless Legal responds",
           "may reject some sections",
           "will not reject Appendix A"
         ],
@@ -955,7 +1027,7 @@
         "no_new_named_entities": true,
         "rewrite_only": true
       },
-      "passing_output": "Although most reviewers support the proposal, the committee will approve it only if Legal signs off before Friday. Unless Legal responds, the committee may reject some sections, but it will not reject Appendix A.",
+      "passing_output": "Most reviewers support the proposal, but the committee will approve it only if Legal signs off before Friday. Unless Legal responds, the committee may reject some sections, but it will not reject Appendix A.",
       "failing_outputs": [
         {
           "label": "broadens support and drops approval condition",
@@ -966,6 +1038,220 @@
           "label": "drops exception and negation",
           "output": "Although most reviewers support the proposal, the committee will approve it only if Legal signs off before Friday. The committee will reject all sections, including Appendix A.",
           "expected_error": "missing required fragment"
+        }
+      ]
+    },
+    {
+      "id": "faithful_structural_product_reconstruction",
+      "faithful_mode": "structural",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_scope",
+        "faithful_logical_relation",
+        "faithful_structural_reconstruction"
+      ],
+      "prompt": "Use Faithful Structural mode to rebuild the sentence structure while preserving every proposition, scope boundary, condition, and relation. Return only the rewritten text.",
+      "source": "Atlas Notes provides offline access to saved documents, which enables travelers to review project files without an internet connection, while also allowing administrators to revoke access after a device has been lost, thereby helping organizations balance convenience with security.",
+      "constraints": {
+        "must_include": [
+          "Atlas Notes",
+          "saved documents",
+          "travelers",
+          "project files",
+          "without an internet connection",
+          "administrators",
+          "device",
+          "lost",
+          "revoke",
+          "balance convenience with security"
+        ],
+        "must_not_include": [
+          "Atlas Notes gives travelers offline access"
+        ],
+        "ordered_fragments": [
+          "saved documents",
+          "travelers",
+          "device",
+          "administrators",
+          "revoke",
+          "balance convenience with security"
+        ],
+        "must_differ_from_source": true,
+        "minimum_sentence_count": 3,
+        "maximum_sentence_count": 4,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "Saved documents remain available offline in Atlas Notes, so travelers can review project files without an internet connection. If a device is lost, administrators can revoke its access. Together, these features help organizations balance convenience with security.",
+      "failing_outputs": [
+        {
+          "label": "uses only a local two-sentence repair",
+          "output": "Atlas Notes provides offline access to saved documents, so travelers can review project files without an internet connection. At the same time, it allows administrators to revoke access after a device has been lost, helping organizations balance convenience with security.",
+          "expected_error": "expected at least 3"
+        },
+        {
+          "label": "narrows the generally available feature to travelers",
+          "output": "Atlas Notes gives travelers offline access to saved documents, so they can review project files without an internet connection. If a device is lost, administrators can revoke its access. Together, these features help organizations balance convenience with security.",
+          "expected_error": "forbidden fragment"
+        }
+      ]
+    },
+    {
+      "id": "faithful_structural_academic_reconstruction",
+      "faithful_mode": "structural",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "scientific_register",
+        "faithful_modality",
+        "faithful_scope",
+        "faithful_causality",
+        "faithful_structural_reconstruction"
+      ],
+      "prompt": "Use Faithful Structural mode to make this academic passage less templated while preserving every claim, limitation, qualifier, causal boundary, and recommendation. Return only the rewritten text.",
+      "source": "The findings suggest that remote work may improve retention for some employees. However, because the survey included only staff who had remained with the company for at least six months, the results should not be interpreted as evidence that remote work causes lower turnover. Taken together, these observations highlight the importance of conducting further research across a wider range of roles and tenure levels.",
+      "constraints": {
+        "must_include": [
+          "findings suggest",
+          "remote work may improve retention",
+          "some employees",
+          "survey",
+          "only staff",
+          "at least six months",
+          "not be interpreted as evidence",
+          "remote work causes lower turnover",
+          "further research",
+          "wider range of roles and tenure levels"
+        ],
+        "ordered_fragments": [
+          "findings suggest",
+          "survey",
+          "not be interpreted as evidence",
+          "further research"
+        ],
+        "must_differ_from_source": true,
+        "minimum_sentence_count": 4,
+        "maximum_sentence_count": 5,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "The findings suggest that remote work may improve retention for some employees. The survey, however, included only staff who had remained with the company for at least six months. Its results should therefore not be interpreted as evidence that remote work causes lower turnover. Taken together, these observations show why further research across a wider range of roles and tenure levels is important.",
+      "failing_outputs": [
+        {
+          "label": "makes only conservative substitutions",
+          "output": "The findings suggest that remote work may improve retention among some employees. However, because the survey included only staff who had remained with the company for at least six months, the results should not be taken as evidence that remote work causes lower turnover. Together, these observations highlight the importance of further research across a wider range of roles and tenure levels.",
+          "expected_error": "expected at least 4"
+        },
+        {
+          "label": "sounds smooth but strengthens and broadens the findings",
+          "output": "Remote work improves employee retention. The survey included staff who had remained with the company for at least six months. Its results establish that remote work lowers turnover. Broader research would still be useful.",
+          "expected_error": "missing required fragment"
+        }
+      ]
+    },
+    {
+      "id": "faithful_structural_opinion_reconstruction",
+      "faithful_mode": "structural",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_opinion",
+        "faithful_modality",
+        "faithful_chronology",
+        "faithful_structural_reconstruction"
+      ],
+      "prompt": "Use Faithful Structural mode to make this opinion less formulaic while preserving every position, owner, reason, concern, mitigation, date, and qualification. Return only the rewritten text.",
+      "source": "From my perspective, the redesign represents a meaningful improvement because it makes the settings easier to locate. At the same time, I remain concerned that the new navigation may confuse long-time users who are familiar with the current layout. That being said, the team can reduce this risk by keeping the old menu available until the end of September. Overall, I support the release, although I believe the transition requires careful communication.",
+      "constraints": {
+        "must_include": [
+          "meaningful improvement",
+          "settings easier to find",
+          "I remain concerned",
+          "new navigation",
+          "may confuse long-time users",
+          "current layout",
+          "team can reduce",
+          "old menu available",
+          "end of September",
+          "I support the release",
+          "transition requires careful communication"
+        ],
+        "must_match": [
+          "(?i)^(?:In my (?:view|opinion),\\s+)?The redesign"
+        ],
+        "must_not_include": [
+          "From my perspective",
+          "At the same time",
+          "That being said",
+          "Overall"
+        ],
+        "ordered_fragments": [
+          "meaningful improvement",
+          "I remain concerned",
+          "team can reduce",
+          "I support the release"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "The redesign is a meaningful improvement in my view because it makes the settings easier to find. I remain concerned about the new navigation, though: it may confuse long-time users who know the current layout. The team can reduce that risk by keeping the old menu available until the end of September. Despite that concern, I support the release, although I believe the transition requires careful communication.",
+      "failing_outputs": [
+        {
+          "label": "retains the original first-person transition template",
+          "output": "I see the redesign as a meaningful improvement because it makes the settings easier to find. At the same time, I remain concerned that the new navigation may confuse long-time users familiar with the current layout. However, the team can reduce this risk by keeping the old menu available until the end of September. On balance, I support the release, although I believe the transition requires careful communication.",
+          "expected_error": "required pattern missing"
+        },
+        {
+          "label": "drops opinion ownership and strengthens the concern",
+          "output": "The redesign is a meaningful improvement because it makes the settings easier to find. The new navigation will confuse long-time users who know the current layout. Keeping the old menu through September solves that problem. The release should proceed.",
+          "expected_error": "missing required fragment"
+        }
+      ]
+    },
+    {
+      "id": "faithful_structural_already_natural_restraint",
+      "faithful_mode": "structural",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "scientific_register",
+        "faithful_already_natural_restraint"
+      ],
+      "prompt": "Use Faithful Structural mode, but leave this already-natural methods passage unchanged. Return only the text.",
+      "source": "Samples were collected at 08:00 and stored at -80 °C before RNA extraction. If a sample exceeded 2 mL, only 2 mL was retained. Samples were not thawed until analysis.",
+      "constraints": {
+        "must_equal_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "Samples were collected at 08:00 and stored at -80 °C before RNA extraction. If a sample exceeded 2 mL, only 2 mL was retained. Samples were not thawed until analysis.",
+      "failing_outputs": [
+        {
+          "label": "reconstructs already-natural scientific form without need",
+          "output": "Before RNA extraction, samples were collected at 08:00 and stored at -80 °C. Only 2 mL was kept from samples that exceeded that volume. No samples were thawed before analysis.",
+          "expected_error": "changed already-natural source"
         }
       ]
     },
