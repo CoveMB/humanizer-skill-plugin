@@ -16,6 +16,7 @@ from tests.helpers.skill_artifacts import REPO_ROOT
 RUNNER_PATH = REPO_ROOT / "scripts" / "run_humanizer_evals.py"
 EVAL_CASES_PATH = REPO_ROOT / "evals" / "humanizer_eval_cases.json"
 SKILL_TRACE_PATH = "skills/editorial-humanizer/SKILL.md"
+FAITHFUL_SKILL_TRACE_PATH = "skills/faithful-humanizer/SKILL.md"
 DEFAULT_OUTPUT_CONTRACT_CASES = object()
 
 
@@ -137,7 +138,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             in {"dense_ai_rewrite", "dense_banned_list_scrub"}
         ]
 
-        self.assertGreaterEqual(len(cases), 10)
+        self.assertGreaterEqual(len(cases), 18)
         self.assertTrue({"explicit", "implicit", "contextual", "negative"}.issubset(categories))
         self.assertTrue(
             {
@@ -151,6 +152,9 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 "unsupported_benefit_substitution",
                 "epistemic_status_preservation",
                 "already_natural_restraint",
+                "faithful_attribution_modality_scope",
+                "faithful_promotional_opinion_chronology",
+                "faithful_exact_anchors_and_list_membership",
                 "negative_fact_check_only",
                 "negative_translate_only",
                 "negative_summary_only",
@@ -197,6 +201,29 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             if case.get("rubric_id"):
                 self.assertIn("rubric", case)
 
+    def test_eval_cases_cover_faithful_preservation_invariants(self):
+        cases = self.runner.load_eval_cases(EVAL_CASES_PATH)
+        faithful_cases = {
+            case["id"]: case
+            for case in cases
+            if case.get("target_skill") == "faithful-humanizer"
+        }
+
+        self.assertEqual(
+            set(faithful_cases),
+            {
+                "faithful_preserves_attribution_modality_scope",
+                "faithful_preserves_promotional_opinion_chronology",
+                "faithful_preserves_exact_anchors_and_list_membership",
+            },
+        )
+        for case in faithful_cases.values():
+            with self.subTest(case=case["id"]):
+                self.assertTrue(case["should_trigger"])
+                self.assertTrue(case["force_skill_file_read"])
+                self.assertFalse(case.get("force_reference_file_read", False))
+                self.assertIn(FAITHFUL_SKILL_TRACE_PATH, case["expected_trace_terms"])
+
     def test_all_cases_reject_humanizer_plugin_loader_warnings(self):
         cases = self.runner.load_eval_cases(EVAL_CASES_PATH)
 
@@ -231,6 +258,31 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                         ),
                     ]
                 }
+            )
+
+    def test_load_eval_cases_rejects_unknown_target_skill(self):
+        with self.assertRaisesRegex(ValueError, "unsupported target_skill"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(target_skill="unknown-humanizer")
+                    ]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_rejects_faithful_reference_catalog_reads(self):
+        with self.assertRaisesRegex(ValueError, "only supported for editorial-humanizer"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(
+                            target_skill="faithful-humanizer",
+                            force_reference_file_read=True,
+                        )
+                    ]
+                },
+                output_contract_cases={},
             )
 
     def test_load_eval_cases_rejects_unknown_output_contract_case_id(self):
@@ -396,6 +448,23 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         self.assertNotIn("Read `skills/editorial-humanizer/SKILL.md` before answering.", prompt)
         self.assertIn("Return only the final Editorial Humanizer output", prompt)
+
+    def test_build_codex_prompt_targets_faithful_skill(self):
+        case = {
+            "id": "faithful",
+            "target_skill": "faithful-humanizer",
+            "category": "explicit",
+            "should_trigger": True,
+            "force_skill_file_read": True,
+            "prompt": "Use $faithful-humanizer to edit only the form.",
+            "source": "Experts believe this may help some patients.",
+        }
+
+        prompt = self.runner.build_codex_prompt(case)
+
+        self.assertIn("Read `skills/faithful-humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Return only the final Faithful Humanizer output", prompt)
+        self.assertNotIn("skills/editorial-humanizer/SKILL.md", prompt)
 
     def test_build_codex_prompt_can_force_reference_file_read(self):
         case = {
@@ -732,30 +801,34 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 plugin_root.joinpath("skills", "editorial-humanizer", "SKILL.md").read_bytes(),
                 REPO_ROOT.joinpath("skills", "editorial-humanizer", "SKILL.md").read_bytes(),
             )
+            self.assertEqual(
+                plugin_root.joinpath("skills", "faithful-humanizer", "SKILL.md").read_bytes(),
+                REPO_ROOT.joinpath("skills", "faithful-humanizer", "SKILL.md").read_bytes(),
+            )
             self.assertFalse(plugin_root.joinpath(".git").exists())
             self.assertFalse(plugin_root.joinpath("tests").exists())
 
-    def test_verify_eval_plugin_is_model_visible_targets_editorial_skill(self):
+    def test_verify_eval_plugin_is_model_visible_targets_both_skills(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             installed_path = Path(temporary_directory) / "plugin"
-            expected_path = (
-                installed_path
-                / "skills"
-                / "editorial-humanizer"
-                / "SKILL.md"
-            ).resolve()
+            expected_paths = [
+                (installed_path / "skills" / skill_name / "SKILL.md").resolve()
+                for skill_name in ("editorial-humanizer", "faithful-humanizer")
+            ]
             with mock.patch.object(
                 self.runner,
                 "run_cli_json",
-                return_value={"prompt_input": str(expected_path)},
+                return_value={
+                    "prompt_input": [str(path) for path in expected_paths]
+                },
             ):
-                actual_path = self.runner.verify_eval_plugin_is_model_visible(
+                actual_paths = self.runner.verify_eval_plugin_is_model_visible(
                     "codex",
                     "humanizer-plugin@humanizer-eval-test",
                     installed_path,
                     {},
                 )
-            self.assertEqual(actual_path, str(expected_path))
+            self.assertEqual(actual_paths, [str(path) for path in expected_paths])
 
     def test_require_isolated_codex_home_rejects_missing_and_default_home(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

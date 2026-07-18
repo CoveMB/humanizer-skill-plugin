@@ -223,8 +223,10 @@ Humanize the form only. Do not change the substance.
 Preserve every claim, hedge, attribution, and example.
 ```
 
-Automatic selection varies by client. Use the explicit skill invocation whenever
-the distinction matters.
+Automatic selection varies by client. Use the client-specific activation form
+whenever the distinction matters. See
+[`Client-specific activation`](docs/skill-examples.md#client-specific-activation)
+for Codex, Claude Code, and OpenCode instructions.
 
 ## Installation
 
@@ -260,10 +262,19 @@ codex plugin add humanizer-plugin@humanizer-plugin-local
 codex plugin list
 ```
 
-### Plain Codex skills
+### Manual skill checkout
+
+The Plain Codex, Claude Code, and OpenCode instructions below copy from a local
+repository checkout. Create it first, then run the client-specific commands from
+the directory that contains `humanizer-skill-plugin`:
 
 ```bash
 git clone https://github.com/CoveMB/humanizer-skill-plugin.git
+```
+
+### Plain Codex skills
+
+```bash
 mkdir -p ~/.agents/skills/editorial-humanizer ~/.agents/skills/faithful-humanizer
 cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.agents/skills/editorial-humanizer/
 cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.agents/skills/faithful-humanizer/
@@ -311,10 +322,10 @@ cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.config/opencode/skills
 └── tests/
 ```
 
-The existing eval runner currently exercises Editorial Humanizer. Faithful
-Humanizer has deterministic contract tests focused on semantic preservation. A
-future live matrix should compare source and output for proposition coverage,
-modality, negation, scope, attribution, exact anchors, and forbidden additions.
+The eval runner exercises both Editorial Humanizer and Faithful Humanizer.
+Executable Faithful cases check attribution, modality, scope, supplied promotional
+claims, opinion, chronology, logical relations, exact anchors, list membership,
+and forbidden additions.
 
 ## Testing
 
@@ -324,7 +335,7 @@ Run deterministic tests:
 make test
 ```
 
-Validate the Editorial Humanizer eval matrix without invoking a model:
+Validate the Humanizer eval matrix without invoking a model:
 
 ```bash
 make eval-humanizer-dry-run
@@ -377,10 +388,11 @@ human-written. Detector evasion is not the objective.
 
 ## License
 
-Original repository code, plugin metadata, tests, documentation, and Faithful
-Humanizer are released under the MIT License.
+Original repository code, plugin metadata, tests, repository-authored
+documentation, and Faithful Humanizer are released under the MIT License.
 
-Wikipedia-derived material in Editorial Humanizer remains available under
-CC BY-SA 4.0. Attribution and license scope are documented in `NOTICE`.
+Wikipedia-derived material adapted into Editorial Humanizer skill instructions,
+reference material, examples, and related plugin documentation remains available
+under CC BY-SA 4.0. Attribution and license scope are documented in `NOTICE`.
 
 The plugin therefore reports `MIT AND CC-BY-SA-4.0` at the package level.

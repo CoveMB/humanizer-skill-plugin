@@ -236,6 +236,45 @@
       "rubric_id": "humanizer_rewrite"
     },
     {
+      "id": "faithful_preserves_attribution_modality_scope",
+      "target_skill": "faithful-humanizer",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $faithful-humanizer to make this read naturally while preserving every attribution, hedge, and scope qualifier. Return only the rewritten text.",
+      "source": "Experts believe the policy may improve outcomes for some patients.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "faithful_attribution_modality_scope"
+    },
+    {
+      "id": "faithful_preserves_promotional_opinion_chronology",
+      "target_skill": "faithful-humanizer",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $faithful-humanizer to improve only the form. Preserve the promotional claim, speaker, chronology, concession, uncertainty, and scope. Return only the rewritten text.",
+      "source": "On Tuesday, I said the Atlas system was a robust foundation for scalable workflows, although it may not help every team.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "faithful_promotional_opinion_chronology"
+    },
+    {
+      "id": "faithful_preserves_exact_anchors_and_list_membership",
+      "target_skill": "faithful-humanizer",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $faithful-humanizer to improve only the surrounding prose. Preserve every command, version, URL, and list item exactly. Return only the rewritten text.",
+      "source": "Keep these deployment checks: run make test, verify API v2.1, and review https://example.com/policy.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "faithful_exact_anchors_and_list_membership"
+    },
+    {
       "id": "negative_fact_check_only",
       "category": "negative",
       "should_trigger": false,

@@ -2,8 +2,8 @@
 
 This repository ships two related but intentionally different skills:
 
-- **Editorial Humanizer** (`$editorial-humanizer`) applies broad editorial judgment.
-- **Faithful Humanizer** (`$faithful-humanizer`) edits form while preserving substance.
+- **Editorial Humanizer** (`editorial-humanizer`) applies broad editorial judgment.
+- **Faithful Humanizer** (`faithful-humanizer`) edits form while preserving substance.
 
 Use the explicit invocation whenever the distinction matters.
 
@@ -256,10 +256,15 @@ The Editorial version removes significance inflation and comments on the weak
 source. The Faithful version preserves the significance claim, attribution, hedge,
 and scope.
 
-## Deterministic activation
+## Client-specific activation
 
-Use explicit activation for support instructions, reproducible evals, review
-handoffs, and high-stakes preservation requirements:
+Activation syntax depends on the client. Use the exact skill name for support
+instructions, reproducible evals, review handoffs, and high-stakes preservation
+requirements.
+
+### Codex
+
+Codex accepts the `$skill-name` form:
 
 ```text
 Use $editorial-humanizer to rewrite this:
@@ -270,6 +275,35 @@ Use $editorial-humanizer to rewrite this:
 Use $faithful-humanizer to humanize the form only:
 [paste draft]
 ```
+
+### Claude Code
+
+Claude Code exposes installed skills as slash commands:
+
+```text
+/editorial-humanizer Rewrite this:
+[paste draft]
+```
+
+```text
+/faithful-humanizer Humanize the form only:
+[paste draft]
+```
+
+### OpenCode
+
+OpenCode agents discover installed skills and load the selected instructions with
+the native `skill` tool. Ask the agent to load the exact skill name before giving
+the editing request:
+
+```text
+Load `faithful-humanizer` with the skill tool, then humanize the form only:
+[paste draft]
+```
+
+This repository does not define a direct OpenCode invocation command. For a
+reproducible check, inspect the session trace and confirm that the `skill` tool
+loaded the selected skill's `SKILL.md`.
 
 Do not rely on automatic skill selection when choosing the wrong editing contract
 could change the content.

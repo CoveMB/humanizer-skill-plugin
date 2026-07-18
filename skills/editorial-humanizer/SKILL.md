@@ -21,14 +21,21 @@ sources:
   - Wikipedia "Signs of AI writing" / WikiProject AI Cleanup
   - stop-slop by Hardik Pandya for checklist and scoring-gate concepts
   - Tagore by Apurv Ray for the combined catalog-plus-scoring workflow
+  - Avoid AI Writing by Conor Bronsdon for targeted edits and contextual signals
+  - Skill Deslop by Stephen Turner for scientific-register considerations
 ---
 
-# Editorial Humanizer: Fact-Safe Anti-Slop Editor
+# Editorial Humanizer: Fact-Safe Editorial Rewrite
 
 ## Purpose
 
 Rewrite AI-drafted or AI-sounding prose so it reads like deliberate human writing.
-Use editorial judgment rather than limiting changes to surface form.
+This is the substantive, voice-oriented Humanizer: use editorial judgment rather
+than limiting changes to surface form.
+
+**Direct distinction:** Editorial Humanizer may change selection, structure,
+emphasis, and rhetorical presentation. Faithful Humanizer may change only surface
+form.
 
 Editorial Humanizer may:
 
@@ -49,11 +56,11 @@ hedge, negation, attribution, example, list item, and logical relation to surviv
 When given text to humanize:
 
 1. Identify AI-writing patterns and structural problems.
-2. Rewrite the problematic passages rather than mechanically swapping words.
+2. Repair the smallest span that resolves each problem when the passage is sound.
 3. Preserve factual integrity and supplied anchor terms.
 4. Match the intended register or a supplied writing sample.
 5. Add voice only where the source and context support it.
-6. Run the quality gate and final semantic audit before returning the result.
+6. Run the editorial and factual-integrity checks before returning the result.
 
 ## Hard rules
 
@@ -66,29 +73,40 @@ When given text to humanize:
 3. **Preserve epistemic status.** Do not turn attributed, uncertain, or unsupported
    claims into facts. Attribution and uncertainty are not interchangeable. Keep the
    original status, remove the claim, or ask a precise source question.
-4. **Prefer the smallest faithful rewrite.** Do not add framing to compensate for
-   material you removed. One plain sentence is enough when it contains all the
-   supported concrete content.
+4. **Use the smallest sufficient intervention.** Preserve sound sentences and edit
+   only the phrase, clause, or passage causing the problem. Rewrite a paragraph or
+   section more broadly only when its structure, argument flow, or repeated patterns
+   cannot be repaired locally. Do not add framing to compensate for material you
+   removed. One plain sentence is enough when it contains all the supported concrete
+   content.
 5. **Rewrite mode is not audit mode.** In a rewrite-only response, remove discarded
    hype and filler instead of replacing it with commentary about missing evidence.
    Reserve explanations for an audit, comparison, or requested source question.
-6. **No em dashes by default.** Use commas, periods, colons, semicolons, or
-   parentheses unless the user explicitly asks to preserve them.
-7. **No forced rule-of-three lists.** Keep only items that carry real content. Do
-   not invent a third item or preserve generic filler merely to maintain a triad.
+6. **Preserve fitting punctuation.** Keep punctuation that suits the author, genre,
+   locale, and supplied style guide. Revise em dashes, semicolons, colons,
+   parentheses, ellipses, quotation marks, title case, or Oxford commas only when
+   they are overused, repetitive, unclear, inconsistent, or explicitly disallowed.
+   A single em dash is not an AI tell by itself.
+7. **Do not force rule-of-three lists.** Preserve a three-item list when all three
+   items are meaningful. Remove or reshape a triad only when it is padded,
+   repetitive, or part of a repeated formula. Do not invent a third item or preserve
+   generic filler merely to maintain a triad.
    Do not translate `fostering alignment` into `helping teams stay on the same page`.
-8. **No contrast framing as a crutch.** Avoid repeated "not X, but Y" and
-   escalation ladders when a direct statement works.
-9. **No `not just` phrasing.** State the supported point directly.
-10. **No dramatic staccato bursts.** Do not stack short sentences to manufacture
-   importance.
-11. **No rhetorical transition hooks.** Remove "The catch?", "Here's the thing,"
-   "So what does this mean?", and similar setup lines unless they serve a real
-   rhetorical purpose.
+8. **Do not use contrast framing as a crutch.** Revise repeated "not X, but Y"
+   formulas and escalation ladders when a direct statement works. Preserve an
+   isolated contrast when it carries real argumentative or rhetorical meaning.
+9. **Treat `not just` as a contextual signal.** Prefer a direct statement when the
+   phrase adds only emphasis, but preserve it when the contrast is load-bearing.
+10. **Avoid manufactured staccato.** Do not stack short sentences merely to create
+   importance; preserve deliberate fragments when they fit the voice and genre.
+11. **Evaluate rhetorical transition hooks.** Remove "The catch?", "Here's the
+   thing," "So what does this mean?", and similar setup lines when they are empty or
+   repeated. Preserve an intentional hook that earns its place.
 12. **No fake naming.** Do not turn ordinary ideas into invented title-cased
    frameworks, methods, paradoxes, loops, or flywheels.
-13. **No self-narration.** Replace "this highlights," "the key takeaway is," and
-   similar announcements with the point itself.
+13. **Remove empty self-narration.** Replace "this highlights," "the key takeaway
+   is," and similar announcements when they merely announce the point. Preserve
+   meaning-bearing metadiscourse required by the genre or argument.
 14. **No chatbot wrapper.** Do not add praise, a preamble, "I hope this helps," or a
    closing invitation around a rewrite.
 15. **No vague attribution presented as evidence.** `Some say` is still vague
@@ -117,6 +135,21 @@ Allowed editorial changes include:
 - retaining only the strongest supported formulation of a repeated idea.
 
 Do not use this latitude when the user explicitly asks for form-only preservation.
+
+## Contextual pattern judgment
+
+AI-associated patterns are diagnostic signals, not proof of authorship and not
+automatic edit instructions. Before changing a flagged passage, ask:
+
+1. Is the pattern isolated, or does it cluster or repeat?
+2. Is it normal for the genre, register, locale, or supplied style guide?
+3. Is it intentional or characteristic of the author's voice?
+4. Does it carry technical, logical, or rhetorical meaning?
+5. Will the proposed change actually improve the passage without inventing or
+   flattening content?
+
+Edit when the answers support intervention. Otherwise preserve the wording. Never
+make a consequential claim about who wrote a text from these signals.
 
 ## Factual and anchor preservation
 
@@ -148,8 +181,9 @@ friction, productivity, attention, judgment, or decisions.
 
 ## Pattern catalog
 
-For dense drafts, read `references/banned-list.md`. It contains the detailed phrase,
-structure, vocabulary, formatting, and rhetorical-pattern catalog.
+For dense drafts, read `references/pattern-catalog.md`. It contains detailed phrase,
+structure, vocabulary, formatting, and rhetorical signals with contextual
+carve-outs. A catalog match starts an evaluation; it does not decide the edit.
 
 The main categories are:
 
@@ -160,8 +194,9 @@ formulaic challenge sections, superficial `-ing` analysis, and generic conclusio
 
 ### Language and grammar
 
-Watch for clustered AI vocabulary, copula avoidance, negative parallelism, forced
-triads, synonym cycling, false ranges, passive voice, and subjectless fragments.
+Watch for clustered AI vocabulary, copula avoidance, negative parallelism, repeated
+or padded triads, synonym cycling, false ranges, unclear agency, and subjectless
+fragments. Passive voice is not a problem by itself.
 
 ### Structure and formatting
 
@@ -177,6 +212,26 @@ self-narration, rhetorical hooks, and signposting announcements.
 
 Cut throat-clearing and redundant qualification while preserving the actual level
 of uncertainty needed by the surviving claim.
+
+## Scientific and academic profile
+
+For scientific or academic prose, read
+`../references/registers/scientific-writing.md`. Use it as genre-specific editorial
+guidance, not as permission to strengthen the science.
+
+This profile may:
+
+- remove empty significance claims and formulaic conclusions;
+- ask for a citation when a vague attribution needs evidentiary support;
+- tighten redundant discussion text;
+- make a supplied scientific implication more explicit; and
+- restructure paragraphs whose argument flow is weak.
+
+It must preserve epistemic caution, evidence boundaries, citation attribution,
+statistical meaning, technical definitions, repeated exact terminology when needed
+for precision, and legitimate passive constructions. Never replace `was measured`
+with `we measured` unless the source establishes the actor. Do not make an abstract,
+manuscript, or grant narrative conversational merely to make it sound human.
 
 ## Voice calibration
 
@@ -213,14 +268,18 @@ Run this process internally:
 1. **Map the source.** Record facts, anchors, attribution, uncertainty, benefits,
    causal explanations, supplied attitudes, and what is unavailable.
 2. **Calibrate voice.** Use the source register or supplied writing sample.
-3. **Diagnose patterns.** Read `references/banned-list.md` for dense drafts.
-4. **Rewrite editorially.** Remove or reshape material that clearly weakens the text.
+3. **Diagnose patterns contextually.** Read `references/pattern-catalog.md` for dense
+   drafts and the scientific-register reference when applicable.
+4. **Rewrite editorially.** Make targeted edits first. Remove or reshape material
+   that clearly weakens the text; broaden the rewrite only when local repair cannot
+   solve a structural problem.
 5. **Check factual integrity.** Confirm that every concrete detail comes from the
    source or user.
-6. **Run the mechanical checklist.** Remove remaining AI tells and substitute tells.
-7. **Score privately.** Apply the quality gate below and revise if it fails.
-8. **Self-audit.** Ask what still makes the result obviously generated.
-9. **Deliver.** Return the requested output format.
+6. **Run the contextual checklist.** Check remaining patterns without treating an
+   isolated occurrence as a failure.
+7. **Self-audit.** Ask what still feels formulaic and whether every edit improved the
+   passage. Restore sound source wording when it did not.
+8. **Deliver.** Return the requested output format.
 
 ## Mechanical checklist
 
@@ -230,15 +289,19 @@ Before returning the rewrite, check for:
 - dropped anchor nouns or scope-defining phrases;
 - invented benefits, causal explanations, attitudes, or substitute filler;
 - lost attribution, uncertainty, or other epistemic qualifiers;
-- repeated triads, contrast formulas, or staccato drama;
+- repeated or padded triads, contrast formulas, or staccato drama;
 - rhetorical hooks, self-narration, fake names, and chatbot wrappers;
 - vague attribution treated as evidence;
-- metronomic paragraph rhythm or a generic positive ending;
+- metronomic paragraph rhythm or a generic positive ending, considered in context;
 - a stronger factual claim than the source supports.
 
-## Quality gate
+Do not fail this check because of one em dash, one semicolon, one three-item list,
+one use of `important`, passive voice, technical jargon, title case, or curly quotes.
 
-Score privately from 1 to 10 on each dimension.
+## User-requested editorial quality score
+
+Use this score only when the user requests an audit or score. It evaluates editorial
+quality, not whether AI wrote the text. Score from 1 to 10 on each dimension.
 
 ### Mechanics
 
@@ -264,6 +327,11 @@ Score privately from 1 to 10 on each dimension.
 - Mechanics must be at least 35/50.
 - Substance must be at least 21/30.
 - Factual integrity must be at least 9/10.
+
+The thresholds guide the requested editorial audit. Deterministic observations such
+as phrase counts, sentence-length distributions, repeated transitions, punctuation
+density, or paragraph uniformity are advisory evidence only. They must not produce
+an AI-authorship verdict, set the score mechanically, or force arbitrary variation.
 
 If factual integrity fails, revise, keep the claim general, remove it, or ask for the
 missing fact. Never fill the gap yourself.
@@ -302,4 +370,4 @@ inventing a replacement benefit or turning the rewrite into an audit.
 
 ## Reference
 
-This skill is based on [Wikipedia: Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup. The checklist and scoring-gate structure are adapted from stop-slop by Hardik Pandya and Tagore by Apurv Ray.
+This skill is based on [Wikipedia: Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup. The checklist and scoring-gate structure are adapted from stop-slop by Hardik Pandya and Tagore by Apurv Ray. Contextual signal handling and targeted-edit principles were informed by Avoid AI Writing by Conor Bronsdon. Scientific-register considerations were informed by Skill Deslop by Stephen Turner, with its blanket active-voice and punctuation rules intentionally excluded.

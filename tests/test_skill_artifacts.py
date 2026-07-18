@@ -18,6 +18,7 @@ WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "test.yml"
 LIVE_EVAL_WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "live-eval.yml"
 FAITHFUL_SKILL_PATH = REPO_ROOT / "skills" / "faithful-humanizer" / "SKILL.md"
 RESEARCH_PATH = REPO_ROOT / "docs" / "faithful-humanizer-research.md"
+SKILL_EXAMPLES_PATH = REPO_ROOT / "docs" / "skill-examples.md"
 
 
 class EditorialHumanizerArtifactTests(unittest.TestCase):
@@ -37,6 +38,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             REFERENCE_PATH,
             FAITHFUL_SKILL_PATH,
             RESEARCH_PATH,
+            SKILL_EXAMPLES_PATH,
         ]:
             with self.subTest(path=path):
                 self.assertTrue(path.exists(), path)
@@ -214,8 +216,49 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             with self.subTest(term=term):
                 self.assertIn(term, self.readme_markdown)
 
+    def test_manual_installations_share_an_explicit_checkout_prerequisite(self):
+        clone_command = (
+            "git clone https://github.com/CoveMB/humanizer-skill-plugin.git"
+        )
+        checkout_position = self.readme_markdown.index("### Manual skill checkout")
+        clone_position = self.readme_markdown.index(clone_command)
+        plain_position = self.readme_markdown.index("### Plain Codex skills")
+        claude_position = self.readme_markdown.index("### Claude Code")
+        opencode_position = self.readme_markdown.index("### OpenCode")
+
+        self.assertLess(checkout_position, clone_position)
+        self.assertLess(clone_position, plain_position)
+        self.assertLess(plain_position, claude_position)
+        self.assertLess(claude_position, opencode_position)
+        for skill_name in ("editorial-humanizer", "faithful-humanizer"):
+            source_path = f"humanizer-skill-plugin/skills/{skill_name}"
+            self.assertGreaterEqual(self.readme_markdown.count(source_path), 3)
+
+    def test_client_specific_activation_uses_supported_forms(self):
+        examples = read_text(SKILL_EXAMPLES_PATH)
+        normalized_examples = " ".join(examples.split())
+
+        self.assertIn("## Client-specific activation", examples)
+        self.assertIn("Codex accepts the `$skill-name` form", normalized_examples)
+        self.assertIn("Use $editorial-humanizer", examples)
+        self.assertIn("Use $faithful-humanizer", examples)
+        self.assertIn("Claude Code exposes installed skills as slash commands", normalized_examples)
+        self.assertIn("/editorial-humanizer", examples)
+        self.assertIn("/faithful-humanizer", examples)
+        self.assertIn("native `skill` tool", normalized_examples)
+        self.assertIn(
+            "does not define a direct OpenCode invocation command",
+            normalized_examples,
+        )
+        self.assertIn(
+            "docs/skill-examples.md#client-specific-activation",
+            self.readme_markdown,
+        )
+
     def test_license_metadata_discloses_mixed_scope(self):
         notice = read_text(REPO_ROOT / "NOTICE")
+        normalized_readme = " ".join(self.readme_markdown.split())
+        normalized_notice = " ".join(notice.split())
         self.assertEqual(self.manifest["license"], "MIT AND CC-BY-SA-4.0")
         self.assertEqual(
             frontmatter_scalar(self.frontmatter, "license"),
@@ -229,6 +272,21 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         ]:
             with self.subTest(term=term):
                 self.assertIn(term, notice + self.readme_markdown)
+        self.assertIn(
+            "tests, repository-authored documentation, and Faithful Humanizer "
+            "are released under the MIT License",
+            normalized_readme,
+        )
+        self.assertIn(
+            "Editorial Humanizer skill instructions, reference material, examples, "
+            "and related plugin documentation remains available under CC BY-SA 4.0",
+            normalized_readme,
+        )
+        self.assertIn(
+            "Adapted, reorganized, and expanded into Editorial Humanizer's skill "
+            "instructions, reference catalog, examples, and plugin documentation",
+            normalized_notice,
+        )
 
     def test_repo_marketplace_points_at_git_plugin_root(self):
         self.assertEqual(self.marketplace["name"], "humanizer-plugin-local")

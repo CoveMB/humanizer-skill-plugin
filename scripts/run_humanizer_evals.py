@@ -33,6 +33,19 @@ PLUGIN_PACKAGE_FILES = ("README.md", "NOTICE", "LICENSE")
 PLUGIN_PROVENANCE_FILENAME = "plugin-provenance.json"
 VALID_CATEGORIES = {"explicit", "implicit", "contextual", "negative"}
 REQUIRED_CASE_KEYS = {"id", "category", "should_trigger", "prompt", "source"}
+DEFAULT_TARGET_SKILL = "editorial-humanizer"
+TARGET_SKILL_DISPLAY_NAMES = {
+    "editorial-humanizer": "Editorial Humanizer",
+    "faithful-humanizer": "Faithful Humanizer",
+}
+EDITORIAL_PATTERN_CATALOG_PATH = (
+    "skills/editorial-humanizer/references/pattern-catalog.md"
+)
+SCIENTIFIC_REGISTER_PATH = "skills/references/registers/scientific-writing.md"
+REFERENCE_TARGET_SKILLS = {
+    EDITORIAL_PATTERN_CATALOG_PATH: {"editorial-humanizer"},
+    SCIENTIFIC_REGISTER_PATH: set(TARGET_SKILL_DISPLAY_NAMES),
+}
 DEFAULT_FORBIDDEN_STDERR_TERMS = (
     'plugin="humanizer-plugin" error=invalid marketplace',
     'plugin="humanizer@humanizer-local"',
@@ -210,19 +223,27 @@ def verify_eval_plugin_is_model_visible(
             "prompt-input",
             "-c",
             f'plugins."{plugin_id}".enabled=true',
-            "Use Editorial Humanizer to rewrite this text.",
+            "Use Editorial Humanizer and Faithful Humanizer to rewrite this text.",
         ],
         environment,
         "eval plugin provenance check",
     )
-    expected_skill_path = (
-        Path(installed_path) / "skills" / "editorial-humanizer" / "SKILL.md"
-    ).resolve()
-    if str(expected_skill_path) not in json.dumps(prompt_input):
+    expected_skill_paths = [
+        (Path(installed_path) / "skills" / target_skill / "SKILL.md").resolve()
+        for target_skill in TARGET_SKILL_DISPLAY_NAMES
+    ]
+    prompt_input_json = json.dumps(prompt_input)
+    missing_skill_paths = [
+        str(skill_path)
+        for skill_path in expected_skill_paths
+        if str(skill_path) not in prompt_input_json
+    ]
+    if missing_skill_paths:
         raise RuntimeError(
-            "installed checkout skill is not present in the model-visible prompt input"
+            "installed checkout skill(s) are not present in the model-visible prompt input: "
+            + ", ".join(missing_skill_paths)
         )
-    return str(expected_skill_path)
+    return [str(skill_path) for skill_path in expected_skill_paths]
 
 
 def cleanup_eval_plugin(
@@ -314,7 +335,7 @@ def installed_eval_plugin(codex_bin, repo_root, artifacts_dir, codex_home):
                 plugin_id,
                 install_result,
             )
-            model_visible_skill_path = verify_eval_plugin_is_model_visible(
+            model_visible_skill_paths = verify_eval_plugin_is_model_visible(
                 codex_bin,
                 plugin_id,
                 provenance["installedPath"],
@@ -323,7 +344,7 @@ def installed_eval_plugin(codex_bin, repo_root, artifacts_dir, codex_home):
             provenance.update(
                 {
                     "checkoutPath": str(Path(repo_root).resolve()),
-                    "modelVisibleSkillPath": model_visible_skill_path,
+                    "modelVisibleSkillPaths": model_visible_skill_paths,
                 }
             )
             artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -404,10 +425,26 @@ def validate_eval_case(case):
 
     require_optional_boolean(case, "force_skill_file_read")
     require_optional_boolean(case, "force_reference_file_read")
+    require_string_list(case, "force_reference_file_reads")
     require_string_list(case, "expected_trace_terms")
     require_string_list(case, "forbidden_trace_terms")
     require_string_list(case, "expected_stderr_terms")
     require_string_list(case, "forbidden_stderr_terms")
+
+    target_skill = case.get("target_skill", DEFAULT_TARGET_SKILL)
+    if target_skill not in TARGET_SKILL_DISPLAY_NAMES:
+        raise ValueError(f"{case['id']}: unsupported target_skill {target_skill!r}")
+    for reference_path in reference_paths_for_case(case):
+        supported_targets = REFERENCE_TARGET_SKILLS.get(reference_path)
+        if supported_targets is None:
+            raise ValueError(
+                f"{case['id']}: unsupported reference path {reference_path!r}"
+            )
+        if target_skill not in supported_targets:
+            raise ValueError(
+                f"{case['id']}: reference {reference_path!r} is not supported for "
+                f"{target_skill}"
+            )
 
     output_contract_case_id = case.get("output_contract_case_id")
     if output_contract_case_id is not None and not isinstance(output_contract_case_id, str):
@@ -622,12 +659,31 @@ def load_output_contract_cases():
     return {case["id"]: case for case in load_fixture_cases()}
 
 
+def target_skill_for_case(case):
+    return case.get("target_skill", DEFAULT_TARGET_SKILL)
+
+
+def reference_paths_for_case(case):
+    reference_paths = []
+    if case.get("force_reference_file_read", False):
+        reference_paths.append(EDITORIAL_PATTERN_CATALOG_PATH)
+    reference_paths.extend(case.get("force_reference_file_reads", []))
+    return unique_strings(reference_paths)
+
+
+def target_skill_path(case, plugin_root=None):
+    skill_path = Path("skills") / target_skill_for_case(case) / "SKILL.md"
+    if plugin_root is not None:
+        skill_path = Path(plugin_root) / skill_path
+    return skill_path
+
+
 def build_codex_prompt(case, plugin_root=None):
     prompt_lines = []
+    target_skill = target_skill_for_case(case)
+    target_skill_display_name = TARGET_SKILL_DISPLAY_NAMES[target_skill]
     if case.get("force_skill_file_read", False):
-        skill_path = Path("skills/editorial-humanizer/SKILL.md")
-        if plugin_root is not None:
-            skill_path = Path(plugin_root) / skill_path
+        skill_path = target_skill_path(case, plugin_root=plugin_root)
         prompt_lines.extend(
             [
                 f"Read `{skill_path}` before answering.",
@@ -635,14 +691,14 @@ def build_codex_prompt(case, plugin_root=None):
                 "",
             ]
         )
-    if case.get("force_reference_file_read", False):
-        reference_path = Path("skills/editorial-humanizer/references/banned-list.md")
+    for reference_path_value in reference_paths_for_case(case):
+        reference_path = Path(reference_path_value)
         if plugin_root is not None:
             reference_path = Path(plugin_root) / reference_path
         prompt_lines.extend(
             [
                 f"Read `{reference_path}` before answering.",
-                "Reading the banned-list reference is essential for this dense-draft eval.",
+                "Reading this reference is essential for this eval.",
                 "",
             ]
         )
@@ -661,7 +717,9 @@ def build_codex_prompt(case, plugin_root=None):
     )
 
     if case["should_trigger"]:
-        prompt_lines.append("Return only the final Editorial Humanizer output, with no eval commentary.")
+        prompt_lines.append(
+            f"Return only the final {target_skill_display_name} output, with no eval commentary."
+        )
     else:
         prompt_lines.append("Return only the final answer, with no eval commentary.")
 
@@ -692,7 +750,7 @@ def build_rubric_prompt(case, output_text):
     }
     return "\n".join(
         [
-            "Grade this Editorial Humanizer eval output against the rubric.",
+            "Grade this Humanizer eval output against the rubric.",
             "Use only the source and output below. Do not infer outside facts.",
             f"Minimum total score: {rubric['minimum_total_score']}",
             f"Minimum dimension score: {rubric['minimum_dimension_score']}",
@@ -1102,6 +1160,7 @@ def run_eval_case(
     summary = {
         "id": case["id"],
         "category": case["category"],
+        "target_skill": target_skill_for_case(case),
         "returncode": None,
         "trace_path": str(trace_path),
         "output_path": str(output_path),
@@ -1233,15 +1292,18 @@ def run_eval_suite(
 
 
 def print_dry_run(cases):
-    print(f"would run {len(cases)} Editorial Humanizer eval case(s)")
+    print(f"would run {len(cases)} Humanizer eval case(s)")
     for case in cases:
         trigger_label = "trigger" if case["should_trigger"] else "no-trigger"
-        print(f"- {case['id']} [{case['category']}, {trigger_label}]")
+        print(
+            f"- {case['id']} "
+            f"[{target_skill_for_case(case)}, {case['category']}, {trigger_label}]"
+        )
 
 
 def print_summary(summaries, summary_path):
     passed_count = sum(1 for summary in summaries if summary["passed"])
-    print(f"passed {passed_count}/{len(summaries)} Editorial Humanizer eval case(s)")
+    print(f"passed {passed_count}/{len(summaries)} Humanizer eval case(s)")
     print(f"summary: {summary_path}")
 
     for summary in summaries:
@@ -1250,7 +1312,7 @@ def print_summary(summaries, summary_path):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Run live Codex evals for Editorial Humanizer.")
+    parser = argparse.ArgumentParser(description="Run live Codex evals for Humanizer skills.")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES_PATH)
     parser.add_argument("--artifacts-dir", type=Path, default=DEFAULT_ARTIFACTS_DIR)
     parser.add_argument("--codex-bin", default="codex")

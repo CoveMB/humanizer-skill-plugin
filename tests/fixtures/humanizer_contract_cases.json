@@ -420,6 +420,88 @@
       }
     },
     {
+      "id": "faithful_attribution_modality_scope",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_attribution",
+        "faithful_modality",
+        "faithful_scope"
+      ],
+      "prompt": "Make this read naturally while preserving every attribution, hedge, and scope qualifier. Return only the rewritten text.",
+      "source": "Experts believe the policy may improve outcomes for some patients.",
+      "constraints": {
+        "must_include": [
+          "Experts believe",
+          "the policy",
+          "may improve outcomes",
+          "some patients"
+        ],
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "faithful_promotional_opinion_chronology",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_opinion",
+        "faithful_chronology",
+        "faithful_logical_relation"
+      ],
+      "prompt": "Improve only the form. Preserve the promotional claim, speaker, chronology, concession, uncertainty, and scope. Return only the rewritten text.",
+      "source": "On Tuesday, I said the Atlas system was a robust foundation for scalable workflows, although it may not help every team.",
+      "constraints": {
+        "must_include": [
+          "On Tuesday",
+          "I said",
+          "Atlas system",
+          "robust foundation",
+          "scalable workflows",
+          "although",
+          "may not help every team"
+        ],
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "faithful_exact_anchors_and_list_membership",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_exact_anchors",
+        "faithful_list_membership"
+      ],
+      "prompt": "Improve only the surrounding prose. Preserve every command, version, URL, and list item exactly. Return only the rewritten text.",
+      "source": "Keep these deployment checks: run make test, verify API v2.1, and review https://example.com/policy.",
+      "constraints": {
+        "must_include": [
+          "run make test",
+          "verify API v2.1",
+          "review https://example.com/policy"
+        ],
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
       "id": "negative_fact_check_only",
       "mode": "answer",
       "tags": [

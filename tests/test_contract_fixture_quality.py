@@ -100,6 +100,43 @@ class ContractFixtureQualityTests(unittest.TestCase):
             with self.subTest(case=case["id"]):
                 self.assertTrue(case["constraints"].get("no_rule_of_three", False))
 
+    def test_faithful_contracts_cover_core_preservation_invariants(self):
+        faithful_cases = {
+            case["id"]: case
+            for case in self.cases
+            if case["id"].startswith("faithful_")
+        }
+
+        self.assertEqual(
+            set(faithful_cases),
+            {
+                "faithful_attribution_modality_scope",
+                "faithful_promotional_opinion_chronology",
+                "faithful_exact_anchors_and_list_membership",
+            },
+        )
+        covered_tags = {
+            tag for case in faithful_cases.values() for tag in case["tags"]
+        }
+        self.assertTrue(
+            {
+                "faithful_attribution",
+                "faithful_modality",
+                "faithful_scope",
+                "faithful_opinion",
+                "faithful_chronology",
+                "faithful_logical_relation",
+                "faithful_exact_anchors",
+                "faithful_list_membership",
+            }.issubset(covered_tags)
+        )
+        for case in faithful_cases.values():
+            with self.subTest(case=case["id"]):
+                constraints = case["constraints"]
+                self.assertTrue(constraints["rewrite_only"])
+                self.assertTrue(constraints["no_new_numbers"])
+                self.assertTrue(constraints["no_new_named_entities"])
+
 
 if __name__ == "__main__":
     unittest.main()

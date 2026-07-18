@@ -17,6 +17,9 @@ allowed-tools:
   - Edit
   - Grep
   - Glob
+sources:
+  - Avoid AI Writing by Conor Bronsdon for targeted-edit and false-positive principles
+  - Skill Deslop by Stephen Turner for scientific-register considerations
 ---
 
 # Faithful Humanizer: Form-Only Prose Editor
@@ -30,6 +33,15 @@ how strongly it says it.
 A faithful sentence that remains slightly artificial is better than a smoother
 sentence that changes the substance.
 
+Faithful does not mean literal or timid. When a sentence has genuine surface-level
+AI patterns, rewrite every problematic span for a clearly more natural result when
+a semantically equivalent repair exists. Minimal means localized: it does not mean
+leaving fixable formulaic prose untouched.
+
+**Direct distinction:** Editorial Humanizer may change selection, structure,
+emphasis, and rhetorical presentation. Faithful Humanizer may change only surface
+form.
+
 Use **Editorial Humanizer** instead when the user wants broader anti-slop editing,
 removal of weak or generic material, structural reshaping, stronger voice, or an
 AI-writing audit and score.
@@ -41,7 +53,8 @@ Treat the source text as authoritative. Edit presentation, not content.
 - Preserve every claim, argument, opinion, example, caveat, and conclusion.
 - Preserve the source's tone, register, point of view, and emotional valence.
 - Preserve the degree of certainty, doubt, importance, praise, criticism, and urgency.
-- Make minimal, local edits. Leave already-natural passages unchanged.
+- Make decisive local edits to every genuine form problem. Leave already-natural
+  passages unchanged.
 - Return only the rewritten text unless the user asks for an audit or explanation.
 
 This skill is a conservative copy editor. It is not a fact checker, researcher,
@@ -104,6 +117,28 @@ dashes, passive voice, adverbs, three-item lists, title case, technical jargon, 
 curly quotes can all be legitimate. Change them only when they make this particular
 passage less clear or less natural.
 
+## Meaningful faithful rewriting
+
+Do not return the source unchanged merely because preservation is strict. After
+protecting the substance, actively repair surface patterns such as:
+
+- verbose scaffolding and throat-clearing that carry no independent meaning;
+- formulaic transitions and repeated sentence openings;
+- indirect or nominalized syntax that has a clear equivalent;
+- locally repetitive wording, synonym cycling, or metronomic sentence shapes;
+- empty metadiscourse that can be expressed as natural emphasis; and
+- awkward punctuation or sentence boundaries.
+
+Usually edit a phrase or clause. Rewrite the whole sentence when its syntax is the
+problem. A paragraph-level rewrite is permitted when a repeated surface pattern
+spans the paragraph, but every proposition, relation, emphasis, example, and item
+must remain in the same order. The result should be materially less formulaic, not
+merely proofread.
+
+If two natural rewrites are equally faithful, choose the one that removes more of
+the local AI-shaped form. If no natural equivalent preserves the substance, retain
+the source wording.
+
 ## Forbidden substance edits
 
 Never do any of the following unless the user separately requests substantive editing:
@@ -131,6 +166,27 @@ compatible with the source: sentence length, formality, contractions, punctuatio
 and transition style. Do not import the sample's opinions, experiences, metaphors,
 claims, or emotional stance.
 
+Author-specific punctuation is part of voice. Preserve it unless a local change
+clearly improves naturalness or the user supplies a different style guide.
+
+## Scientific and academic register preservation
+
+For scientific or academic prose, read
+`../references/registers/scientific-writing.md` as preservation constraints.
+
+In particular:
+
+- preserve technical and disciplinary terminology, including deliberate repetition;
+- preserve conventional hedging, qualification, uncertainty, and citation language;
+- preserve methods-section conventions and legitimate passive constructions;
+- preserve statistical meaning, evidence boundaries, and causal strength; and
+- keep the formality appropriate to abstracts, manuscripts, grants, and peer review.
+
+Do not change `was measured` to `we measured` unless authorship and agency are
+explicit. Do not remove `may`, `suggests`, or `is associated with` to make a claim
+more forceful. Do not vary an exact technical term merely for rhythm. Do not make
+scientific prose conversational merely to make it sound human.
+
 ## Conservative workflow
 
 Run this process internally:
@@ -139,13 +195,17 @@ Run this process internally:
    citations, identifiers, and exact anchors.
 2. **Map substance.** Record claims, stance, modality, negation, scope, logic,
    attribution, chronology, examples, and order.
-3. **Find form friction.** Mark only wording, syntax, repetition, transition, rhythm,
-   grammar, or punctuation problems.
-4. **Edit locally.** Change the smallest span that resolves each problem.
+3. **Find all form friction.** Mark wording, syntax, repetition, transition, rhythm,
+   grammar, or punctuation that makes the passage formulaic or unnatural.
+4. **Edit decisively and locally.** Change the smallest span that fully resolves
+   each problem. Rewrite a whole sentence when clause-level patching cannot make it
+   natural.
 5. **Run a semantic diff.** Map every source proposition to the rewrite and every
    rewrite proposition back to the source.
-6. **Restore on doubt.** If equivalence is uncertain, keep or restore the original wording.
-7. **Deliver.** Return the rewrite without commentary unless commentary was requested.
+6. **Run a naturalness pass.** Confirm that fixable AI-shaped surface form did not
+   survive merely because the contract is strict.
+7. **Restore on doubt.** If equivalence is uncertain, keep or restore the original wording.
+8. **Deliver.** Return the rewrite without commentary unless commentary was requested.
 
 ## Final semantic diff
 
@@ -160,6 +220,8 @@ Before responding, verify all of the following:
 - The rewrite does not introduce a more casual, forceful, emotional, promotional,
   skeptical, or confident stance.
 - Every edit has a form-based reason; no style rule was applied for its own sake.
+- Every genuine form problem with a safe equivalent was repaired; minimality did
+  not become a reason for a cosmetic or unchanged result.
 
 If any check fails, revise or restore the source wording.
 
@@ -192,6 +254,19 @@ Do not assign an AI-likeness score.
 
 The rewrite keeps the emphasis (`Importantly`), uncertainty (`may`), and scope
 (`some teams`). It removes only redundant scaffolding.
+
+### Formulaic syntax receives a real rewrite
+
+**Before**
+
+> At this point in time, the committee is in the process of conducting an evaluation of the proposal.
+
+**After**
+
+> The committee is currently evaluating the proposal.
+
+The proposition, actor, tense, and object remain, while the sentence loses its
+formulaic scaffolding. Faithful editing does not require preserving awkward syntax.
 
 ### Vague attribution remains vague
 
@@ -240,3 +315,11 @@ The speaker's feeling, order, concessive relation, and uncertain benefit remain.
 Do not rewrite this as `The policy improves outcomes for patients.` That removes
 the attribution, hedge, and scope. Do not add a named study. Do not delete the
 sentence because the experts are unnamed.
+
+## Reference note
+
+Targeted-edit and contextual false-positive principles were informed by Avoid AI
+Writing by Conor Bronsdon. Scientific-register considerations were informed by
+Skill Deslop by Stephen Turner, with blanket active-voice and punctuation rules
+intentionally excluded. This skill's instructions and examples are independently
+written for its stricter form-only contract.
