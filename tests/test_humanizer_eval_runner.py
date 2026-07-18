@@ -338,7 +338,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             case = activation_cases[case_id]
             with self.subTest(activation_case=case["id"]):
                 self.assertFalse(case.get("force_skill_file_read", False))
-                self.assertNotIn("expected_trace_terms", case)
+                self.assertIn(FAITHFUL_SKILL_TRACE_PATH, case["expected_trace_terms"])
                 self.assertIn(SKILL_TRACE_PATH, case["forbidden_trace_terms"])
                 self.assertIn(
                     "less formulaic rewrite appropriate to the requested Faithful mode",

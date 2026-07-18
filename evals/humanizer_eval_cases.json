@@ -603,6 +603,9 @@
       "activation_probe": true,
       "prompt": "Faithfully humanize this without changing any claim, scope boundary, condition, or relation. Return only the rewritten text.",
       "source": "Atlas Notes provides offline access to saved documents, which enables travelers to review project files without an internet connection, while also allowing administrators to revoke access after a device has been lost, thereby helping organizations balance convenience with security.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md"
+      ],
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md"
       ],
@@ -618,6 +621,9 @@
       "activation_probe": true,
       "prompt": "Rework the sentence structure so this feels less templated, but preserve every proposition, scope boundary, condition, and relation. Return only the rewritten text.",
       "source": "Atlas Notes provides offline access to saved documents, which enables travelers to review project files without an internet connection, while also allowing administrators to revoke access after a device has been lost, thereby helping organizations balance convenience with security.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md"
+      ],
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md"
       ],
@@ -633,6 +639,9 @@
       "activation_probe": true,
       "prompt": "Use a minimal, light-touch Faithful edit. Legal approved every claim in this release note, so keep all substance and the second sentence exactly as written. Fix only the formulaic wording in the first sentence. Return only the result.",
       "source": "At this point in time, the review team is in the process of evaluating Atlas Note v2.1. I still dislike the onboarding flow, although it may help some new users.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md"
+      ],
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md"
       ],
@@ -648,6 +657,9 @@
       "activation_probe": true,
       "prompt": "Use $faithful-humanizer to make this less formulaic while preserving every proposition, scope boundary, condition, and relation. Return only the rewritten text.",
       "source": "Atlas Notes provides offline access to saved documents, which enables travelers to review project files without an internet connection, while also allowing administrators to revoke access after a device has been lost, thereby helping organizations balance convenience with security.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md"
+      ],
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md"
       ],

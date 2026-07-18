@@ -120,7 +120,7 @@
         "no_new_named_entities": true,
         "rewrite_only": true
       },
-      "passing_output": "AI coding assistants are broader than autocomplete. Their clearest uses are drafting documentation and improving tests.",
+      "passing_output": "AI coding assistants are broader than autocomplete. They can draft documentation and improve tests.",
       "failing_outputs": [
         {
           "label": "leaves the formulaic wrapper unchanged",
