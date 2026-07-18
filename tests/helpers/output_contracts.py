@@ -12,11 +12,14 @@ CHATBOT_WRAPPER_STARTS = (
 
 SUPPORTED_CONSTRAINT_KEYS = {
     "must_include",
+    "must_include_exact",
     "must_match",
     "must_not_include",
     "must_not_match",
+    "ordered_fragments",
     "exact_occurrences",
     "must_differ_from_source",
+    "must_equal_source",
     "no_new_named_entities",
     "no_new_numbers",
     "no_em_dash",
@@ -31,7 +34,7 @@ SUPPORTED_CONSTRAINT_KEYS = {
 }
 
 REWRITE_SECTION_BOUNDARY_PATTERN = re.compile(
-    r"(?im)^\s*(?:brief\s+notes|notes|score)\s*:"
+    r"(?im)^\s*(?:brief\s+notes|notes|score|form\s+changes|preservation\s+notes)\s*:"
 )
 
 NUMBER_PATTERN = re.compile(
@@ -140,6 +143,30 @@ def require_fragments(case_id, output, fragments):
     )
 
 
+def require_exact_fragments(case_id, output, fragments):
+    missing_fragments = [fragment for fragment in fragments if fragment not in output]
+    raise_if_violations(
+        f"{case_id}: missing required exact fragment {fragment!r}"
+        for fragment in missing_fragments
+    )
+
+
+def require_fragments_in_order(case_id, output, fragments):
+    normalized_output = normalize_text(output).casefold()
+    search_start = 0
+    violations = []
+    for fragment in fragments:
+        normalized_fragment = normalize_text(fragment).casefold()
+        fragment_index = normalized_output.find(normalized_fragment, search_start)
+        if fragment_index == -1:
+            violations.append(
+                f"{case_id}: ordered fragment missing or out of order {fragment!r}"
+            )
+            break
+        search_start = fragment_index + len(normalized_fragment)
+    raise_if_violations(violations)
+
+
 def reject_fragments(case_id, output, fragments):
     lowered_output = output.lower()
     present_fragments = [
@@ -210,6 +237,11 @@ def enforce_exact_occurrences(case_id, output, expected_occurrences):
 def require_source_change(case_id, source, output):
     if normalize_text(source).casefold() == normalize_text(output).casefold():
         raise AssertionError(f"{case_id}: output did not rewrite the source")
+
+
+def require_source_equality(case_id, source, output):
+    if source.strip() != output.strip():
+        raise AssertionError(f"{case_id}: output changed already-natural source text")
 
 
 def reject_em_dash(case_id, output):
@@ -419,6 +451,13 @@ def validate_case_output(case, output):
     )
     collect_violation(
         violations,
+        require_exact_fragments,
+        case_id,
+        output,
+        constraints.get("must_include_exact", []),
+    )
+    collect_violation(
+        violations,
         require_patterns,
         case_id,
         normalized_output,
@@ -446,6 +485,14 @@ def validate_case_output(case, output):
         constraints.get("must_not_match", []),
     )
 
+    collect_violation(
+        violations,
+        require_fragments_in_order,
+        case_id,
+        output,
+        constraints.get("ordered_fragments", []),
+    )
+
     if "exact_occurrences" in constraints:
         collect_violation(
             violations,
@@ -462,6 +509,15 @@ def validate_case_output(case, output):
             case_id,
             source,
             normalized_output,
+        )
+
+    if constraints.get("must_equal_source", False):
+        collect_violation(
+            violations,
+            require_source_equality,
+            case_id,
+            source,
+            output,
         )
 
     if constraints.get("no_em_dash", False):

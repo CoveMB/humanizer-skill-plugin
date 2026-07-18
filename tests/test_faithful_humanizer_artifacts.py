@@ -80,6 +80,8 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
             "Do not return the source unchanged merely because preservation is strict",
             "The result should be materially less formulaic, not merely proofread",
             "choose the one that removes more of the local AI-shaped form",
+            "redundant modal pairs such as `may potentially` or `could possibly`",
+            "keep `may` or `could`",
         ]:
             with self.subTest(term=term):
                 self.assertIn(term, self.normalized_skill)

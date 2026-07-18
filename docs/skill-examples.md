@@ -12,6 +12,9 @@ presentation. Faithful Humanizer may change only surface form.
 
 Use the explicit invocation whenever the distinction matters.
 
+For side-by-side outputs from the same source across 17 genres and editing cases,
+see [`Paired Humanizer comparison examples`](humanizer-comparison-examples.md).
+
 ## Choosing a skill
 
 | Need | Skill |
@@ -298,27 +301,29 @@ It should not assign an AI-likeness score.
 Source:
 
 ```text
-The launch marks a pivotal moment for the company and may help some teams work more
-efficiently, according to industry observers.
+The company launched Atlas 2.0 on May 6. The launch marks a pivotal moment for the
+company and may help some teams work more efficiently, according to industry
+observers.
 ```
 
 Editorial Humanizer may return:
 
 ```text
-The launch may help some teams work more efficiently. The draft does not identify
-the industry observers behind that claim.
+The company launched Atlas 2.0 on May 6.
 ```
 
 Faithful Humanizer may return:
 
 ```text
-According to industry observers, the launch marks a pivotal moment for the company
-and may help some teams work more efficiently.
+The company launched Atlas 2.0 on May 6. According to industry observers, the
+launch marks a pivotal moment for the company and may help some teams work more
+efficiently.
 ```
 
-The Editorial version removes significance inflation and comments on the weak
-source. The Faithful version preserves the significance claim, attribution, hedge,
-and scope.
+The Editorial version keeps the supplied release fact and removes significance
+inflation and the weakly sourced benefit without adding audit commentary to the
+rewrite. The Faithful version preserves the release fact, significance claim,
+attribution, hedge, and scope.
 
 ## Client-specific activation
 

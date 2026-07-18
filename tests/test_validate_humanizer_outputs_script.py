@@ -59,6 +59,8 @@ class ValidateHumanizerOutputsScriptTests(unittest.TestCase):
         )
 
     def _passing_output_for(self, case):
+        if "passing_output" in case:
+            return case["passing_output"]
         constraints = case["constraints"]
         required_fragments = constraints.get("must_include", [])
         base = ". ".join(required_fragments)

@@ -123,6 +123,8 @@ Do not return the source unchanged merely because preservation is strict. After
 protecting the substance, actively repair surface patterns such as:
 
 - verbose scaffolding and throat-clearing that carry no independent meaning;
+- redundant modal pairs such as `may potentially` or `could possibly` when
+  removing the adverb preserves the same uncertainty; keep `may` or `could`;
 - formulaic transitions and repeated sentence openings;
 - indirect or nominalized syntax that has a clear equivalent;
 - locally repetitive wording, synonym cycling, or metronomic sentence shapes;

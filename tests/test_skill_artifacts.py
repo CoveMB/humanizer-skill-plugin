@@ -20,6 +20,9 @@ LIVE_EVAL_WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "live-eval.yml"
 FAITHFUL_SKILL_PATH = REPO_ROOT / "skills" / "faithful-humanizer" / "SKILL.md"
 RESEARCH_PATH = REPO_ROOT / "docs" / "faithful-humanizer-research.md"
 SKILL_EXAMPLES_PATH = REPO_ROOT / "docs" / "skill-examples.md"
+COMPARISON_EXAMPLES_PATH = (
+    REPO_ROOT / "docs" / "humanizer-comparison-examples.md"
+)
 
 
 class EditorialHumanizerArtifactTests(unittest.TestCase):
@@ -30,6 +33,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.marketplace = json.loads(read_text(MARKETPLACE_PATH))
         self.reference_markdown = read_text(REFERENCE_PATH)
         self.readme_markdown = read_text(REPO_ROOT / "README.md")
+        self.comparison_examples_markdown = read_text(COMPARISON_EXAMPLES_PATH)
 
     def test_required_files_exist(self):
         for path in [
@@ -41,6 +45,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             FAITHFUL_SKILL_PATH,
             RESEARCH_PATH,
             SKILL_EXAMPLES_PATH,
+            COMPARISON_EXAMPLES_PATH,
         ]:
             with self.subTest(path=path):
                 self.assertTrue(path.exists(), path)
@@ -248,6 +253,37 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             with self.subTest(term=term):
                 self.assertIn(term, self.readme_markdown)
 
+    def test_paired_examples_cover_both_contracts_across_genres(self):
+        examples = self.comparison_examples_markdown
+        normalized_documentation = " ".join(
+            (examples + self.readme_markdown).split()
+        )
+        for heading in [
+            "## Content selection and evidence",
+            "## Structure and presentation",
+            "## Technical and high-stakes prose",
+            "## Voice and audience",
+        ]:
+            with self.subTest(heading=heading):
+                self.assertIn(heading, examples)
+
+        self.assertEqual(examples.count("#### Source"), 17)
+        self.assertEqual(examples.count("#### Editorial Humanizer"), 17)
+        self.assertEqual(examples.count("#### Faithful Humanizer"), 17)
+        self.assertEqual(examples.count("Best default:"), 17)
+        self.assertEqual(examples.count("**Why"), 17)
+
+        for term in [
+            "not proof of authorship",
+            "not fixed golden responses",
+            "Scientific methods where both outputs should converge",
+            "Policy notice with modality, deadline, and exception",
+            "When a request needs both strict preservation and selected substantive changes",
+            "docs/humanizer-comparison-examples.md",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, normalized_documentation)
+
     def test_readme_documents_install_and_update_lifecycle(self):
         for term in [
             "codex plugin marketplace add CoveMB/humanizer-skill-plugin --ref main",
@@ -357,6 +393,8 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "fetch-depth: 0",
             "git diff --check",
             "make test",
+            "python -m pip install -r requirements-dev.txt",
+            "make coverage",
             "make eval-humanizer-dry-run",
             "Check eval flag variations",
             "--filter explicit_dense_rewrite",
@@ -367,6 +405,10 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "--cases evals/humanizer_eval_cases.json",
             "--artifacts-dir /tmp/humanizer-eval-artifacts",
             "--codex-bin codex",
+            "Check Faithful eval stability flags",
+            "--target-skill faithful-humanizer",
+            "--trials 3",
+            "--rubric-model gpt-5.5",
         ]:
             with self.subTest(command=command):
                 self.assertIn(command, workflow)

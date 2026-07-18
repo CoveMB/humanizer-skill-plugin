@@ -24,6 +24,11 @@ REQUIRED_TAGS = {
     "scientific_register",
     "faithful_meaningful_rewrite",
     "faithful_scientific_register",
+    "faithful_already_natural_restraint",
+    "faithful_mixed_locality",
+    "faithful_audit_mode",
+    "faithful_voice_matching",
+    "faithful_structure_preservation",
 }
 
 SOURCE_AWARE_CONSTRAINT_KEYS = {
@@ -108,6 +113,29 @@ class ContractFixtureQualityTests(unittest.TestCase):
             with self.subTest(case=case["id"]):
                 self.assertIs(type(constraints["must_differ_from_source"]), bool)
 
+    def test_must_equal_constraints_are_boolean_and_not_conflicting(self):
+        for case in self.cases:
+            constraints = case["constraints"]
+            if "must_equal_source" not in constraints:
+                continue
+            with self.subTest(case=case["id"]):
+                self.assertIs(type(constraints["must_equal_source"]), bool)
+                self.assertFalse(constraints.get("must_differ_from_source", False))
+
+    def test_ordered_and_exact_fragment_constraints_are_non_empty_strings(self):
+        for case in self.cases:
+            constraints = case["constraints"]
+            for constraint_name in ("must_include_exact", "ordered_fragments"):
+                fragments = constraints.get(constraint_name)
+                if fragments is None:
+                    continue
+                with self.subTest(case=case["id"], constraint=constraint_name):
+                    self.assertIsInstance(fragments, list)
+                    self.assertTrue(fragments)
+                    self.assertTrue(
+                        all(isinstance(fragment, str) and fragment for fragment in fragments)
+                    )
+
     def test_docs_cleanup_contract_preserves_supplied_team_scope(self):
         docs_cleanup_case = next(
             case for case in self.cases if case["id"] == "contextual_docs_cleanup"
@@ -140,6 +168,12 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 "faithful_exact_anchors_and_list_membership",
                 "faithful_meaningful_local_rewrite",
                 "faithful_scientific_register",
+                "faithful_already_natural_restraint",
+                "faithful_mixed_local_edit",
+                "faithful_audit_mode",
+                "faithful_voice_matching",
+                "faithful_structure_and_protected_spans",
+                "faithful_conditions_exceptions_comparison",
             },
         )
         covered_tags = {
@@ -159,14 +193,32 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 "faithful_causality",
                 "faithful_meaningful_rewrite",
                 "faithful_scientific_register",
+                "faithful_already_natural_restraint",
+                "faithful_mixed_locality",
+                "faithful_audit_mode",
+                "faithful_voice_matching",
+                "faithful_structure_preservation",
             }.issubset(covered_tags)
         )
         for case in faithful_cases.values():
             with self.subTest(case=case["id"]):
                 constraints = case["constraints"]
-                self.assertTrue(constraints["rewrite_only"])
+                if case["mode"] == "rewrite":
+                    self.assertTrue(constraints["rewrite_only"])
+                else:
+                    self.assertEqual(case["mode"], "audit")
+                    self.assertNotIn("rewrite_only", constraints)
                 self.assertTrue(constraints["no_new_numbers"])
                 self.assertTrue(constraints["no_new_named_entities"])
+                self.assertIsInstance(case.get("passing_output"), str)
+                self.assertTrue(case["passing_output"])
+                self.assertIsInstance(case.get("failing_outputs"), list)
+                self.assertTrue(case["failing_outputs"])
+                for failure in case["failing_outputs"]:
+                    self.assertEqual(
+                        set(failure),
+                        {"label", "output", "expected_error"},
+                    )
 
 
 if __name__ == "__main__":

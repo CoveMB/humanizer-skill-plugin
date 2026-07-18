@@ -426,6 +426,7 @@ def validate_eval_case(case):
 
     require_optional_boolean(case, "force_skill_file_read")
     require_optional_boolean(case, "force_reference_file_read")
+    require_optional_boolean(case, "activation_probe")
     require_string_list(case, "force_reference_file_reads")
     require_string_list(case, "expected_trace_terms")
     require_string_list(case, "forbidden_trace_terms")
@@ -656,6 +657,35 @@ def load_eval_cases(path=DEFAULT_CASES_PATH, output_contract_cases=None):
     return validated_cases
 
 
+def load_rubric_calibrations(path=DEFAULT_CASES_PATH):
+    data = read_json(Path(path))
+    rubrics = validate_rubrics(data.get("rubrics", {}))
+    calibrations = data.get("rubric_calibrations")
+    if not isinstance(calibrations, list) or not calibrations:
+        raise ValueError("eval case file must contain rubric_calibrations")
+
+    seen_ids = set()
+    validated_calibrations = []
+    for calibration in calibrations:
+        calibration_id = require_string(calibration, "id")
+        require_string(calibration, "source")
+        require_string(calibration, "output")
+        rubric_id = require_string(calibration, "rubric_id")
+        if rubric_id not in rubrics:
+            raise ValueError(
+                f"{calibration_id}: unknown rubric id {rubric_id!r}"
+            )
+        if not isinstance(calibration.get("expected_pass"), bool):
+            raise ValueError(f"{calibration_id}: expected_pass must be a boolean")
+        if calibration_id in seen_ids:
+            raise ValueError(f"duplicate rubric calibration id: {calibration_id}")
+        seen_ids.add(calibration_id)
+        validated_calibrations.append(
+            {**calibration, "rubric": rubrics[rubric_id]}
+        )
+    return validated_calibrations
+
+
 def load_output_contract_cases():
     return {case["id"]: case for case in load_fixture_cases()}
 
@@ -723,7 +753,9 @@ def build_codex_prompt(case, plugin_root=None):
         ]
     )
 
-    if case["should_trigger"]:
+    if case.get("activation_probe", False):
+        prompt_lines.append("Return only the final answer, with no eval commentary.")
+    elif case["should_trigger"]:
         prompt_lines.append(
             f"Return only the final {target_skill_display_name} output, with no eval commentary."
         )
@@ -1034,7 +1066,7 @@ def require_rubric_grade_score(case_id, dimension_name, score_entry):
     return score
 
 
-def validate_rubric_grade(case, grade):
+def validate_rubric_grade(case, grade, require_pass=True):
     case_id = case["id"]
     rubric = case["rubric"]
     if not isinstance(grade, dict):
@@ -1059,35 +1091,43 @@ def validate_rubric_grade(case, grade):
         raise AssertionError(f"{case_id}: rubric total_score does not match scores")
 
     minimum_dimension_scores = rubric.get("minimum_dimension_scores", {})
-    violations = []
+    score_violations = []
     for name, score in dimension_scores.items():
         minimum_score = minimum_dimension_scores.get(
             name,
             rubric["minimum_dimension_score"],
         )
         if score < minimum_score:
-            violations.append(
+            score_violations.append(
                 f"{case_id}: {name} score {score} below minimum {minimum_score}"
             )
     if total_score < rubric["minimum_total_score"]:
-        violations.append(
+        score_violations.append(
             f"{case_id}: total_score {total_score} below minimum {rubric['minimum_total_score']}"
         )
 
-    computed_passed = not violations
+    computed_passed = not score_violations
+    schema_violations = []
     if grade.get("passed") is not computed_passed:
-        violations.append(f"{case_id}: rubric passed flag does not match scores")
+        schema_violations.append(
+            f"{case_id}: rubric passed flag does not match scores"
+        )
 
     issues = grade.get("issues")
     if not isinstance(issues, list) or not all(isinstance(issue, str) for issue in issues):
-        violations.append(f"{case_id}: rubric issues must be a list of strings")
+        schema_violations.append(
+            f"{case_id}: rubric issues must be a list of strings"
+        )
 
-    if violations:
-        raise AssertionError("\n".join(violations))
+    if schema_violations:
+        raise AssertionError("\n".join(schema_violations))
+    if require_pass and score_violations:
+        raise AssertionError("\n".join(score_violations))
     return {
-        "rubric_passed": True,
+        "rubric_passed": computed_passed,
         "rubric_total_score": total_score,
         "rubric_dimension_scores": dimension_scores,
+        "rubric_score_violations": score_violations,
     }
 
 
@@ -1108,11 +1148,14 @@ def run_rubric_grade(
     model=None,
     timeout_seconds=DEFAULT_TIMEOUT_SECONDS,
     environment=None,
+    artifact_stem=None,
+    require_pass=True,
 ):
-    rubric_prompt_path = artifact_dirs["rubric_prompts"] / f"{case['id']}.txt"
-    rubric_output_path = artifact_dirs["rubric_outputs"] / f"{case['id']}.json"
-    rubric_trace_path = artifact_dirs["rubric_traces"] / f"{case['id']}.jsonl"
-    rubric_stderr_path = artifact_dirs["rubric_stderr"] / f"{case['id']}.stderr"
+    artifact_stem = case["id"] if artifact_stem is None else artifact_stem
+    rubric_prompt_path = artifact_dirs["rubric_prompts"] / f"{artifact_stem}.txt"
+    rubric_output_path = artifact_dirs["rubric_outputs"] / f"{artifact_stem}.json"
+    rubric_trace_path = artifact_dirs["rubric_traces"] / f"{artifact_stem}.jsonl"
+    rubric_stderr_path = artifact_dirs["rubric_stderr"] / f"{artifact_stem}.stderr"
     prompt = build_rubric_prompt(case, output_text)
 
     rubric_prompt_path.write_text(prompt, encoding="utf-8")
@@ -1142,8 +1185,61 @@ def run_rubric_grade(
         "rubric_output_path": str(rubric_output_path),
         "rubric_trace_path": str(rubric_trace_path),
         "rubric_stderr_path": str(rubric_stderr_path),
-        **validate_rubric_grade(case, grade),
+        **validate_rubric_grade(case, grade, require_pass=require_pass),
     }
+
+
+def run_rubric_calibration_suite(
+    calibrations,
+    artifacts_dir,
+    codex_bin,
+    model=None,
+    timeout_seconds=DEFAULT_TIMEOUT_SECONDS,
+):
+    require_isolated_codex_home()
+    artifact_dirs = ensure_artifact_dirs(artifacts_dir)
+    summaries = []
+    for calibration in calibrations:
+        summary = {
+            "id": calibration["id"],
+            "target_skill": "rubric-calibration",
+            "expected_pass": calibration["expected_pass"],
+            "passed": False,
+            "error": None,
+            "failure_stage": "rubric_calibration",
+        }
+        try:
+            grade_summary = run_rubric_grade(
+                calibration,
+                calibration["output"],
+                artifact_dirs,
+                codex_bin=codex_bin,
+                model=model,
+                timeout_seconds=timeout_seconds,
+                environment=os.environ.copy(),
+                artifact_stem=calibration["id"],
+                require_pass=False,
+            )
+            summary.update(grade_summary)
+            actual_pass = grade_summary["rubric_passed"]
+            if actual_pass != calibration["expected_pass"]:
+                raise AssertionError(
+                    f"{calibration['id']}: rubric returned passed={actual_pass}; "
+                    f"expected {calibration['expected_pass']}"
+                )
+        except (AssertionError, OSError, ValueError, subprocess.TimeoutExpired) as error:
+            summary["error"] = str(error)
+        else:
+            summary["passed"] = True
+            summary["failure_stage"] = None
+        summaries.append(summary)
+
+    summary_path = write_summary(
+        artifacts_dir,
+        summaries,
+        metadata={"model": model, "rubric_calibration": True},
+    )
+    return summaries, summary_path
 
 
 def run_eval_case(
@@ -1157,17 +1253,25 @@ def run_eval_case(
     plugin_id=None,
     plugin_root=None,
     environment=None,
+    rubric_model=None,
+    artifact_stem=None,
+    trial=1,
 ):
+    artifact_stem = case["id"] if artifact_stem is None else artifact_stem
     prompt = build_codex_prompt(case, plugin_root=plugin_root)
-    output_path = artifact_dirs["outputs"] / f"{case['id']}.txt"
-    trace_path = artifact_dirs["traces"] / f"{case['id']}.jsonl"
-    stderr_path = artifact_dirs["stderr"] / f"{case['id']}.stderr"
-    prompt_path = artifact_dirs["prompts"] / f"{case['id']}.txt"
+    output_path = artifact_dirs["outputs"] / f"{artifact_stem}.txt"
+    trace_path = artifact_dirs["traces"] / f"{artifact_stem}.jsonl"
+    stderr_path = artifact_dirs["stderr"] / f"{artifact_stem}.stderr"
+    prompt_path = artifact_dirs["prompts"] / f"{artifact_stem}.txt"
 
     summary = {
         "id": case["id"],
         "category": case["category"],
         "target_skill": target_skill_for_case(case),
+        "activation_probe": case.get("activation_probe", False),
+        "trial": trial,
+        "model": model,
+        "rubric_model": rubric_model or model,
         "returncode": None,
         "trace_path": str(trace_path),
         "output_path": str(output_path),
@@ -1175,6 +1279,7 @@ def run_eval_case(
         "prompt_path": str(prompt_path),
         "passed": False,
         "error": None,
+        "failure_stage": "execution",
         "rubric_passed": None,
         "rubric_error": None,
         "rubric_total_score": None,
@@ -1216,12 +1321,14 @@ def run_eval_case(
         if result.returncode != 0:
             raise AssertionError(f"{case['id']}: codex exited with {result.returncode}")
 
+        summary["failure_stage"] = "trace"
         events = parse_jsonl_events(result.stdout)
         metrics = collect_trace_metrics(events)
         summary.update(metrics)
         check_trace_expectations(case, events)
         check_stderr_expectations(case, result.stderr)
 
+        summary["failure_stage"] = "output_contract"
         output_text = read_final_output(case, output_path)
         summary["editorial_output_diagnostics"] = editorial_diagnostics_for_case(
             case,
@@ -1229,6 +1336,7 @@ def run_eval_case(
         )
         validate_case_output_contract(case, output_text, output_contract_cases)
         if grade_rubric and case.get("rubric"):
+            summary["failure_stage"] = "rubric"
             try:
                 summary.update(
                     run_rubric_grade(
@@ -1236,9 +1344,10 @@ def run_eval_case(
                         output_text,
                         artifact_dirs,
                         codex_bin=codex_bin,
-                        model=model,
+                        model=rubric_model or model,
                         timeout_seconds=timeout_seconds,
                         environment=environment,
+                        artifact_stem=artifact_stem,
                     )
                 )
             except (AssertionError, OSError, ValueError, subprocess.TimeoutExpired) as error:
@@ -1249,24 +1358,84 @@ def run_eval_case(
         return summary
 
     summary["passed"] = True
+    summary["failure_stage"] = None
     return summary
 
 
-def select_cases(cases, filters):
-    if not filters:
-        return cases
-
+def select_cases(cases, filters, target_skills=None):
     selected_ids = set(filters)
-    selected_cases = [case for case in cases if case["id"] in selected_ids]
-    missing_ids = selected_ids - {case["id"] for case in selected_cases}
-    if missing_ids:
-        raise ValueError(f"unknown eval case id(s): {', '.join(sorted(missing_ids))}")
+    if selected_ids:
+        selected_cases = [case for case in cases if case["id"] in selected_ids]
+        missing_ids = selected_ids - {case["id"] for case in selected_cases}
+        if missing_ids:
+            raise ValueError(f"unknown eval case id(s): {', '.join(sorted(missing_ids))}")
+    else:
+        selected_cases = list(cases)
+
+    selected_target_skills = set(target_skills or [])
+    if selected_target_skills:
+        selected_cases = [
+            case
+            for case in selected_cases
+            if target_skill_for_case(case) in selected_target_skills
+        ]
+        if not selected_cases:
+            raise ValueError("no eval cases match the selected target skill(s)")
     return selected_cases
 
 
-def write_summary(artifacts_dir, summaries):
+def aggregate_summaries(summaries):
+    grouped_summaries = {}
+    failure_stages = {}
+    for summary in summaries:
+        target_skill = summary.get("target_skill", "unknown")
+        grouped_summaries.setdefault(target_skill, []).append(summary)
+        failure_stage = summary.get("failure_stage")
+        if failure_stage:
+            failure_stages[failure_stage] = failure_stages.get(failure_stage, 0) + 1
+
+    by_target_skill = {}
+    for target_skill, skill_summaries in sorted(grouped_summaries.items()):
+        passed_count = sum(1 for summary in skill_summaries if summary.get("passed"))
+        dimension_scores = {}
+        for summary in skill_summaries:
+            for dimension, score in (
+                summary.get("rubric_dimension_scores") or {}
+            ).items():
+                dimension_scores.setdefault(dimension, []).append(score)
+        by_target_skill[target_skill] = {
+            "runs": len(skill_summaries),
+            "passed": passed_count,
+            "pass_rate": passed_count / len(skill_summaries),
+            "minimum_rubric_dimension_scores": {
+                dimension: min(scores)
+                for dimension, scores in sorted(dimension_scores.items())
+            },
+        }
+
+    passed_count = sum(1 for summary in summaries if summary.get("passed"))
+    return {
+        "runs": len(summaries),
+        "passed": passed_count,
+        "pass_rate": passed_count / len(summaries) if summaries else 0,
+        "failure_stages": dict(sorted(failure_stages.items())),
+        "by_target_skill": by_target_skill,
+    }
+
+
+def write_summary(artifacts_dir, summaries, metadata=None):
     summary_path = artifacts_dir / "summary.json"
-    summary_path.write_text(json.dumps({"results": summaries}, indent=2), encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(
+            {
+                "metadata": metadata or {},
+                "aggregate": aggregate_summaries(summaries),
+                "results": summaries,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     return summary_path
 
 
@@ -1277,6 +1446,8 @@ def run_eval_suite(
     model=None,
     timeout_seconds=DEFAULT_TIMEOUT_SECONDS,
     grade_rubric=False,
+    rubric_model=None,
+    trials=1,
 ):
     artifact_dirs = ensure_artifact_dirs(artifacts_dir)
     remove_file_if_exists(artifacts_dir / PLUGIN_PROVENANCE_FILENAME)
@@ -1288,27 +1459,49 @@ def run_eval_suite(
         artifacts_dir,
         codex_home,
     ) as installation:
-        summaries = [
-            run_eval_case(
-                case,
-                artifact_dirs,
-                codex_bin=codex_bin,
-                output_contract_cases=output_contract_cases,
-                model=model,
-                timeout_seconds=timeout_seconds,
-                grade_rubric=grade_rubric,
-                plugin_id=installation.plugin_id,
-                plugin_root=installation.installed_path,
-                environment=installation.environment,
-            )
-            for case in cases
-        ]
-    summary_path = write_summary(artifacts_dir, summaries)
+        summaries = []
+        for case in cases:
+            for trial in range(1, trials + 1):
+                artifact_stem = (
+                    case["id"]
+                    if trials == 1
+                    else f"{case['id']}.trial-{trial:02d}"
+                )
+                summaries.append(
+                    run_eval_case(
+                        case,
+                        artifact_dirs,
+                        codex_bin=codex_bin,
+                        output_contract_cases=output_contract_cases,
+                        model=model,
+                        timeout_seconds=timeout_seconds,
+                        grade_rubric=grade_rubric,
+                        plugin_id=installation.plugin_id,
+                        plugin_root=installation.installed_path,
+                        environment=installation.environment,
+                        rubric_model=rubric_model,
+                        artifact_stem=artifact_stem,
+                        trial=trial,
+                    )
+                )
+    summary_path = write_summary(
+        artifacts_dir,
+        summaries,
+        metadata={
+            "model": model,
+            "rubric_model": rubric_model or model,
+            "rubric_grade": grade_rubric,
+            "trials": trials,
+        },
+    )
     return summaries, summary_path
 
 
-def print_dry_run(cases):
-    print(f"would run {len(cases)} Humanizer eval case(s)")
+def print_dry_run(cases, trials=1):
+    print(
+        f"would run {len(cases)} Humanizer eval case(s) "
+        f"across {trials} trial(s) ({len(cases) * trials} total run(s))"
+    )
     for case in cases:
         trigger_label = "trigger" if case["should_trigger"] else "no-trigger"
         print(
@@ -1322,6 +1515,12 @@ def print_summary(summaries, summary_path):
     print(f"passed {passed_count}/{len(summaries)} Humanizer eval case(s)")
     print(f"summary: {summary_path}")
 
+    aggregate = aggregate_summaries(summaries)
+    for target_skill, skill_summary in aggregate["by_target_skill"].items():
+        print(
+            f"- {target_skill}: {skill_summary['passed']}/{skill_summary['runs']} passed"
+        )
+
     for summary in summaries:
         if not summary["passed"]:
             print(f"- {summary['id']}: {summary['error']}", file=sys.stderr)
@@ -1333,13 +1532,22 @@ def build_parser():
     parser.add_argument("--artifacts-dir", type=Path, default=DEFAULT_ARTIFACTS_DIR)
     parser.add_argument("--codex-bin", default="codex")
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--rubric-model")
     parser.add_argument(
         "--timeout-seconds",
         type=positive_integer,
         default=DEFAULT_TIMEOUT_SECONDS,
     )
     parser.add_argument("--filter", action="append", default=[])
+    parser.add_argument(
+        "--target-skill",
+        action="append",
+        choices=sorted(TARGET_SKILL_DISPLAY_NAMES),
+        default=[],
+    )
+    parser.add_argument("--trials", type=positive_integer, default=1)
     parser.add_argument("--rubric-grade", action="store_true")
+    parser.add_argument("--calibrate-rubric", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser
 
@@ -1348,14 +1556,46 @@ def main(argv):
     parser = build_parser()
     args = parser.parse_args(argv[1:])
 
+    if args.calibrate_rubric:
+        try:
+            calibrations = load_rubric_calibrations(args.cases)
+        except (OSError, ValueError) as error:
+            print(str(error), file=sys.stderr)
+            return 2
+        if args.dry_run:
+            print(f"would run {len(calibrations)} rubric calibration(s)")
+            for calibration in calibrations:
+                print(
+                    f"- {calibration['id']} "
+                    f"[expected_pass={calibration['expected_pass']}]"
+                )
+            return 0
+        try:
+            summaries, summary_path = run_rubric_calibration_suite(
+                calibrations,
+                artifacts_dir=args.artifacts_dir,
+                codex_bin=args.codex_bin,
+                model=args.rubric_model or args.model,
+                timeout_seconds=args.timeout_seconds,
+            )
+        except (OSError, RuntimeError, ValueError) as error:
+            print(str(error), file=sys.stderr)
+            return 2
+        print_summary(summaries, summary_path)
+        return 0 if all(summary["passed"] for summary in summaries) else 1
+
     try:
-        cases = select_cases(load_eval_cases(args.cases), args.filter)
+        cases = select_cases(
+            load_eval_cases(args.cases),
+            args.filter,
+            target_skills=args.target_skill,
+        )
     except (OSError, ValueError) as error:
         print(str(error), file=sys.stderr)
         return 2
 
     if args.dry_run:
-        print_dry_run(cases)
+        print_dry_run(cases, trials=args.trials)
         return 0
 
     try:
@@ -1366,6 +1606,8 @@ def main(argv):
             model=args.model,
             timeout_seconds=args.timeout_seconds,
             grade_rubric=args.rubric_grade,
+            rubric_model=args.rubric_model,
+            trials=args.trials,
         )
     except (OSError, RuntimeError, ValueError) as error:
         print(str(error), file=sys.stderr)

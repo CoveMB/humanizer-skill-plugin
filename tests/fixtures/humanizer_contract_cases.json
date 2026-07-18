@@ -488,7 +488,20 @@
         "no_new_numbers": true,
         "no_new_named_entities": true,
         "rewrite_only": true
-      }
+      },
+      "passing_output": "Experts believe the policy may improve outcomes for some patients.",
+      "failing_outputs": [
+        {
+          "label": "drops attribution hedge and scope",
+          "output": "The policy improves outcomes for patients.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "strengthens modality and scope",
+          "output": "Experts believe the policy will improve outcomes for most patients.",
+          "expected_error": "missing required fragment"
+        }
+      ]
     },
     {
       "id": "faithful_promotional_opinion_chronology",
@@ -506,7 +519,16 @@
       "constraints": {
         "must_include": [
           "On Tuesday",
-          "I said",
+          "I",
+          "Atlas system",
+          "robust foundation",
+          "scalable workflows",
+          "although",
+          "may not help every team"
+        ],
+        "ordered_fragments": [
+          "On Tuesday",
+          "I",
           "Atlas system",
           "robust foundation",
           "scalable workflows",
@@ -518,7 +540,20 @@
         "no_new_numbers": true,
         "no_new_named_entities": true,
         "rewrite_only": true
-      }
+      },
+      "passing_output": "On Tuesday, I described the Atlas system as a robust foundation for scalable workflows, although it may not help every team.",
+      "failing_outputs": [
+        {
+          "label": "drops speaker and chronology",
+          "output": "The Atlas system was a robust foundation for scalable workflows, although it may not help every team.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "reverses concession and certainty",
+          "output": "On Tuesday, I described the Atlas system as a robust foundation for scalable workflows, and it will help every team.",
+          "expected_error": "missing required fragment"
+        }
+      ]
     },
     {
       "id": "faithful_exact_anchors_and_list_membership",
@@ -533,7 +568,12 @@
       "prompt": "Improve only the surrounding prose. Preserve every command, version, URL, and list item exactly. Return only the rewritten text.",
       "source": "Keep these deployment checks: run make test, verify API v2.1, and review https://example.com/policy.",
       "constraints": {
-        "must_include": [
+        "must_include_exact": [
+          "run make test,",
+          "verify API v2.1,",
+          "review https://example.com/policy."
+        ],
+        "ordered_fragments": [
           "run make test",
           "verify API v2.1",
           "review https://example.com/policy"
@@ -543,7 +583,20 @@
         "no_new_numbers": true,
         "no_new_named_entities": true,
         "rewrite_only": true
-      }
+      },
+      "passing_output": "Keep these deployment checks in place: run make test, verify API v2.1, and review https://example.com/policy.",
+      "failing_outputs": [
+        {
+          "label": "changes protected command",
+          "output": "Keep these deployment checks: run make tests, verify API v2.1, and review https://example.com/policy.",
+          "expected_error": "missing required exact fragment"
+        },
+        {
+          "label": "reorders list membership",
+          "output": "Keep these deployment checks: review https://example.com/policy, verify API v2.1, and run make test.",
+          "expected_error": "ordered fragment"
+        }
+      ]
     },
     {
       "id": "faithful_meaningful_local_rewrite",
@@ -578,7 +631,20 @@
         "no_new_numbers": true,
         "no_new_named_entities": true,
         "rewrite_only": true
-      }
+      },
+      "passing_output": "The committee is currently evaluating the proposal and may recommend revisions for some sections.",
+      "failing_outputs": [
+        {
+          "label": "leaves removable scaffolding",
+          "output": "At this point in time, the committee is in the process of conducting an evaluation of the proposal, and it may potentially recommend revisions for some sections.",
+          "expected_error": "forbidden fragment"
+        },
+        {
+          "label": "strengthens modality and broadens scope",
+          "output": "The committee is currently evaluating the proposal and will recommend revisions for most sections.",
+          "expected_error": "missing required fragment"
+        }
+      ]
     },
     {
       "id": "faithful_scientific_register",
@@ -614,7 +680,294 @@
         "no_new_numbers": true,
         "no_new_named_entities": true,
         "rewrite_only": true
-      }
+      },
+      "passing_output": "Notably, in Smith et al. (2024), the weighted interval score was measured for each model. The weighted interval score may be associated with forecast calibration, but the study did not establish causality.",
+      "failing_outputs": [
+        {
+          "label": "turns association into causation",
+          "output": "In Smith et al. (2024), the weighted interval score was measured for each model. The weighted interval score caused better forecast calibration.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "changes passive agency and technical repetition",
+          "output": "In Smith et al. (2024), we measured the interval score for each model. The metric may be associated with forecast calibration, but the study did not establish causality.",
+          "expected_error": "missing required fragment"
+        }
+      ]
+    },
+    {
+      "id": "faithful_already_natural_restraint",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_already_natural_restraint"
+      ],
+      "prompt": "Make only necessary form edits. Leave already-natural prose unchanged. Return only the text.",
+      "source": "The deployment finished on Tuesday. I still find the new dashboard frustrating, although it may help some teams.",
+      "constraints": {
+        "must_equal_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "The deployment finished on Tuesday. I still find the new dashboard frustrating, although it may help some teams.",
+      "failing_outputs": [
+        {
+          "label": "rewrites natural wording without need",
+          "output": "The deployment was completed on Tuesday. I continue to find the new dashboard frustrating, although it may help some teams.",
+          "expected_error": "changed already-natural source"
+        }
+      ]
+    },
+    {
+      "id": "faithful_mixed_local_edit",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "minimal_edit",
+        "faithful_opinion",
+        "faithful_modality",
+        "faithful_scope",
+        "faithful_mixed_locality"
+      ],
+      "prompt": "Repair only the formulaic wording. Preserve the already-natural sentence exactly. Return only the rewritten text.",
+      "source": "At this point in time, the review team is in the process of evaluating Atlas Note v2.1. I still dislike the onboarding flow, although it may help some new users.",
+      "constraints": {
+        "must_include": [
+          "review team",
+          "evaluating Atlas Note v2.1"
+        ],
+        "must_include_exact": [
+          "I still dislike the onboarding flow, although it may help some new users."
+        ],
+        "must_not_include": [
+          "At this point in time",
+          "in the process of"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "The review team is currently evaluating Atlas Note v2.1. I still dislike the onboarding flow, although it may help some new users.",
+      "failing_outputs": [
+        {
+          "label": "changes already-natural opinion",
+          "output": "The review team is currently evaluating Atlas Note v2.1. I dislike the onboarding flow, but it could benefit new users.",
+          "expected_error": "missing required exact fragment"
+        },
+        {
+          "label": "leaves formulaic sentence unchanged",
+          "output": "At this point in time, the review team is in the process of evaluating Atlas Note v2.1. I still dislike the onboarding flow, although it may help some new users.",
+          "expected_error": "forbidden fragment"
+        }
+      ]
+    },
+    {
+      "id": "faithful_audit_mode",
+      "mode": "audit",
+      "tags": [
+        "audit_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_audit_mode",
+        "faithful_modality",
+        "faithful_scope"
+      ],
+      "prompt": "Rewrite this and briefly explain only the form changes and preservation choices. Do not score it.",
+      "source": "At this point in time, Atlas Note may potentially reduce setup time for some teams.",
+      "constraints": {
+        "must_include": [
+          "Atlas Note may reduce setup time for some teams",
+          "Form changes:",
+          "Preservation notes:"
+        ],
+        "must_not_include": [
+          "At this point in time",
+          "may potentially"
+        ],
+        "must_not_match": [
+          "(?i)\\bscore\\s*:"
+        ],
+        "ordered_fragments": [
+          "Atlas Note may reduce setup time for some teams",
+          "Form changes:",
+          "Preservation notes:"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true
+      },
+      "passing_output": "Atlas Note may reduce setup time for some teams.\n\nForm changes: Removed redundant temporal and modal scaffolding.\n\nPreservation notes: Retained ‘may’ and ‘some teams’ to preserve uncertainty and scope.",
+      "failing_outputs": [
+        {
+          "label": "omits required explanation sections",
+          "output": "Atlas Note may reduce setup time for some teams.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "adds forbidden score",
+          "output": "Atlas Note may reduce setup time for some teams.\n\nForm changes: Removed scaffolding.\n\nPreservation notes: Retained the hedge.\n\nScore: 10/10",
+          "expected_error": "forbidden pattern"
+        }
+      ]
+    },
+    {
+      "id": "faithful_voice_matching",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "voice_calibration",
+        "faithful_voice_matching"
+      ],
+      "prompt": "Match only the short, direct surface style of this sample: ‘I keep notes short. If a tool makes me babysit it, I stop using it.’ Do not import its opinions or experiences.",
+      "source": "Additionally, the ChronoPad release may potentially improve offline search for some users.",
+      "constraints": {
+        "must_include": [
+          "ChronoPad release",
+          "may improve offline search",
+          "some users"
+        ],
+        "must_not_include": [
+          "Additionally",
+          "may potentially",
+          "babysit"
+        ],
+        "must_not_match": [
+          "(?i)\\bI\\b"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "The ChronoPad release may improve offline search for some users.",
+      "failing_outputs": [
+        {
+          "label": "imports first-person opinion",
+          "output": "I think the ChronoPad release may improve offline search for some users, so I might keep using it.",
+          "expected_error": "forbidden pattern"
+        },
+        {
+          "label": "strengthens modality and scope",
+          "output": "The ChronoPad release will improve offline search for users.",
+          "expected_error": "missing required fragment"
+        }
+      ]
+    },
+    {
+      "id": "faithful_structure_and_protected_spans",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_exact_anchors",
+        "faithful_list_membership",
+        "faithful_structure_preservation"
+      ],
+      "prompt": "Improve only the surrounding prose. Preserve the heading, item order, quotation, attribution, code, URL, identifier, version, flag, and path exactly.",
+      "source": "## Deployment notes\n\nKeep the following items in order:\n\n1. Run `make test`.\n2. Verify `API v2.1`.\n3. Review “Policy A” at https://example.com/policy.\n\n> “Ship only after review,” Mira said.\n\nUse `--dry-run` before `/srv/atlas/deploy.sh`.",
+      "constraints": {
+        "must_include_exact": [
+          "## Deployment notes",
+          "1. Run `make test`.",
+          "2. Verify `API v2.1`.",
+          "3. Review “Policy A” at https://example.com/policy.",
+          "> “Ship only after review,” Mira said.",
+          "Use `--dry-run` before `/srv/atlas/deploy.sh`."
+        ],
+        "ordered_fragments": [
+          "## Deployment notes",
+          "1. Run `make test`.",
+          "2. Verify `API v2.1`.",
+          "3. Review “Policy A” at https://example.com/policy.",
+          "> “Ship only after review,” Mira said.",
+          "Use `--dry-run` before `/srv/atlas/deploy.sh`."
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "## Deployment notes\n\nComplete the following items in order:\n\n1. Run `make test`.\n2. Verify `API v2.1`.\n3. Review “Policy A” at https://example.com/policy.\n\n> “Ship only after review,” Mira said.\n\nUse `--dry-run` before `/srv/atlas/deploy.sh`.",
+      "failing_outputs": [
+        {
+          "label": "rewrites protected quotation",
+          "output": "## Deployment notes\n\nComplete the following items in order:\n\n1. Run `make test`.\n2. Verify `API v2.1`.\n3. Review “Policy A” at https://example.com/policy.\n\n> “Do not ship before review,” Mira said.\n\nUse `--dry-run` before `/srv/atlas/deploy.sh`.",
+          "expected_error": "missing required exact fragment"
+        },
+        {
+          "label": "reorders protected list",
+          "output": "## Deployment notes\n\nComplete the following items in order:\n\n2. Verify `API v2.1`.\n1. Run `make test`.\n3. Review “Policy A” at https://example.com/policy.\n\n> “Ship only after review,” Mira said.\n\nUse `--dry-run` before `/srv/atlas/deploy.sh`.",
+          "expected_error": "ordered fragment"
+        }
+      ]
+    },
+    {
+      "id": "faithful_conditions_exceptions_comparison",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_modality",
+        "faithful_negation",
+        "faithful_scope",
+        "faithful_logical_relation",
+        "faithful_chronology"
+      ],
+      "prompt": "Make only safe form edits while preserving every condition, exception, comparison, scope boundary, and deadline.",
+      "source": "Although most reviewers support the proposal, the committee will approve it only if Legal signs off before Friday. Unless Legal responds, the committee may reject some sections, but it will not reject Appendix A.",
+      "constraints": {
+        "must_include": [
+          "Although most reviewers support the proposal",
+          "will approve it only if Legal signs off before Friday",
+          "Unless Legal responds",
+          "may reject some sections",
+          "will not reject Appendix A"
+        ],
+        "ordered_fragments": [
+          "Although most reviewers support the proposal",
+          "will approve it only if Legal signs off before Friday",
+          "Unless Legal responds",
+          "may reject some sections",
+          "will not reject Appendix A"
+        ],
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      },
+      "passing_output": "Although most reviewers support the proposal, the committee will approve it only if Legal signs off before Friday. Unless Legal responds, the committee may reject some sections, but it will not reject Appendix A.",
+      "failing_outputs": [
+        {
+          "label": "broadens support and drops approval condition",
+          "output": "All reviewers support the proposal, so the committee will approve it before Friday. The committee may reject some sections, but it will not reject Appendix A.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "drops exception and negation",
+          "output": "Although most reviewers support the proposal, the committee will approve it only if Legal signs off before Friday. The committee will reject all sections, including Appendix A.",
+          "expected_error": "missing required fragment"
+        }
+      ]
     },
     {
       "id": "negative_fact_check_only",
