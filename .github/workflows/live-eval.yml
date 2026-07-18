@@ -72,7 +72,6 @@ jobs:
           fi
           eval_home_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/home"
           eval_codex_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/codex-home"
-          printf 'HOME=%s\n' "$eval_home_dir" >> "$GITHUB_ENV"
           printf 'CODEX_HOME=%s\n' "$eval_codex_dir" >> "$GITHUB_ENV"
           mkdir -p "$eval_home_dir" "$eval_codex_dir"
           {
