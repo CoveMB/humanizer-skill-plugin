@@ -6,7 +6,6 @@
       "tags": [
         "rewrite_only_output",
         "factual_integrity",
-        "no_em_dash",
         "no_chatbot_wrapper",
         "no_contrast_frame",
         "no_rule_of_three",
@@ -74,7 +73,6 @@
           "(?i)\\bmore\\s+than\\s+(?:just\\s+)?autocomplete\\b",
           "(?i)(?:^|[.!?]\\s+)adoption\\s+is\\s+(?:rising|growing)(?:[.!?]|$)"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_rule_of_three": true,
@@ -113,7 +111,6 @@
           "crucial role",
           "productivity ecosystem"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_rule_of_three": true,
@@ -129,8 +126,7 @@
       "tags": [
         "rewrite_only_output",
         "voice_calibration",
-        "preserve_supplied_facts",
-        "no_em_dash"
+        "preserve_supplied_facts"
       ],
       "prompt": "Humanize this text. Match this writing sample: I keep my notes short because I actually read them later. If a tool makes me babysit it, I stop using it. Draft:",
       "source": "The ChronoPad release introduces a significantly enhanced offline mode, showcasing the team's commitment to seamless productivity. Users can now edit notes on flights and sync them when they reconnect.",
@@ -150,7 +146,6 @@
           "part I care about",
           "sounds usable"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_rule_of_three": true,
@@ -191,7 +186,6 @@
           "(?i)factual integrity\\s*:\\s*(?:9|10)/10"
         ],
         "minimum_score_out_of_80": 56,
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_markdown_fence": true,
@@ -201,15 +195,14 @@
       }
     },
     {
-      "id": "dense_banned_list_scrub",
+      "id": "dense_pattern_catalog_scrub",
       "mode": "rewrite",
       "tags": [
         "rewrite_only_output",
-        "dense_banned_list",
+        "dense_pattern_catalog",
         "no_chatbot_wrapper",
         "no_contrast_frame",
-        "no_rule_of_three",
-        "no_em_dash"
+        "no_rule_of_three"
       ],
       "prompt": "Humanize this dense draft. Return only the rewritten text.",
       "source": "Certainly! In today's fast-paced landscape, NovaBuild leverages a robust, scalable, and innovative framework to streamline decision-making, foster cross-functional synergy, and move the needle. It's not just a dashboard, it's a paradigm shift. \ud83d\ude80",
@@ -231,7 +224,6 @@
           "paradigm shift",
           "\ud83d\ude80"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_rule_of_three": true,
@@ -247,7 +239,6 @@
       "tags": [
         "rewrite_only_output",
         "factual_integrity",
-        "no_em_dash",
         "no_chatbot_wrapper",
         "preserve_supplied_facts"
       ],
@@ -265,7 +256,6 @@
           "commitment",
           "seamless collaboration"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_markdown_fence": true,
@@ -280,7 +270,6 @@
       "tags": [
         "rewrite_only_output",
         "factual_integrity",
-        "no_em_dash",
         "no_chatbot_wrapper",
         "preserve_supplied_facts"
       ],
@@ -308,7 +297,6 @@
         "must_not_match": [
           "(?i)\\b(?:make|makes|making)\\b[^.?!]{0,60}\\beasier\\b"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_markdown_fence": true,
@@ -346,7 +334,6 @@
           "productivity",
           "better decisions"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_rule_of_three": true,
@@ -382,7 +369,6 @@
         "must_not_include": [
           "some say"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
         "no_rule_of_three": true,
@@ -410,9 +396,67 @@
           "watch error rates",
           "before calling the change a success"
         ],
-        "no_em_dash": true,
         "no_chatbot_wrapper": true,
         "no_contrast_frame": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "editorial_contextual_false_positives",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "contextual_false_positive",
+        "scientific_register"
+      ],
+      "prompt": "Humanize this scientific prose only where needed. Preserve legitimate punctuation, passive voice, emphasis, and concrete list structure. Return only the rewritten text.",
+      "source": "The primary endpoint was time to recovery—specified before enrollment. This detail was important because the protocol required blood pressure, heart rate, and oxygen saturation.",
+      "constraints": {
+        "must_include": [
+          "recovery—specified before enrollment",
+          "was important",
+          "blood pressure, heart rate, and oxygen saturation"
+        ],
+        "exact_occurrences": {
+          "—": 1
+        },
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "editorial_scientific_profile",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "scientific_register",
+        "preserve_epistemic_status"
+      ],
+      "prompt": "Edit this scientific passage editorially. Remove formulaic padding while preserving the citation, association, limitation, and causal boundary. Return only the rewritten text.",
+      "source": "In Smith et al. (2024), exposure was associated with higher symptom scores. It is important to note that the observational design does not establish causality. Despite these limitations, these findings make a significant contribution to the field.",
+      "constraints": {
+        "must_include": [
+          "Smith et al. (2024)",
+          "exposure was associated with higher symptom scores",
+          "observational design",
+          "does not establish causality"
+        ],
+        "must_not_include": [
+          "It is important to note",
+          "Despite these limitations",
+          "significant contribution to the field"
+        ],
+        "no_chatbot_wrapper": true,
         "no_markdown_fence": true,
         "no_new_numbers": true,
         "no_new_named_entities": true,
@@ -494,6 +538,77 @@
           "verify API v2.1",
           "review https://example.com/policy"
         ],
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "faithful_meaningful_local_rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "minimal_edit",
+        "faithful_modality",
+        "faithful_scope",
+        "faithful_meaningful_rewrite"
+      ],
+      "prompt": "Rewrite this so it sounds substantially less formulaic while preserving every proposition, hedge, scope qualifier, and relation. Return only the rewritten text.",
+      "source": "At this point in time, the committee is in the process of conducting an evaluation of the proposal, and it may potentially recommend revisions for some sections.",
+      "constraints": {
+        "must_include": [
+          "committee",
+          "proposal",
+          "may recommend revisions",
+          "some sections"
+        ],
+        "must_not_include": [
+          "At this point in time",
+          "in the process of",
+          "conducting an evaluation",
+          "may potentially"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true
+      }
+    },
+    {
+      "id": "faithful_scientific_register",
+      "mode": "rewrite",
+      "tags": [
+        "rewrite_only_output",
+        "factual_integrity",
+        "preserve_supplied_facts",
+        "faithful_attribution",
+        "faithful_modality",
+        "faithful_negation",
+        "faithful_causality",
+        "faithful_scientific_register"
+      ],
+      "prompt": "Make this scientific passage less formulaic without changing its terminology, passive construction, citation, uncertainty, negation, or causal meaning. Return only the rewritten text.",
+      "source": "It is important to note that, in Smith et al. (2024), the weighted interval score was measured for each model. The weighted interval score may be associated with forecast calibration, but the study did not establish causality.",
+      "constraints": {
+        "must_include": [
+          "Smith et al. (2024)",
+          "was measured for each model",
+          "may be associated with forecast calibration",
+          "did not establish causality"
+        ],
+        "must_not_include": [
+          "It is important to note"
+        ],
+        "exact_occurrences": {
+          "weighted interval score": 2
+        },
+        "must_differ_from_source": true,
         "no_chatbot_wrapper": true,
         "no_markdown_fence": true,
         "no_new_numbers": true,

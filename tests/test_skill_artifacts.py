@@ -6,6 +6,7 @@ from tests.helpers.skill_artifacts import (
     MARKETPLACE_PATH,
     REFERENCE_PATH,
     REPO_ROOT,
+    SCIENTIFIC_REFERENCE_PATH,
     SKILL_PATH,
     extract_frontmatter,
     frontmatter_list,
@@ -36,6 +37,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             MARKETPLACE_PATH,
             SKILL_PATH,
             REFERENCE_PATH,
+            SCIENTIFIC_REFERENCE_PATH,
             FAITHFUL_SKILL_PATH,
             RESEARCH_PATH,
             SKILL_EXAMPLES_PATH,
@@ -91,22 +93,32 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             with self.subTest(term=term):
                 self.assertIn(term, normalized)
 
+    def test_editorial_skill_directly_distinguishes_substantive_and_surface_edits(self):
+        normalized = " ".join(self.skill_markdown.split())
+        for term in [
+            "substantive, voice-oriented Humanizer",
+            "Editorial Humanizer may change selection, structure, emphasis, and rhetorical presentation",
+            "Faithful Humanizer may change only surface form",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, normalized)
+
     def test_editorial_skill_protects_factual_integrity(self):
         normalized = " ".join(self.skill_markdown.split())
         required_terms = [
             "Do not invent details",
             "Do not invent benefits or causal explanations",
             "Preserve epistemic status",
-            "Prefer the smallest faithful rewrite",
+            "Use the smallest sufficient intervention",
             "Rewrite mode is not audit mode",
-            "No em dashes",
-            "No forced rule-of-three lists",
-            "No contrast framing",
-            "No `not just` phrasing",
-            "No dramatic staccato bursts",
-            "No rhetorical transition hooks",
+            "Preserve fitting punctuation",
+            "Do not force rule-of-three lists",
+            "Do not use contrast framing as a crutch",
+            "Treat `not just` as a contextual signal",
+            "Avoid manufactured staccato",
+            "Evaluate rhetorical transition hooks",
             "No fake naming",
-            "No self-narration",
+            "Remove empty self-narration",
             "No chatbot wrapper",
             "No vague attribution presented as evidence",
             "Preserve supplied concrete nouns",
@@ -116,6 +128,20 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         for term in required_terms:
             with self.subTest(term=term):
                 self.assertIn(term, normalized)
+
+    def test_editorial_patterns_are_contextual_signals_not_blanket_bans(self):
+        normalized = " ".join(self.skill_markdown.split())
+        for term in [
+            "diagnostic signals, not proof of authorship",
+            "Is the pattern isolated, or does it cluster or repeat?",
+            "genre, register, locale, or supplied style guide",
+            "A single em dash is not an AI tell by itself",
+            "Do not fail this check because of one em dash",
+            "Passive voice is not a problem by itself",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, normalized)
+        self.assertNotIn("No em dashes by default", normalized)
 
     def test_fact_safe_boundaries_cover_observed_live_failures(self):
         normalized = " ".join(self.skill_markdown.split())
@@ -145,7 +171,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             with self.subTest(pattern=expected_pattern):
                 self.assertRegex(normalized, expected_pattern)
 
-    def test_scoring_gate_thresholds_are_present(self):
+    def test_user_requested_editorial_score_thresholds_are_present(self):
         for threshold in [
             "Total must be at least 56/80",
             "Mechanics must be at least 35/50",
@@ -155,17 +181,38 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             self.assertIn(threshold, self.skill_markdown)
 
     def test_reference_catalog_is_available(self):
-        self.assertIn("references/banned-list.md", self.skill_markdown)
+        self.assertIn("references/pattern-catalog.md", self.skill_markdown)
         for section in [
-            "## Transition words to avoid",
-            "## Adjectives AI overuses",
-            "## Plain-word swaps",
-            "## Contrast framing (all variants)",
-            "## Rule-of-three (all variants)",
-            "## Fake naming",
+            "## Transition words to evaluate in context",
+            "## Adjective clusters AI writing often overuses",
+            "## Possible plain-word alternatives",
+            "## Repeated contrast framing",
+            "## Repeated or padded rule-of-three patterns",
+            "## Unsupported or ornamental naming",
         ]:
             with self.subTest(section=section):
                 self.assertIn(section, self.reference_markdown)
+
+    def test_shared_scientific_reference_has_editorial_preservation_boundaries(self):
+        scientific_reference = read_text(SCIENTIFIC_REFERENCE_PATH)
+        normalized_skill = " ".join(self.skill_markdown.split())
+        normalized_reference = " ".join(scientific_reference.split())
+        for term in [
+            "../references/registers/scientific-writing.md",
+            "Scientific and academic profile",
+            "preserve epistemic caution, evidence boundaries, citation attribution",
+            "Never replace `was measured` with `we measured`",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, normalized_skill)
+        for term in [
+            "Faithful Humanizer treats this file as preservation constraints",
+            "Editorial Humanizer uses it as genre-specific guidance",
+            "Precision outranks lexical variety",
+            "Passive voice is conventional and useful",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, normalized_reference)
 
     def test_editorial_output_contract_is_explicit(self):
         normalized = " ".join(self.skill_markdown.split())
@@ -233,6 +280,8 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         for skill_name in ("editorial-humanizer", "faithful-humanizer"):
             source_path = f"humanizer-skill-plugin/skills/{skill_name}"
             self.assertGreaterEqual(self.readme_markdown.count(source_path), 3)
+        shared_reference_path = "humanizer-skill-plugin/skills/references"
+        self.assertGreaterEqual(self.readme_markdown.count(shared_reference_path), 3)
 
     def test_client_specific_activation_uses_supported_forms(self):
         examples = read_text(SKILL_EXAMPLES_PATH)

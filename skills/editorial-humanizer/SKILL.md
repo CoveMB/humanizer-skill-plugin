@@ -4,8 +4,8 @@ version: 3.0.0
 description: |
   Apply broad editorial judgment to AI-drafted or AI-sounding prose. Use when the
   user wants anti-slop cleanup, tighter structure, removal of weak or generic
-  material, stronger natural voice, or an audit of AI-writing patterns. This skill
-  may reshape wording, structure, emphasis, and voice while preserving factual
+  material, stronger natural voice, or an audit of formulaic writing patterns. This
+  skill may reshape wording, structure, emphasis, and voice while preserving factual
   integrity. Do not use when every supplied claim, qualifier, attribution, example,
   and logical relation must remain; use faithful-humanizer instead.
 license: MIT AND CC-BY-SA-4.0
@@ -44,7 +44,8 @@ Editorial Humanizer may:
 - sharpen the point of view and vary rhythm;
 - match a supplied writing sample;
 - ask for missing evidence when a claim cannot be rewritten safely;
-- audit and score AI-writing patterns when requested.
+- audit and score editorial quality and formulaic writing patterns when requested,
+  without claiming to determine authorship.
 
 It must not invent facts, sources, quotations, examples, or experiences.
 

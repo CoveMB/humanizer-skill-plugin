@@ -25,6 +25,31 @@
         }
       ]
     },
+    "faithful_humanizer_rewrite": {
+      "minimum_total_score": 32,
+      "minimum_dimension_score": 8,
+      "minimum_dimension_scores": {
+        "semantic_fidelity": 9
+      },
+      "dimensions": [
+        {
+          "name": "semantic_fidelity",
+          "question": "Does the output preserve every proposition, attribution, qualifier, negation, scope boundary, logical relation, example, and concrete anchor without adding, removing, strengthening, or weakening content?"
+        },
+        {
+          "name": "meaningful_surface_rewrite",
+          "question": "Where the source is formulaic or awkward, does the output make a clearly more natural, less AI-sounding surface-level rewrite instead of merely proofreading or making a token change?"
+        },
+        {
+          "name": "register_and_voice_preservation",
+          "question": "Does the output preserve the source's register, voice, technical precision, and legitimate scientific conventions rather than making the prose generically conversational?"
+        },
+        {
+          "name": "localized_intervention",
+          "question": "Does the output leave already-natural material intact and avoid broader restructuring when a local wording or syntax repair is sufficient?"
+        }
+      ]
+    },
     "missing_source_handling": {
       "minimum_total_score": 24,
       "minimum_dimension_score": 8,
@@ -101,7 +126,7 @@
       "source": "Great question! Here is an overview. AI coding assistants serve as an enduring testament to the transformative potential of large language models, marking a pivotal moment in the rapidly evolving landscape of software development. At its core, the value proposition is clear: streamlining documentation, enhancing tests, and fostering alignment. It is not just about autocomplete; it is about unlocking creativity at scale. Industry observers have noted adoption is rising. Let me know if you want more detail.",
       "expected_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
-        "skills/editorial-humanizer/references/banned-list.md"
+        "skills/editorial-humanizer/references/pattern-catalog.md"
       ],
       "output_contract_case_id": "dense_ai_rewrite",
       "rubric_id": "humanizer_rewrite"
@@ -142,7 +167,7 @@
       "source": "Great question! Here is an overview. AI coding assistants serve as an enduring testament to the transformative potential of large language models, marking a pivotal moment in the rapidly evolving landscape of software development. At its core, the value proposition is clear: streamlining documentation, enhancing tests, and fostering alignment. It is not just about autocomplete; it is about unlocking creativity at scale. Industry observers have noted adoption is rising. Let me know if you want more detail.",
       "expected_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
-        "skills/editorial-humanizer/references/banned-list.md"
+        "skills/editorial-humanizer/references/pattern-catalog.md"
       ],
       "output_contract_case_id": "dense_ai_rewrite"
     },
@@ -159,7 +184,7 @@
       "output_contract_case_id": "voice_calibration"
     },
     {
-      "id": "implicit_dense_banned_list",
+      "id": "implicit_dense_pattern_catalog",
       "category": "implicit",
       "should_trigger": true,
       "force_skill_file_read": true,
@@ -168,9 +193,9 @@
       "source": "Certainly! In today's fast-paced landscape, NovaBuild leverages a robust, scalable, and innovative framework to streamline decision-making, foster cross-functional synergy, and move the needle. It's not just a dashboard, it's a paradigm shift. 🚀",
       "expected_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
-        "skills/editorial-humanizer/references/banned-list.md"
+        "skills/editorial-humanizer/references/pattern-catalog.md"
       ],
-      "output_contract_case_id": "dense_banned_list_scrub"
+      "output_contract_case_id": "dense_pattern_catalog_scrub"
     },
     {
       "id": "contextual_release_notes",
@@ -236,6 +261,39 @@
       "rubric_id": "humanizer_rewrite"
     },
     {
+      "id": "editorial_preserves_contextual_false_positives",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "force_reference_file_reads": [
+        "skills/references/registers/scientific-writing.md"
+      ],
+      "prompt": "Use $editorial-humanizer only where needed. Preserve legitimate scientific punctuation, passive voice, emphasis, and concrete list structure. Return only the rewritten text.",
+      "source": "The primary endpoint was time to recovery—specified before enrollment. This detail was important because the protocol required blood pressure, heart rate, and oxygen saturation.",
+      "expected_trace_terms": [
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/references/registers/scientific-writing.md"
+      ],
+      "output_contract_case_id": "editorial_contextual_false_positives"
+    },
+    {
+      "id": "editorial_uses_scientific_profile",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "force_reference_file_reads": [
+        "skills/references/registers/scientific-writing.md"
+      ],
+      "prompt": "Use $editorial-humanizer with its scientific profile. Remove formulaic padding while preserving the citation, association, limitation, and causal boundary. Return only the rewritten text.",
+      "source": "In Smith et al. (2024), exposure was associated with higher symptom scores. It is important to note that the observational design does not establish causality. Despite these limitations, these findings make a significant contribution to the field.",
+      "expected_trace_terms": [
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/references/registers/scientific-writing.md"
+      ],
+      "output_contract_case_id": "editorial_scientific_profile",
+      "rubric_id": "humanizer_rewrite"
+    },
+    {
       "id": "faithful_preserves_attribution_modality_scope",
       "target_skill": "faithful-humanizer",
       "category": "explicit",
@@ -246,7 +304,8 @@
       "expected_trace_terms": [
         "skills/faithful-humanizer/SKILL.md"
       ],
-      "output_contract_case_id": "faithful_attribution_modality_scope"
+      "output_contract_case_id": "faithful_attribution_modality_scope",
+      "rubric_id": "faithful_humanizer_rewrite"
     },
     {
       "id": "faithful_preserves_promotional_opinion_chronology",
@@ -259,7 +318,8 @@
       "expected_trace_terms": [
         "skills/faithful-humanizer/SKILL.md"
       ],
-      "output_contract_case_id": "faithful_promotional_opinion_chronology"
+      "output_contract_case_id": "faithful_promotional_opinion_chronology",
+      "rubric_id": "faithful_humanizer_rewrite"
     },
     {
       "id": "faithful_preserves_exact_anchors_and_list_membership",
@@ -272,7 +332,40 @@
       "expected_trace_terms": [
         "skills/faithful-humanizer/SKILL.md"
       ],
-      "output_contract_case_id": "faithful_exact_anchors_and_list_membership"
+      "output_contract_case_id": "faithful_exact_anchors_and_list_membership",
+      "rubric_id": "faithful_humanizer_rewrite"
+    },
+    {
+      "id": "faithful_performs_meaningful_local_rewrite",
+      "target_skill": "faithful-humanizer",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $faithful-humanizer to make this substantially less formulaic while preserving every proposition, hedge, scope qualifier, and relation. Return only the rewritten text.",
+      "source": "At this point in time, the committee is in the process of conducting an evaluation of the proposal, and it may potentially recommend revisions for some sections.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "faithful_meaningful_local_rewrite",
+      "rubric_id": "faithful_humanizer_rewrite"
+    },
+    {
+      "id": "faithful_preserves_scientific_register",
+      "target_skill": "faithful-humanizer",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "force_reference_file_reads": [
+        "skills/references/registers/scientific-writing.md"
+      ],
+      "prompt": "Use $faithful-humanizer to make this scientific passage less formulaic without changing its terminology, passive construction, citation, uncertainty, negation, or causal meaning. Return only the rewritten text.",
+      "source": "It is important to note that, in Smith et al. (2024), the weighted interval score was measured for each model. The weighted interval score may be associated with forecast calibration, but the study did not establish causality.",
+      "expected_trace_terms": [
+        "skills/faithful-humanizer/SKILL.md",
+        "skills/references/registers/scientific-writing.md"
+      ],
+      "output_contract_case_id": "faithful_scientific_register",
+      "rubric_id": "faithful_humanizer_rewrite"
     },
     {
       "id": "negative_fact_check_only",
@@ -282,7 +375,7 @@
       "source": "Atlas Note adoption increased by 43% last quarter according to industry reports.",
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
-        "Editorial Humanizer: Fact-Safe Anti-Slop Editor"
+        "Editorial Humanizer: Fact-Safe Editorial Rewrite"
       ],
       "output_contract_case_id": "negative_fact_check_only",
       "rubric_id": "negative_fact_check"
@@ -295,7 +388,7 @@
       "source": "The product includes offline comments and faster issue search.",
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
-        "Editorial Humanizer: Fact-Safe Anti-Slop Editor"
+        "Editorial Humanizer: Fact-Safe Editorial Rewrite"
       ],
       "output_contract_case_id": "negative_translate_only"
     },
@@ -307,7 +400,7 @@
       "source": "The release includes offline comments, faster issue search, and a redesigned notification settings page.",
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
-        "Editorial Humanizer: Fact-Safe Anti-Slop Editor"
+        "Editorial Humanizer: Fact-Safe Editorial Rewrite"
       ],
       "output_contract_case_id": "negative_summary_only"
     },
@@ -319,7 +412,7 @@
       "source": "The releese includes offline commments and faster issue serch.",
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
-        "Editorial Humanizer: Fact-Safe Anti-Slop Editor"
+        "Editorial Humanizer: Fact-Safe Editorial Rewrite"
       ],
       "output_contract_case_id": "negative_spellcheck_only"
     }

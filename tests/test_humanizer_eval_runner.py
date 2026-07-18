@@ -135,10 +135,10 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             case
             for case in cases
             if case.get("output_contract_case_id")
-            in {"dense_ai_rewrite", "dense_banned_list_scrub"}
+            in {"dense_ai_rewrite", "dense_pattern_catalog_scrub"}
         ]
 
-        self.assertGreaterEqual(len(cases), 18)
+        self.assertGreaterEqual(len(cases), 22)
         self.assertTrue({"explicit", "implicit", "contextual", "negative"}.issubset(categories))
         self.assertTrue(
             {
@@ -146,15 +146,19 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 "missing_source_handling",
                 "voice_calibration",
                 "audit_mode",
-                "dense_banned_list_scrub",
+                "dense_pattern_catalog_scrub",
                 "contextual_release_notes",
                 "contextual_docs_cleanup",
                 "unsupported_benefit_substitution",
                 "epistemic_status_preservation",
                 "already_natural_restraint",
+                "editorial_contextual_false_positives",
+                "editorial_scientific_profile",
                 "faithful_attribution_modality_scope",
                 "faithful_promotional_opinion_chronology",
                 "faithful_exact_anchors_and_list_membership",
+                "faithful_meaningful_local_rewrite",
+                "faithful_scientific_register",
                 "negative_fact_check_only",
                 "negative_translate_only",
                 "negative_summary_only",
@@ -164,6 +168,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertTrue(
             {
                 "humanizer_rewrite",
+                "faithful_humanizer_rewrite",
                 "missing_source_handling",
                 "humanizer_audit",
                 "negative_fact_check",
@@ -180,7 +185,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         for case in dense_reference_cases:
             with self.subTest(dense_reference_case=case["id"]):
                 self.assertIn(
-                    "skills/editorial-humanizer/references/banned-list.md",
+                    "skills/editorial-humanizer/references/pattern-catalog.md",
                     case["expected_trace_terms"],
                 )
                 self.assertTrue(case.get("force_reference_file_read", False))
@@ -215,6 +220,8 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 "faithful_preserves_attribution_modality_scope",
                 "faithful_preserves_promotional_opinion_chronology",
                 "faithful_preserves_exact_anchors_and_list_membership",
+                "faithful_performs_meaningful_local_rewrite",
+                "faithful_preserves_scientific_register",
             },
         )
         for case in faithful_cases.values():
@@ -223,6 +230,24 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 self.assertTrue(case["force_skill_file_read"])
                 self.assertFalse(case.get("force_reference_file_read", False))
                 self.assertIn(FAITHFUL_SKILL_TRACE_PATH, case["expected_trace_terms"])
+                self.assertEqual(case["rubric_id"], "faithful_humanizer_rewrite")
+                self.assertEqual(
+                    case["rubric"]["minimum_dimension_scores"],
+                    {"semantic_fidelity": 9},
+                )
+                self.assertIn(
+                    "less AI-sounding surface-level rewrite",
+                    next(
+                        dimension["question"]
+                        for dimension in case["rubric"]["dimensions"]
+                        if dimension["name"] == "meaningful_surface_rewrite"
+                    ),
+                )
+        scientific_case = faithful_cases["faithful_preserves_scientific_register"]
+        self.assertEqual(
+            scientific_case["force_reference_file_reads"],
+            ["skills/references/registers/scientific-writing.md"],
+        )
 
     def test_all_cases_reject_humanizer_plugin_loader_warnings(self):
         cases = self.runner.load_eval_cases(EVAL_CASES_PATH)
@@ -272,13 +297,46 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             )
 
     def test_load_eval_cases_rejects_faithful_reference_catalog_reads(self):
-        with self.assertRaisesRegex(ValueError, "only supported for editorial-humanizer"):
+        with self.assertRaisesRegex(ValueError, "not supported for faithful-humanizer"):
             self._load_cases_from_data(
                 {
                     "cases": [
                         minimal_eval_case(
                             target_skill="faithful-humanizer",
                             force_reference_file_read=True,
+                        )
+                    ]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_accepts_shared_scientific_reference_for_faithful(self):
+        cases = self._load_cases_from_data(
+            {
+                "cases": [
+                    minimal_eval_case(
+                        target_skill="faithful-humanizer",
+                        force_reference_file_reads=[
+                            "skills/references/registers/scientific-writing.md"
+                        ],
+                    )
+                ]
+            },
+            output_contract_cases={},
+        )
+
+        self.assertEqual(
+            self.runner.reference_paths_for_case(cases[0]),
+            ["skills/references/registers/scientific-writing.md"],
+        )
+
+    def test_load_eval_cases_rejects_unknown_reference_path(self):
+        with self.assertRaisesRegex(ValueError, "unsupported reference path"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(
+                            force_reference_file_reads=["../../outside.md"]
                         )
                     ]
                 },
@@ -481,7 +539,29 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         self.assertIn("Read `skills/editorial-humanizer/SKILL.md` before answering.", prompt)
         self.assertIn(
-            "Read `skills/editorial-humanizer/references/banned-list.md` before answering.",
+            "Read `skills/editorial-humanizer/references/pattern-catalog.md` before answering.",
+            prompt,
+        )
+
+    def test_build_codex_prompt_can_read_shared_scientific_reference(self):
+        case = {
+            "id": "scientific",
+            "target_skill": "faithful-humanizer",
+            "category": "explicit",
+            "should_trigger": True,
+            "force_skill_file_read": True,
+            "force_reference_file_reads": [
+                "skills/references/registers/scientific-writing.md"
+            ],
+            "prompt": "Preserve this scientific register.",
+            "source": "The samples may be associated with the outcome.",
+        }
+
+        prompt = self.runner.build_codex_prompt(case)
+
+        self.assertIn("Read `skills/faithful-humanizer/SKILL.md`", prompt)
+        self.assertIn(
+            "Read `skills/references/registers/scientific-writing.md` before answering.",
             prompt,
         )
 
@@ -504,7 +584,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             prompt,
         )
         self.assertIn(
-            f"`{plugin_root}/skills/editorial-humanizer/references/banned-list.md`",
+            f"`{plugin_root}/skills/editorial-humanizer/references/pattern-catalog.md`",
             prompt,
         )
 
@@ -804,6 +884,20 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             self.assertEqual(
                 plugin_root.joinpath("skills", "faithful-humanizer", "SKILL.md").read_bytes(),
                 REPO_ROOT.joinpath("skills", "faithful-humanizer", "SKILL.md").read_bytes(),
+            )
+            self.assertEqual(
+                plugin_root.joinpath(
+                    "skills",
+                    "references",
+                    "registers",
+                    "scientific-writing.md",
+                ).read_bytes(),
+                REPO_ROOT.joinpath(
+                    "skills",
+                    "references",
+                    "registers",
+                    "scientific-writing.md",
+                ).read_bytes(),
             )
             self.assertFalse(plugin_root.joinpath(".git").exists())
             self.assertFalse(plugin_root.joinpath("tests").exists())
@@ -1205,6 +1299,19 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             self.assertTrue(summary["passed"], summary["error"])
             self.assertEqual(summary["command_count"], 1)
             self.assertEqual(summary["input_tokens"], 123)
+            self.assertIsNotNone(summary["editorial_source_diagnostics"])
+            self.assertIsNotNone(summary["editorial_output_diagnostics"])
+            self.assertNotIn("verdict", summary["editorial_output_diagnostics"])
+
+    def test_editorial_diagnostics_are_not_applied_to_faithful_cases(self):
+        case = minimal_eval_case(
+            target_skill="faithful-humanizer",
+            source="It is important to note that the samples were measured.",
+        )
+
+        self.assertIsNone(
+            self.runner.editorial_diagnostics_for_case(case, case["source"])
+        )
 
     def test_run_eval_case_runs_rubric_grade_when_enabled(self):
         case = minimal_eval_case(

@@ -15,6 +15,8 @@ SUPPORTED_CONSTRAINT_KEYS = {
     "must_match",
     "must_not_include",
     "must_not_match",
+    "exact_occurrences",
+    "must_differ_from_source",
     "no_new_named_entities",
     "no_new_numbers",
     "no_em_dash",
@@ -177,6 +179,37 @@ def require_patterns(case_id, output, patterns):
         f"{case_id}: required pattern missing {pattern!r}"
         for pattern in missing_patterns
     )
+
+
+def enforce_exact_occurrences(case_id, output, expected_occurrences):
+    if not isinstance(expected_occurrences, dict):
+        raise AssertionError(f"{case_id}: exact_occurrences must be an object")
+    violations = []
+    lowered_output = output.lower()
+    for fragment, expected_count in expected_occurrences.items():
+        if not isinstance(fragment, str) or not fragment:
+            violations.append(
+                f"{case_id}: exact_occurrences keys must be non-empty strings"
+            )
+            continue
+        if type(expected_count) is not int or expected_count < 0:
+            violations.append(
+                f"{case_id}: exact occurrence count for {fragment!r} must be a "
+                "non-negative integer"
+            )
+            continue
+        actual_count = lowered_output.count(fragment.lower())
+        if actual_count != expected_count:
+            violations.append(
+                f"{case_id}: {fragment!r} occurs {actual_count} time(s); "
+                f"expected {expected_count}"
+            )
+    raise_if_violations(violations)
+
+
+def require_source_change(case_id, source, output):
+    if normalize_text(source).casefold() == normalize_text(output).casefold():
+        raise AssertionError(f"{case_id}: output did not rewrite the source")
 
 
 def reject_em_dash(case_id, output):
@@ -412,6 +445,24 @@ def validate_case_output(case, output):
         normalized_output,
         constraints.get("must_not_match", []),
     )
+
+    if "exact_occurrences" in constraints:
+        collect_violation(
+            violations,
+            enforce_exact_occurrences,
+            case_id,
+            normalized_output,
+            constraints["exact_occurrences"],
+        )
+
+    if constraints.get("must_differ_from_source", False):
+        collect_violation(
+            violations,
+            require_source_change,
+            case_id,
+            source,
+            normalized_output,
+        )
 
     if constraints.get("no_em_dash", False):
         collect_violation(violations, reject_em_dash, case_id, normalized_output)

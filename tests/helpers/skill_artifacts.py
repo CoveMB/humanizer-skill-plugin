@@ -12,7 +12,10 @@ REFERENCE_PATH = (
     / "skills"
     / "editorial-humanizer"
     / "references"
-    / "banned-list.md"
+    / "pattern-catalog.md"
+)
+SCIENTIFIC_REFERENCE_PATH = (
+    REPO_ROOT / "skills" / "references" / "registers" / "scientific-writing.md"
 )
 FIXTURE_PATH = REPO_ROOT / "tests" / "fixtures" / "humanizer_contract_cases.json"
 

@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from scripts.editorial_diagnostics import analyze_text  # noqa: E402
 from tests.helpers.output_contracts import validate_case_output  # noqa: E402
 from tests.helpers.skill_artifacts import load_fixture_cases  # noqa: E402
 
@@ -663,6 +664,12 @@ def target_skill_for_case(case):
     return case.get("target_skill", DEFAULT_TARGET_SKILL)
 
 
+def editorial_diagnostics_for_case(case, text):
+    if target_skill_for_case(case) != DEFAULT_TARGET_SKILL or not case["should_trigger"]:
+        return None
+    return analyze_text(text)
+
+
 def reference_paths_for_case(case):
     reference_paths = []
     if case.get("force_reference_file_read", False):
@@ -1171,6 +1178,11 @@ def run_eval_case(
         "rubric_passed": None,
         "rubric_error": None,
         "rubric_total_score": None,
+        "editorial_source_diagnostics": editorial_diagnostics_for_case(
+            case,
+            case["source"],
+        ),
+        "editorial_output_diagnostics": None,
         **empty_trace_metrics(),
     }
 
@@ -1211,6 +1223,10 @@ def run_eval_case(
         check_stderr_expectations(case, result.stderr)
 
         output_text = read_final_output(case, output_path)
+        summary["editorial_output_diagnostics"] = editorial_diagnostics_for_case(
+            case,
+            output_text,
+        )
         validate_case_output_contract(case, output_text, output_contract_cases)
         if grade_rubric and case.get("rubric"):
             try:

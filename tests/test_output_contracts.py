@@ -22,6 +22,31 @@ BASE_CASE = {
 
 
 class OutputContractTests(unittest.TestCase):
+    def test_requires_source_change_when_requested(self):
+        case = {
+            "id": "meaningful_rewrite",
+            "source": "The committee is in the process of reviewing the proposal.",
+            "constraints": {"must_differ_from_source": True},
+        }
+
+        with self.assertRaisesRegex(AssertionError, "did not rewrite the source"):
+            validate_case_output(case, case["source"])
+
+        validate_case_output(case, "The committee is reviewing the proposal.")
+
+    def test_exact_occurrences_preserve_repeated_technical_terms(self):
+        case = {
+            "id": "technical_repetition",
+            "constraints": {"exact_occurrences": {"weighted interval score": 2}},
+        }
+
+        validate_case_output(
+            case,
+            "The weighted interval score was recorded. The weighted interval score remained stable.",
+        )
+        with self.assertRaisesRegex(AssertionError, "occurs 1 time"):
+            validate_case_output(case, "The weighted interval score remained stable.")
+
     def test_dense_ai_rewrite_rejects_live_rubric_failure(self):
         cases = {case["id"]: case for case in load_fixture_cases()}
 

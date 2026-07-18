@@ -44,7 +44,7 @@ form.
 
 Use **Editorial Humanizer** instead when the user wants broader anti-slop editing,
 removal of weak or generic material, structural reshaping, stronger voice, or an
-AI-writing audit and score.
+editorial-quality audit and score.
 
 ## Default contract
 

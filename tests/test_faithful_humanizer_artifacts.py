@@ -4,6 +4,7 @@ import unittest
 from tests.helpers.skill_artifacts import (
     MANIFEST_PATH,
     REPO_ROOT,
+    SCIENTIFIC_REFERENCE_PATH,
     SKILL_PATH,
     extract_frontmatter,
     frontmatter_list,
@@ -33,6 +34,7 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
     def test_required_files_exist_and_fit_plugin_skill_root(self):
         self.assertTrue(FAITHFUL_SKILL_PATH.exists(), FAITHFUL_SKILL_PATH)
         self.assertTrue(RESEARCH_PATH.exists(), RESEARCH_PATH)
+        self.assertTrue(SCIENTIFIC_REFERENCE_PATH.exists(), SCIENTIFIC_REFERENCE_PATH)
         self.assertEqual(self.manifest["skills"], "./skills/")
         self.assertEqual(FAITHFUL_SKILL_PATH.parent.parent, REPO_ROOT / "skills")
 
@@ -67,7 +69,20 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
         faithful_lines = len(self.skill_markdown.splitlines())
         editorial_lines = len(read_text(SKILL_PATH).splitlines())
         self.assertLess(faithful_lines, editorial_lines)
-        self.assertNotIn("references/", self.skill_markdown)
+        self.assertIn("../references/registers/scientific-writing.md", self.skill_markdown)
+        self.assertNotIn("pattern-catalog.md", self.skill_markdown)
+
+    def test_faithful_is_local_but_not_timid(self):
+        for term in [
+            "Faithful does not mean literal or timid",
+            "rewrite every problematic span for a clearly more natural result",
+            "Minimal means localized",
+            "Do not return the source unchanged merely because preservation is strict",
+            "The result should be materially less formulaic, not merely proofread",
+            "choose the one that removes more of the local AI-shaped form",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, self.normalized_skill)
 
     def test_contract_preserves_local_semantics_not_only_core_meaning(self):
         required_invariants = [
@@ -136,12 +151,32 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
             with self.subTest(rule=forbidden_rule):
                 self.assertNotIn(forbidden_rule, self.normalized_skill)
 
+    def test_scientific_register_preserves_precision_and_epistemic_status(self):
+        scientific_reference = normalize_markdown(read_text(SCIENTIFIC_REFERENCE_PATH))
+        for term in [
+            "Scientific and academic register preservation",
+            "preserve technical and disciplinary terminology",
+            "preserve conventional hedging, qualification, uncertainty, and citation language",
+            "Do not change `was measured` to `we measured`",
+            "Do not vary an exact technical term merely for rhythm",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, self.normalized_skill)
+        for term in [
+            "Do not turn an observed association into a cause",
+            "Precision outranks lexical variety",
+            "Keep citation markers and their associated claims together",
+        ]:
+            with self.subTest(term=term):
+                self.assertIn(term, scientific_reference)
+
     def test_workflow_requires_bidirectional_semantic_diff_and_restore_on_doubt(self):
         for step in [
             "Map every source proposition to the rewrite and every rewrite proposition back to the source",
             "If equivalence is uncertain, keep or restore the original wording",
             "No source claim disappeared, and no new claim appeared",
             "no style rule was applied for its own sake",
+            "Every genuine form problem with a safe equivalent was repaired",
         ]:
             with self.subTest(step=step):
                 self.assertIn(step, self.normalized_skill)
@@ -161,7 +196,7 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
             "broader anti-slop editing",
             "removal of weak or generic material",
             "structural reshaping",
-            "AI-writing audit and score",
+            "editorial-quality audit and score",
         ]:
             with self.subTest(term=term):
                 self.assertIn(term, self.normalized_skill)
@@ -175,6 +210,7 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
             "The policy improves outcomes for patients.",
             "That removes the attribution, hedge, and scope",
             "Do not add a named study",
+            "The committee is currently evaluating the proposal.",
         ]
         for example in expected_examples:
             with self.subTest(example=example):

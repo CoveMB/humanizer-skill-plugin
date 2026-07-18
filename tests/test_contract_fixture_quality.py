@@ -9,18 +9,21 @@ REQUIRED_TAGS = {
     "audit_output",
     "factual_integrity",
     "missing_source_handling",
-    "no_em_dash",
     "no_chatbot_wrapper",
     "no_contrast_frame",
     "no_rule_of_three",
     "no_fake_naming",
     "no_self_narration",
-    "dense_banned_list",
+    "dense_pattern_catalog",
     "voice_calibration",
     "preserve_supplied_facts",
     "no_unsupported_benefits",
     "preserve_epistemic_status",
     "minimal_edit",
+    "contextual_false_positive",
+    "scientific_register",
+    "faithful_meaningful_rewrite",
+    "faithful_scientific_register",
 }
 
 SOURCE_AWARE_CONSTRAINT_KEYS = {
@@ -83,6 +86,28 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 self.assertGreaterEqual(threshold, 0)
                 self.assertLessEqual(threshold, 80)
 
+    def test_exact_occurrence_constraints_are_valid(self):
+        for case in self.cases:
+            expected_occurrences = case["constraints"].get("exact_occurrences")
+            if expected_occurrences is None:
+                continue
+            with self.subTest(case=case["id"]):
+                self.assertIsInstance(expected_occurrences, dict)
+                self.assertTrue(expected_occurrences)
+                for fragment, expected_count in expected_occurrences.items():
+                    self.assertIsInstance(fragment, str)
+                    self.assertTrue(fragment)
+                    self.assertIs(type(expected_count), int)
+                    self.assertGreaterEqual(expected_count, 0)
+
+    def test_must_differ_constraints_are_boolean(self):
+        for case in self.cases:
+            constraints = case["constraints"]
+            if "must_differ_from_source" not in constraints:
+                continue
+            with self.subTest(case=case["id"]):
+                self.assertIs(type(constraints["must_differ_from_source"]), bool)
+
     def test_docs_cleanup_contract_preserves_supplied_team_scope(self):
         docs_cleanup_case = next(
             case for case in self.cases if case["id"] == "contextual_docs_cleanup"
@@ -113,6 +138,8 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 "faithful_attribution_modality_scope",
                 "faithful_promotional_opinion_chronology",
                 "faithful_exact_anchors_and_list_membership",
+                "faithful_meaningful_local_rewrite",
+                "faithful_scientific_register",
             },
         )
         covered_tags = {
@@ -128,6 +155,10 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 "faithful_logical_relation",
                 "faithful_exact_anchors",
                 "faithful_list_membership",
+                "faithful_negation",
+                "faithful_causality",
+                "faithful_meaningful_rewrite",
+                "faithful_scientific_register",
             }.issubset(covered_tags)
         )
         for case in faithful_cases.values():

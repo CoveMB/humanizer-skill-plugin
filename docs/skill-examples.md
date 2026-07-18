@@ -2,8 +2,13 @@
 
 This repository ships two related but intentionally different skills:
 
-- **Editorial Humanizer** (`editorial-humanizer`) applies broad editorial judgment.
-- **Faithful Humanizer** (`faithful-humanizer`) edits form while preserving substance.
+- **Editorial Humanizer** (`editorial-humanizer`) applies broad, voice-oriented
+  editorial judgment.
+- **Faithful Humanizer** (`faithful-humanizer`) makes decisive surface rewrites
+  while preserving substance.
+
+Editorial Humanizer may change selection, structure, emphasis, and rhetorical
+presentation. Faithful Humanizer may change only surface form.
 
 Use the explicit invocation whenever the distinction matters.
 
@@ -19,14 +24,18 @@ Use the explicit invocation whenever the distinction matters.
 | Preserve section order, examples, and list membership | Faithful Humanizer |
 | Match a writing sample broadly and allow stronger voice | Editorial Humanizer |
 | Match only compatible surface features from a sample | Faithful Humanizer |
-| Audit AI-writing patterns and receive an 80-point score | Editorial Humanizer |
+| Audit editorial quality and receive an 80-point score | Editorial Humanizer |
 | Receive only form-change and preservation notes | Faithful Humanizer |
+| Tighten scientific prose within evidence boundaries | Editorial Humanizer |
+| Preserve scientific terminology, hedging, passive voice, and citations | Faithful Humanizer |
 
 ## Editorial Humanizer
 
 Editorial Humanizer is the broader anti-slop editor. It protects factual integrity,
 but it may change editorial substance by removing weak material, challenging vague
 attribution, restructuring the draft, or sharpening the voice.
+It prefers targeted edits when the passage is sound and broadens the rewrite only
+when local repair cannot fix a structural problem.
 
 ### Basic rewrite
 
@@ -85,7 +94,7 @@ tolerance for uncertainty without importing facts from the sample.
 ### Audit and score
 
 ```text
-Use $editorial-humanizer to audit and score this draft for AI-writing patterns:
+Use $editorial-humanizer to audit and score this draft's editorial quality:
 
 Our platform is more than just a tool; it is a testament to innovation, empowering
 teams to collaborate, create, and scale like never before.
@@ -97,6 +106,24 @@ The response should:
 2. add concise notes tied to actual changes;
 3. use `Score: NN/80`;
 4. avoid a ten-point or percentage output score.
+
+Counts and distributions may support the audit, but they are advisory. They must
+not become an AI-authorship verdict or mechanically determine the score.
+
+### Contextual false positives
+
+```text
+Use $editorial-humanizer only where needed. Preserve legitimate scientific
+punctuation and register:
+
+The primary endpoint was time to recovery—specified before enrollment. This detail
+was important because the protocol required blood pressure, heart rate, and oxygen
+saturation.
+```
+
+The single em dash, passive construction, `important`, and concrete three-item list
+are not automatic problems. The skill should preserve them unless the surrounding
+context or a supplied style guide gives a real reason to change them.
 
 ### Missing evidence
 
@@ -115,7 +142,8 @@ the unsupported claim. It must not invent a source, percentage, or citation.
 
 Faithful Humanizer treats the source as authoritative. It may improve grammar,
 syntax, repetition, punctuation, transitions, and rhythm, but it cannot decide that
-a supplied idea is weak or unnecessary.
+a supplied idea is weak or unnecessary. This does not make it timid: it should
+rewrite every genuine surface problem when a semantically equivalent repair exists.
 
 ### Basic faithful rewrite
 
@@ -139,6 +167,42 @@ The rewrite preserves:
 - the importance claim;
 - uncertainty through `may`;
 - scope through `some teams`.
+
+### Meaningful local rewrite
+
+```text
+Use $faithful-humanizer. Make this substantially less formulaic without changing
+any proposition, hedge, qualifier, or relation:
+
+At this point in time, the committee is in the process of conducting an evaluation
+of the proposal, and it may potentially recommend revisions for some sections.
+```
+
+Expected rewrite:
+
+```text
+The committee is currently evaluating the proposal and may recommend revisions for
+some sections.
+```
+
+Faithful minimality is localized, not cosmetic. The sentence receives a real
+rewrite while the actor, action, proposal, uncertainty, possible recommendation,
+and scope remain intact.
+
+### Scientific register preservation
+
+```text
+Use $faithful-humanizer. Preserve the terminology, passive construction, citation,
+uncertainty, negation, and causal meaning:
+
+It is important to note that, in Smith et al. (2024), the weighted interval score
+was measured for each model. The weighted interval score may be associated with
+forecast calibration, but the study did not establish causality.
+```
+
+The skill may remove `It is important to note that`, but it must retain both uses of
+`weighted interval score`, the passive measurement, `may be associated with`, the
+citation, and `did not establish causality`.
 
 ### Preserve vague attribution
 

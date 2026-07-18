@@ -42,6 +42,30 @@ was also too technical and did not clearly communicate the user-facing guarantee
 | [softaworks/agent-toolkit](https://github.com/softaworks/agent-toolkit) | Progressive disclosure and compact clarity guidance | Active voice and concreteness are editorial defaults, not semantic invariants |
 | [humanizerai/agent-skills](https://github.com/humanizerai/agent-skills) and detector-oriented variants | Distinct trigger vocabulary and market category | Detector bypass is a different objective and rewards unnecessary transformation |
 
+## Follow-up implementation review
+
+The 2026-07-17 implementation pass rechecked the current upstream instructions for
+Avoid AI Writing 3.16.0 and Skill Deslop 1.0.0.
+
+Avoid AI Writing contributed four compatible principles:
+
+- patterns are writing-quality signals rather than proof of authorship;
+- already-natural passages should remain untouched;
+- edits should target flagged spans before regenerating whole passages; and
+- ordinary words and structures become more informative when they cluster or repeat.
+
+Its fixed punctuation targets, stylometric ranges, authorship-oriented detector
+features, and full-rewrite thresholds were not adopted as Humanizer rules.
+
+Skill Deslop contributed attention to scientific formality, disciplinary
+terminology, citations, and formulaic scientific conclusions. Its blanket
+active-voice, first-person, no-em-dash, and anti-tricolon rules were rejected because
+they can change agency, register, emphasis, or valid scientific form.
+
+The resulting implementation uses a shared scientific-register reference with
+skill-specific authority. Faithful treats it as preservation constraints; Editorial
+uses it as genre-specific guidance within factual and epistemic boundaries.
+
 ## Main findings
 
 ### 1. Most humanizers combine two tasks
@@ -97,6 +121,12 @@ Faithful Humanizer therefore protects exact spans first, changes the smallest us
 span, leaves natural passages untouched, and restores original wording whenever
 equivalence is uncertain.
 
+Minimality does not justify an unchanged or cosmetic result when a safe surface
+rewrite exists. Faithful Humanizer must repair every genuine form problem, may
+recast a whole sentence when its syntax is the problem, and should produce prose
+that is materially less formulaic. The intervention remains local so that stronger
+rewriting does not become substantive rewriting.
+
 ### 6. Register guards are necessary
 
 Legal, medical, scientific, financial, security, policy, and technical prose often
@@ -109,6 +139,12 @@ Perplexity, burstiness, vocabulary scores, and detector outcomes are not reliabl
 proxies for faithful editing. Optimizing them can reward random variation and
 unnecessary rewriting.
 
+Deterministic observations can still support Editorial audits. Counts of repeated
+phrases, transitions, punctuation, sentence or paragraph lengths, bold-label
+structures, and vocabulary clusters are raw diagnostic evidence. They do not
+determine authorship, set an editorial score mechanically, or apply to Faithful as
+humanness targets.
+
 ## Adopted design
 
 Faithful Humanizer uses six controls:
@@ -118,8 +154,9 @@ Faithful Humanizer uses six controls:
    logic, attribution, chronology, emphasis, examples, and list membership survive.
 3. **Exact anchors:** names, numbers, dates, units, quotes, citations, URLs, code,
    identifiers, and domain terms remain unchanged.
-4. **Minimal local edits:** only wording, syntax, grammar, punctuation, transitions,
-   repetition, and rhythm may change.
+4. **Decisive local edits:** every genuine surface problem with a safe equivalent is
+   repaired; only wording, syntax, grammar, punctuation, transitions, repetition,
+   and rhythm may change.
 5. **Bidirectional semantic diff:** every source proposition maps to the output and
    every output proposition maps back to the source.
 6. **Restore on doubt:** uncertain paraphrases revert to source wording.

@@ -5,8 +5,8 @@ levels of editorial authority:
 
 | Skill | Invocation | Core promise |
 |---|---|---|
-| **Editorial Humanizer** | `$editorial-humanizer` | Improve the writing with broad editorial judgment while preserving factual integrity |
-| **Faithful Humanizer** | `$faithful-humanizer` | Improve only the presentation while preserving every substantive element |
+| **Editorial Humanizer** | `$editorial-humanizer` | Produce a substantive, voice-oriented editorial rewrite while preserving factual integrity |
+| **Faithful Humanizer** | `$faithful-humanizer` | Make the prose materially less formulaic while preserving every substantive element |
 
 The names describe what each editor is allowed to do:
 
@@ -19,6 +19,11 @@ The names describe what each editor is allowed to do:
 
 “Faithful” is more precise than “non-opinionated.” The skill still makes local
 copy-editing judgments, but it cannot impose a new position or editorial agenda.
+It is not a no-op or proofreading-only mode: it rewrites every genuine surface
+problem when a semantically equivalent repair exists.
+
+Editorial Humanizer may change selection, structure, emphasis, and rhetorical
+presentation. Faithful Humanizer may change only surface form.
 
 ## Choose the correct skill
 
@@ -41,11 +46,15 @@ Use this decision rule:
 | Attribution | May remove vague attribution or ask for a source | Must preserve vague attribution as vague attribution |
 | Structure | May merge, split, reorder, or replace paragraphs, headings, and lists | Preserves section order, paragraph order, examples, and list membership by default |
 | Voice | May add stronger human texture or match a supplied voice sample broadly | Matches only compatible surface features; never imports opinions or experiences |
+| Rewrite strength | Uses targeted edits first, but may rebuild structurally weak passages | Makes decisive local rewrites and may recast a whole sentence when its form is the problem |
+| Pattern handling | Treats density, repetition, genre, intent, and meaning as evidence | Changes a pattern only when it is locally awkward and an equivalent repair exists |
+| Scientific register | May tighten and restructure within scientific evidence boundaries | Preserves terminology, hedging, passive constructions, citation language, and statistical meaning |
+| Punctuation | Preserves punctuation suited to the author, genre, locale, and style guide | Treats author-specific punctuation as part of voice |
 | Promotional language | May neutralize or delete it | Preserves its evaluative force if the author supplied it |
 | Fact checking | Does not research by default, but may flag or question unsupported claims | Does not fact-check, correct, challenge, endorse, or rebut |
 | Missing evidence | May ask for evidence, generalize, or remove the claim | Keeps the claim and attribution without inventing evidence |
 | Detector optimization | Not a goal | Not a goal |
-| Audit and score | Supports an 80-point editorial audit | Supports form-change notes only; no AI-likeness score |
+| Audit and score | Supports an 80-point editorial-quality audit; raw diagnostics are advisory | Supports form-change notes only; no AI-likeness score |
 
 ## Same source, different result
 
@@ -98,7 +107,7 @@ Neither result is universally better. They answer different editing contracts.
 
 ## Editorial Humanizer
 
-Editorial Humanizer is the broader anti-slop editor.
+Editorial Humanizer is the broader, voice-oriented editorial rewrite.
 
 Use it when you want:
 
@@ -108,13 +117,21 @@ Use it when you want:
 - promotional or inflated language reduced;
 - a more distinctive point of view;
 - voice matching from a writing sample;
-- an audit and score of AI-writing patterns.
+- an editorial-quality audit with contextual pattern evidence.
 
 It protects factual integrity: it must not invent names, figures, dates, studies,
 quotes, citations, examples, prices, experiences, benefits, attitudes, or causal
 explanations. It must preserve epistemic status and may remove a claim that cannot
 be supported or rewrite the surrounding argument more broadly. A rewrite must not
 replace discarded claims with audit commentary unless the user requested an audit.
+It starts with targeted edits and broadens the rewrite only when structure, argument
+flow, or repeated patterns cannot be repaired locally.
+
+Pattern matches are signals, not proof of authorship or automatic edit commands.
+One em dash, semicolon, three-item list, passive sentence, use of `important`,
+title-case heading, or curly quotation mark does not require revision. The skill
+considers density, repetition, genre, register, intent, and whether the change
+actually improves the passage.
 
 Basic use:
 
@@ -127,7 +144,7 @@ Use $editorial-humanizer to improve this draft. Return only the rewrite:
 Audit use:
 
 ```text
-Use $editorial-humanizer to audit and score this draft for AI-writing patterns.
+Use $editorial-humanizer to audit and score this draft's editorial quality.
 Put the rewrite first, then concise notes:
 
 [paste draft]
@@ -135,7 +152,9 @@ Put the rewrite first, then concise notes:
 
 ## Faithful Humanizer
 
-Faithful Humanizer is the strict form-only editor.
+Faithful Humanizer is the strict form-only editor. Strict preservation does not mean
+timid editing: it removes fixable AI-shaped surface form and should return prose that
+is materially less formulaic, not merely proofread.
 
 Use it when:
 
@@ -145,7 +164,7 @@ Use it when:
 - vague attribution must remain attributed rather than being challenged;
 - promotional language belongs to the author's intended message;
 - list items, examples, chronology, and argument order must remain;
-- you want minimal local edits instead of paragraph regeneration.
+- you want decisive local edits instead of unnecessary paragraph regeneration.
 
 It protects:
 
@@ -197,6 +216,15 @@ The audit contains:
 3. `Preservation notes`.
 
 It does not assign an AI-likeness score.
+
+### Scientific and academic writing
+
+Both skills use a shared scientific-register reference, but with different
+authority. Faithful treats terminology, passive voice, hedging, citations,
+statistical meaning, and repeated exact terms as preservation constraints.
+Editorial may remove formulaic padding or improve argument flow, but it must keep
+epistemic caution, evidence boundaries, attribution, definitions, and causal
+strength intact.
 
 ## Trigger behavior
 
@@ -275,9 +303,10 @@ git clone https://github.com/CoveMB/humanizer-skill-plugin.git
 ### Plain Codex skills
 
 ```bash
-mkdir -p ~/.agents/skills/editorial-humanizer ~/.agents/skills/faithful-humanizer
+mkdir -p ~/.agents/skills/editorial-humanizer ~/.agents/skills/faithful-humanizer ~/.agents/skills/references
 cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.agents/skills/editorial-humanizer/
 cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.agents/skills/faithful-humanizer/
+cp -R humanizer-skill-plugin/skills/references/. ~/.agents/skills/references/
 ```
 
 Do not enable the plain skills and plugin copies at the same time. Duplicate copies
@@ -286,17 +315,19 @@ can make selection and provenance ambiguous.
 ### Claude Code
 
 ```bash
-mkdir -p ~/.claude/skills
+mkdir -p ~/.claude/skills/references
 cp -R humanizer-skill-plugin/skills/editorial-humanizer ~/.claude/skills/editorial-humanizer
 cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.claude/skills/faithful-humanizer
+cp -R humanizer-skill-plugin/skills/references/. ~/.claude/skills/references/
 ```
 
 ### OpenCode
 
 ```bash
-mkdir -p ~/.config/opencode/skills
+mkdir -p ~/.config/opencode/skills/references
 cp -R humanizer-skill-plugin/skills/editorial-humanizer ~/.config/opencode/skills/editorial-humanizer
 cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.config/opencode/skills/faithful-humanizer
+cp -R humanizer-skill-plugin/skills/references/. ~/.config/opencode/skills/references/
 ```
 
 ## Repository layout
@@ -312,20 +343,26 @@ cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.config/opencode/skills
 │   └── humanizer_eval_cases.json
 ├── scripts/
 │   ├── run_humanizer_evals.py
+│   ├── editorial_diagnostics.py
 │   └── validate_humanizer_outputs.py
 ├── skills/
 │   ├── editorial-humanizer/
 │   │   ├── SKILL.md
-│   │   └── references/banned-list.md
-│   └── faithful-humanizer/
-│       └── SKILL.md
+│   │   └── references/pattern-catalog.md
+│   ├── faithful-humanizer/
+│   │   └── SKILL.md
+│   └── references/registers/scientific-writing.md
 └── tests/
 ```
 
 The eval runner exercises both Editorial Humanizer and Faithful Humanizer.
 Executable Faithful cases check attribution, modality, scope, supplied promotional
 claims, opinion, chronology, logical relations, exact anchors, list membership,
-and forbidden additions.
+scientific register, meaningful surface rewriting, and forbidden additions.
+Its dedicated live rubric requires both semantic fidelity and a clearly more
+natural surface rewrite, so cosmetic changes do not satisfy the Faithful contract.
+Editorial eval summaries also record deterministic pattern diagnostics as advisory
+evidence; those observations do not determine pass/fail or authorship.
 
 ## Testing
 
@@ -367,7 +404,7 @@ Faithful Humanizer separates those tasks. Its design is based on:
 1. source authority;
 2. explicit semantic invariants;
 3. exact-anchor preservation;
-4. minimal local edits;
+4. decisive local edits;
 5. a bidirectional semantic diff;
 6. restore-on-doubt behavior.
 
@@ -379,7 +416,7 @@ The detailed comparison and rejected design choices are documented in
 Neither skill can mathematically guarantee semantic equivalence. Language is
 ambiguous, and a model can still make a bad paraphrase.
 
-Faithful Humanizer reduces that risk through minimal edits, explicit invariants,
+Faithful Humanizer reduces that risk through localized edits, explicit invariants,
 exact-anchor preservation, and restore-on-doubt rules. High-stakes legal, medical,
 scientific, financial, security, or policy text still requires human review.
 
