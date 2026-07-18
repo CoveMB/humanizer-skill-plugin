@@ -59,8 +59,17 @@ class ValidateHumanizerOutputsScriptTests(unittest.TestCase):
         )
 
     def _passing_output_for(self, case):
-        required_fragments = case["constraints"].get("must_include", [])
+        if "passing_output" in case:
+            return case["passing_output"]
+        constraints = case["constraints"]
+        required_fragments = constraints.get("must_include", [])
         base = ". ".join(required_fragments)
+        for fragment, expected_count in constraints.get(
+            "exact_occurrences", {}
+        ).items():
+            missing_count = expected_count - base.casefold().count(fragment.casefold())
+            if missing_count > 0:
+                base = ". ".join([base, *([fragment] * missing_count)]).strip(". ")
         if case["mode"] == "audit":
             return (
                 "Teams collaborate better when they stay aligned.\n\n"

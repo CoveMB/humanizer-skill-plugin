@@ -9,18 +9,27 @@ REQUIRED_TAGS = {
     "audit_output",
     "factual_integrity",
     "missing_source_handling",
-    "no_em_dash",
     "no_chatbot_wrapper",
     "no_contrast_frame",
     "no_rule_of_three",
     "no_fake_naming",
     "no_self_narration",
-    "dense_banned_list",
+    "dense_pattern_catalog",
     "voice_calibration",
     "preserve_supplied_facts",
     "no_unsupported_benefits",
     "preserve_epistemic_status",
     "minimal_edit",
+    "contextual_false_positive",
+    "scientific_register",
+    "faithful_meaningful_rewrite",
+    "faithful_scientific_register",
+    "faithful_already_natural_restraint",
+    "faithful_mixed_locality",
+    "faithful_audit_mode",
+    "faithful_voice_matching",
+    "faithful_structure_preservation",
+    "faithful_structural_reconstruction",
 }
 
 SOURCE_AWARE_CONSTRAINT_KEYS = {
@@ -83,6 +92,51 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 self.assertGreaterEqual(threshold, 0)
                 self.assertLessEqual(threshold, 80)
 
+    def test_exact_occurrence_constraints_are_valid(self):
+        for case in self.cases:
+            expected_occurrences = case["constraints"].get("exact_occurrences")
+            if expected_occurrences is None:
+                continue
+            with self.subTest(case=case["id"]):
+                self.assertIsInstance(expected_occurrences, dict)
+                self.assertTrue(expected_occurrences)
+                for fragment, expected_count in expected_occurrences.items():
+                    self.assertIsInstance(fragment, str)
+                    self.assertTrue(fragment)
+                    self.assertIs(type(expected_count), int)
+                    self.assertGreaterEqual(expected_count, 0)
+
+    def test_must_differ_constraints_are_boolean(self):
+        for case in self.cases:
+            constraints = case["constraints"]
+            if "must_differ_from_source" not in constraints:
+                continue
+            with self.subTest(case=case["id"]):
+                self.assertIs(type(constraints["must_differ_from_source"]), bool)
+
+    def test_must_equal_constraints_are_boolean_and_not_conflicting(self):
+        for case in self.cases:
+            constraints = case["constraints"]
+            if "must_equal_source" not in constraints:
+                continue
+            with self.subTest(case=case["id"]):
+                self.assertIs(type(constraints["must_equal_source"]), bool)
+                self.assertFalse(constraints.get("must_differ_from_source", False))
+
+    def test_ordered_and_exact_fragment_constraints_are_non_empty_strings(self):
+        for case in self.cases:
+            constraints = case["constraints"]
+            for constraint_name in ("must_include_exact", "ordered_fragments"):
+                fragments = constraints.get(constraint_name)
+                if fragments is None:
+                    continue
+                with self.subTest(case=case["id"], constraint=constraint_name):
+                    self.assertIsInstance(fragments, list)
+                    self.assertTrue(fragments)
+                    self.assertTrue(
+                        all(isinstance(fragment, str) and fragment for fragment in fragments)
+                    )
+
     def test_docs_cleanup_contract_preserves_supplied_team_scope(self):
         docs_cleanup_case = next(
             case for case in self.cases if case["id"] == "contextual_docs_cleanup"
@@ -99,6 +153,103 @@ class ContractFixtureQualityTests(unittest.TestCase):
 
             with self.subTest(case=case["id"]):
                 self.assertTrue(case["constraints"].get("no_rule_of_three", False))
+
+    def test_faithful_contracts_cover_core_preservation_invariants(self):
+        faithful_cases = {
+            case["id"]: case
+            for case in self.cases
+            if case["id"].startswith("faithful_")
+        }
+
+        self.assertEqual(
+            set(faithful_cases),
+            {
+                "faithful_attribution_modality_scope",
+                "faithful_promotional_opinion_chronology",
+                "faithful_exact_anchors_and_list_membership",
+                "faithful_meaningful_local_rewrite",
+                "faithful_scientific_register",
+                "faithful_already_natural_restraint",
+                "faithful_mixed_local_edit",
+                "faithful_audit_mode",
+                "faithful_voice_matching",
+                "faithful_structure_and_protected_spans",
+                "faithful_conditions_exceptions_comparison",
+                "faithful_structural_product_reconstruction",
+                "faithful_structural_academic_reconstruction",
+                "faithful_structural_opinion_reconstruction",
+                "faithful_structural_already_natural_restraint",
+            },
+        )
+        covered_tags = {
+            tag for case in faithful_cases.values() for tag in case["tags"]
+        }
+        self.assertTrue(
+            {
+                "faithful_attribution",
+                "faithful_modality",
+                "faithful_scope",
+                "faithful_opinion",
+                "faithful_chronology",
+                "faithful_logical_relation",
+                "faithful_exact_anchors",
+                "faithful_list_membership",
+                "faithful_negation",
+                "faithful_causality",
+                "faithful_meaningful_rewrite",
+                "faithful_scientific_register",
+                "faithful_already_natural_restraint",
+                "faithful_mixed_locality",
+                "faithful_audit_mode",
+                "faithful_voice_matching",
+                "faithful_structure_preservation",
+                "faithful_structural_reconstruction",
+            }.issubset(covered_tags)
+        )
+        for case in faithful_cases.values():
+            with self.subTest(case=case["id"]):
+                self.assertIn(
+                    case["faithful_mode"],
+                    {"structural", "conservative"},
+                )
+                constraints = case["constraints"]
+                if case["mode"] == "rewrite":
+                    self.assertTrue(constraints["rewrite_only"])
+                else:
+                    self.assertEqual(case["mode"], "audit")
+                    self.assertNotIn("rewrite_only", constraints)
+                self.assertTrue(constraints["no_new_numbers"])
+                self.assertTrue(constraints["no_new_named_entities"])
+                self.assertIsInstance(case.get("passing_output"), str)
+                self.assertTrue(case["passing_output"])
+                self.assertIsInstance(case.get("failing_outputs"), list)
+                self.assertTrue(case["failing_outputs"])
+                for failure in case["failing_outputs"]:
+                    self.assertEqual(
+                        set(failure),
+                        {"label", "output", "expected_error"},
+                    )
+
+        structural_cases = {
+            case_id
+            for case_id, case in faithful_cases.items()
+            if case["faithful_mode"] == "structural"
+        }
+        conservative_cases = {
+            case_id
+            for case_id, case in faithful_cases.items()
+            if case["faithful_mode"] == "conservative"
+        }
+        self.assertEqual(
+            structural_cases,
+            {
+                "faithful_structural_product_reconstruction",
+                "faithful_structural_academic_reconstruction",
+                "faithful_structural_opinion_reconstruction",
+                "faithful_structural_already_natural_restraint",
+            },
+        )
+        self.assertTrue(conservative_cases)
 
 
 if __name__ == "__main__":

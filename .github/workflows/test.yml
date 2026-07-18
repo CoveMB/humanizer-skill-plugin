@@ -21,6 +21,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install test dependencies
+        run: python -m pip install -r requirements-dev.txt
+
       - name: Check whitespace
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -34,6 +37,9 @@ jobs:
       - name: Run tests
         run: make test
 
+      - name: Check branch coverage
+        run: make coverage
+
       - name: Check eval matrix
         run: make eval-humanizer-dry-run
 
@@ -44,3 +50,14 @@ jobs:
           --rubric-grade --model gpt-5.5 --timeout-seconds 600
           --cases evals/humanizer_eval_cases.json
           --artifacts-dir /tmp/humanizer-eval-artifacts --codex-bin codex'
+
+      - name: Check Faithful eval stability flags
+        run: >-
+          make eval-humanizer-dry-run
+          EVAL_ARGS='--target-skill faithful-humanizer --trials 3
+          --rubric-grade --rubric-model gpt-5.5'
+
+      - name: Check rubric calibration matrix
+        run: >-
+          make eval-humanizer-dry-run
+          EVAL_ARGS='--calibrate-rubric'

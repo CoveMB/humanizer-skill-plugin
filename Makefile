@@ -1,7 +1,12 @@
-.PHONY: test validate-humanizer-output eval-humanizer eval-humanizer-dry-run
+.PHONY: test coverage validate-humanizer-output eval-humanizer eval-humanizer-dry-run
 
 test:
 	python3 -m unittest discover -s tests -v
+
+coverage:
+	python3 -m coverage erase
+	python3 -m coverage run -m unittest discover -s tests
+	python3 -m coverage report
 
 validate-humanizer-output:
 	@test -n "$(OUTPUT_DIR)" || (echo "OUTPUT_DIR is required" >&2; exit 2)

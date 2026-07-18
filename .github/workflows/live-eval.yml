@@ -7,6 +7,23 @@ on:
         description: "Codex model to use for live evals"
         required: true
         default: "gpt-5.5"
+      rubric_model:
+        description: "Optional separate Codex model for rubric grading"
+        required: false
+        default: ""
+      target_skill:
+        description: "Optional target skill filter"
+        required: false
+        type: choice
+        default: "all"
+        options:
+          - all
+          - editorial-humanizer
+          - faithful-humanizer
+      trials:
+        description: "Number of trials per selected case"
+        required: true
+        default: "1"
       timeout_seconds:
         description: "Per-case timeout in seconds"
         required: true
@@ -53,17 +70,16 @@ jobs:
             echo "OPENAI_API_KEY secret is required" >&2
             exit 2
           fi
-          export HOME="${RUNNER_TEMP:?RUNNER_TEMP is required}/home"
-          export CODEX_HOME="${RUNNER_TEMP:?RUNNER_TEMP is required}/codex-home"
-          printf 'HOME=%s\n' "$HOME" >> "$GITHUB_ENV"
-          printf 'CODEX_HOME=%s\n' "$CODEX_HOME" >> "$GITHUB_ENV"
-          mkdir -p "$HOME" "$CODEX_HOME"
+          eval_home_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/home"
+          eval_codex_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/codex-home"
+          printf 'CODEX_HOME=%s\n' "$eval_codex_dir" >> "$GITHUB_ENV"
+          mkdir -p "$eval_home_dir" "$eval_codex_dir"
           {
             printf '[cli_auth]\n'
             printf 'credentials_store = "file"\n'
-          } > "$CODEX_HOME/config.toml"
-          printf '%s' "$OPENAI_API_KEY" | codex login --with-api-key
-          codex login status
+          } > "$eval_codex_dir/config.toml"
+          printf '%s' "$OPENAI_API_KEY" | env HOME="$eval_home_dir" CODEX_HOME="$eval_codex_dir" codex login --with-api-key
+          env HOME="$eval_home_dir" CODEX_HOME="$eval_codex_dir" codex login status
 
       - name: Run deterministic tests
         run: make test
@@ -74,11 +90,20 @@ jobs:
       - name: Run live eval
         env:
           EVAL_MODEL: ${{ inputs.model }}
+          EVAL_RUBRIC_MODEL: ${{ inputs.rubric_model }}
+          EVAL_TARGET_SKILL: ${{ inputs.target_skill }}
+          EVAL_TRIALS: ${{ inputs.trials }}
           EVAL_TIMEOUT_SECONDS: ${{ inputs.timeout_seconds }}
           EVAL_FILTER: ${{ inputs.filter }}
           EVAL_RUBRIC_GRADE: ${{ inputs.rubric_grade }}
         run: |
-          eval_args=(--model "$EVAL_MODEL" --timeout-seconds "$EVAL_TIMEOUT_SECONDS")
+          eval_args=(--model "$EVAL_MODEL" --timeout-seconds "$EVAL_TIMEOUT_SECONDS" --trials "$EVAL_TRIALS")
+          if [ -n "$EVAL_RUBRIC_MODEL" ]; then
+            eval_args+=(--rubric-model "$EVAL_RUBRIC_MODEL")
+          fi
+          if [ "$EVAL_TARGET_SKILL" != "all" ]; then
+            eval_args+=(--target-skill "$EVAL_TARGET_SKILL")
+          fi
           if [ -n "$EVAL_FILTER" ]; then
             eval_args+=(--filter "$EVAL_FILTER")
           fi

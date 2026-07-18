@@ -1,0 +1,12 @@
+[run]
+branch = True
+source =
+    scripts
+    tests/helpers
+omit =
+    scripts/validate_humanizer_outputs.py
+
+[report]
+show_missing = True
+skip_covered = True
+fail_under = 84

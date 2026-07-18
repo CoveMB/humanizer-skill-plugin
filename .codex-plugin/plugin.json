@@ -1,7 +1,7 @@
 {
   "name": "humanizer-plugin",
-  "version": "2.8.0",
-  "description": "Fact-safe Codex plugin for removing signs of AI-generated writing.",
+  "version": "3.0.0",
+  "description": "Codex plugin with Editorial Humanizer and Faithful Humanizer.",
   "author": {
     "name": "CoveMB",
     "url": "https://github.com/CoveMB"
@@ -15,13 +15,14 @@
     "style",
     "humanizer",
     "codex",
-    "factual-integrity"
+    "editorial-editing",
+    "semantic-preservation"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Humanizer Plugin",
-    "shortDescription": "Fact-safe AI-writing cleanup.",
-    "longDescription": "A Codex writing editor that identifies common AI-writing patterns and rewrites text to sound more natural while preserving meaning, voice, factual integrity, and quality through a private checklist and scoring gate.",
+    "shortDescription": "Editorial and faithful AI-writing cleanup.",
+    "longDescription": "Two clearly separated Codex writing editors: Editorial Humanizer applies broader anti-slop judgment and may reshape or remove weak material, while Faithful Humanizer changes only presentation and preserves every supplied claim, qualifier, attribution, example, and logical relation.",
     "developerName": "CoveMB",
     "category": "Productivity",
     "capabilities": [
@@ -31,9 +32,9 @@
     "privacyPolicyURL": "https://github.com/CoveMB/humanizer-skill-plugin/blob/main/README.md",
     "termsOfServiceURL": "https://github.com/CoveMB/humanizer-skill-plugin/blob/main/README.md#license",
     "defaultPrompt": [
-      "Humanize this text:",
-      "Match my writing sample and rewrite this.",
-      "Audit and score this draft for AI-writing patterns."
+      "Use $editorial-humanizer to improve this draft with broader editorial judgment:",
+      "Use $faithful-humanizer to improve the wording without changing the substance:",
+      "Use $editorial-humanizer to audit and score this draft for AI-writing patterns."
     ],
     "screenshots": [],
     "brandColor": "#475569"

@@ -22,6 +22,110 @@ BASE_CASE = {
 
 
 class OutputContractTests(unittest.TestCase):
+    def test_requires_exact_fragments_with_original_case_and_punctuation(self):
+        case = {
+            "id": "exact_anchor",
+            "constraints": {"must_include_exact": ["`API v2.1`"]},
+        }
+
+        validate_case_output(case, "Verify `API v2.1` before release.")
+        with self.assertRaisesRegex(AssertionError, "missing required exact fragment"):
+            validate_case_output(case, "Verify `api v2.1` before release.")
+
+    def test_requires_fragments_in_source_order(self):
+        case = {
+            "id": "ordered_items",
+            "constraints": {"ordered_fragments": ["first", "second", "third"]},
+        }
+
+        validate_case_output(case, "First, do this. Second, do that. Third, stop.")
+        with self.assertRaisesRegex(AssertionError, "ordered fragment"):
+            validate_case_output(case, "Second, do that. First, do this. Third, stop.")
+
+    def test_requires_already_natural_source_to_remain_unchanged(self):
+        case = {
+            "id": "already_natural",
+            "source": "This sentence already reads naturally.",
+            "constraints": {"must_equal_source": True},
+        }
+
+        validate_case_output(case, case["source"] + "\n")
+        with self.assertRaisesRegex(AssertionError, "changed already-natural source"):
+            validate_case_output(case, "This sentence already sounds natural.")
+
+    def test_enforces_structural_sentence_count_bounds_on_rewrite_only(self):
+        case = {
+            "id": "structural_reconstruction",
+            "constraints": {
+                "minimum_sentence_count": 3,
+                "maximum_sentence_count": 4,
+            },
+        }
+
+        validate_case_output(case, "One sentence. A second sentence. The third sentence.")
+        with self.assertRaisesRegex(AssertionError, "expected at least 3"):
+            validate_case_output(case, "One sentence. A second sentence.")
+        with self.assertRaisesRegex(AssertionError, "expected at most 4"):
+            validate_case_output(
+                case,
+                "One. Two. Three. Four. Five.",
+            )
+
+    def test_sentence_count_bounds_ignore_requested_audit_sections(self):
+        case = {
+            "id": "structural_audit",
+            "constraints": {"minimum_sentence_count": 2},
+        }
+
+        validate_case_output(
+            case,
+            "First sentence. Second sentence.\n\nForm changes:\nSplit one sentence.",
+        )
+
+    def test_fixture_mutations_prove_each_declared_guard(self):
+        mutation_cases = [
+            case
+            for case in load_fixture_cases()
+            if "passing_output" in case or "failing_outputs" in case
+        ]
+
+        self.assertTrue(mutation_cases)
+        for case in mutation_cases:
+            with self.subTest(case=case["id"], output="passing"):
+                validate_case_output(case, case["passing_output"])
+            for failure in case["failing_outputs"]:
+                with self.subTest(case=case["id"], mutation=failure["label"]):
+                    with self.assertRaisesRegex(
+                        AssertionError,
+                        failure["expected_error"],
+                    ):
+                        validate_case_output(case, failure["output"])
+
+    def test_requires_source_change_when_requested(self):
+        case = {
+            "id": "meaningful_rewrite",
+            "source": "The committee is in the process of reviewing the proposal.",
+            "constraints": {"must_differ_from_source": True},
+        }
+
+        with self.assertRaisesRegex(AssertionError, "did not rewrite the source"):
+            validate_case_output(case, case["source"])
+
+        validate_case_output(case, "The committee is reviewing the proposal.")
+
+    def test_exact_occurrences_preserve_repeated_technical_terms(self):
+        case = {
+            "id": "technical_repetition",
+            "constraints": {"exact_occurrences": {"weighted interval score": 2}},
+        }
+
+        validate_case_output(
+            case,
+            "The weighted interval score was recorded. The weighted interval score remained stable.",
+        )
+        with self.assertRaisesRegex(AssertionError, "occurs 1 time"):
+            validate_case_output(case, "The weighted interval score remained stable.")
+
     def test_dense_ai_rewrite_rejects_live_rubric_failure(self):
         cases = {case["id"]: case for case in load_fixture_cases()}
 

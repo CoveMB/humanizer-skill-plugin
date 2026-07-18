@@ -15,7 +15,8 @@ from tests.helpers.skill_artifacts import REPO_ROOT
 
 RUNNER_PATH = REPO_ROOT / "scripts" / "run_humanizer_evals.py"
 EVAL_CASES_PATH = REPO_ROOT / "evals" / "humanizer_eval_cases.json"
-SKILL_TRACE_PATH = "skills/humanizer/SKILL.md"
+SKILL_TRACE_PATH = "skills/editorial-humanizer/SKILL.md"
+FAITHFUL_SKILL_TRACE_PATH = "skills/faithful-humanizer/SKILL.md"
 DEFAULT_OUTPUT_CONTRACT_CASES = object()
 
 
@@ -37,7 +38,7 @@ def minimal_eval_case(**overrides):
         "id": "case",
         "category": "explicit",
         "should_trigger": True,
-        "prompt": "Use $humanizer.",
+        "prompt": "Use $editorial-humanizer.",
         "source": "Here is a draft.",
         **overrides,
     }
@@ -134,23 +135,42 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             case
             for case in cases
             if case.get("output_contract_case_id")
-            in {"dense_ai_rewrite", "dense_banned_list_scrub"}
+            in {"dense_ai_rewrite", "dense_pattern_catalog_scrub"}
+            and case.get("force_reference_file_read", False)
         ]
 
-        self.assertGreaterEqual(len(cases), 10)
+        self.assertGreaterEqual(len(cases), 38)
         self.assertTrue({"explicit", "implicit", "contextual", "negative"}.issubset(categories))
         self.assertTrue(
             {
                 "dense_ai_rewrite",
+                "editorial_broader_boundary",
                 "missing_source_handling",
                 "voice_calibration",
                 "audit_mode",
-                "dense_banned_list_scrub",
+                "dense_pattern_catalog_scrub",
                 "contextual_release_notes",
                 "contextual_docs_cleanup",
                 "unsupported_benefit_substitution",
                 "epistemic_status_preservation",
                 "already_natural_restraint",
+                "editorial_contextual_false_positives",
+                "editorial_scientific_profile",
+                "faithful_structural_product_reconstruction",
+                "faithful_structural_academic_reconstruction",
+                "faithful_structural_opinion_reconstruction",
+                "faithful_structural_already_natural_restraint",
+                "faithful_attribution_modality_scope",
+                "faithful_promotional_opinion_chronology",
+                "faithful_exact_anchors_and_list_membership",
+                "faithful_meaningful_local_rewrite",
+                "faithful_scientific_register",
+                "faithful_already_natural_restraint",
+                "faithful_mixed_local_edit",
+                "faithful_audit_mode",
+                "faithful_voice_matching",
+                "faithful_structure_and_protected_spans",
+                "faithful_conditions_exceptions_comparison",
                 "negative_fact_check_only",
                 "negative_translate_only",
                 "negative_summary_only",
@@ -160,6 +180,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertTrue(
             {
                 "humanizer_rewrite",
+                "faithful_humanizer_rewrite",
                 "missing_source_handling",
                 "humanizer_audit",
                 "negative_fact_check",
@@ -168,15 +189,47 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertTrue(positive_case_ids)
         self.assertTrue(forced_read_case_ids)
         self.assertTrue(forced_read_case_ids.issubset(positive_case_ids))
-        self.assertEqual(positive_cases_without_forced_skill_read, [])
-        self.assertEqual(negative_cases_without_contract, [])
+        self.assertEqual(
+            set(positive_cases_without_forced_skill_read),
+            {
+                "faithful_implicit_form_only_activation",
+                "faithful_rework_structure_activation",
+                "faithful_contextual_preservation_activation",
+                "faithful_explicit_catalog_activation",
+            },
+        )
+        self.assertTrue(
+            all(
+                case.get("activation_probe", False)
+                for case in cases
+                if case["id"] in positive_cases_without_forced_skill_read
+            )
+        )
+        editorial_boundary_case = next(
+            case
+            for case in cases
+            if case["id"] == "editorial_routes_broader_rewrite_away_from_faithful"
+        )
+        self.assertTrue(editorial_boundary_case["force_skill_file_read"])
+        self.assertFalse(editorial_boundary_case.get("activation_probe", False))
+        self.assertIn(SKILL_TRACE_PATH, editorial_boundary_case["expected_trace_terms"])
+        self.assertIn(
+            FAITHFUL_SKILL_TRACE_PATH,
+            editorial_boundary_case["forbidden_trace_terms"],
+        )
+        self.assertEqual(negative_cases_without_contract, ["negative_detector_evasion_only"])
+        self.assertTrue(
+            next(
+                case for case in cases if case["id"] == "negative_detector_evasion_only"
+            )["activation_probe"]
+        )
         self.assertIn("sounds padded", trigger_prompts)
         self.assertIn("reads like a person wrote it", trigger_prompts)
         self.assertTrue(dense_reference_cases)
         for case in dense_reference_cases:
             with self.subTest(dense_reference_case=case["id"]):
                 self.assertIn(
-                    "skills/humanizer/references/banned-list.md",
+                    "skills/editorial-humanizer/references/pattern-catalog.md",
                     case["expected_trace_terms"],
                 )
                 self.assertTrue(case.get("force_reference_file_read", False))
@@ -189,6 +242,10 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             if dimension["name"] == "factual_fidelity"
         )
         self.assertIn("Do not penalize removal of generic filler", factual_fidelity_question)
+        self.assertIn(
+            "removal of vague attribution when the user requests broader Editorial cleanup",
+            factual_fidelity_question,
+        )
         self.assertEqual(
             rewrite_rubric["minimum_dimension_scores"],
             {"factual_fidelity": 9},
@@ -196,6 +253,203 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         for case in cases:
             if case.get("rubric_id"):
                 self.assertIn("rubric", case)
+
+    def test_eval_cases_cover_faithful_preservation_invariants(self):
+        cases = self.runner.load_eval_cases(EVAL_CASES_PATH)
+        faithful_cases = {
+            case["id"]: case
+            for case in cases
+            if case.get("target_skill") == "faithful-humanizer"
+        }
+        quality_cases = {
+            case_id: case
+            for case_id, case in faithful_cases.items()
+            if case["should_trigger"] and not case.get("activation_probe", False)
+        }
+        activation_cases = {
+            case_id: case
+            for case_id, case in faithful_cases.items()
+            if case["should_trigger"] and case.get("activation_probe", False)
+        }
+
+        self.assertEqual(
+            set(quality_cases),
+            {
+                "faithful_structural_rebuilds_product_description",
+                "faithful_structural_rebuilds_academic_limitation",
+                "faithful_structural_rebuilds_opinion",
+                "faithful_structural_leaves_natural_methods_unchanged",
+                "faithful_preserves_attribution_modality_scope",
+                "faithful_preserves_promotional_opinion_chronology",
+                "faithful_preserves_exact_anchors_and_list_membership",
+                "faithful_performs_meaningful_local_rewrite",
+                "faithful_preserves_scientific_register",
+                "faithful_leaves_already_natural_text_unchanged",
+                "faithful_edits_only_formulaic_sentence",
+                "faithful_returns_audit_sections_without_score",
+                "faithful_matches_voice_without_importing_content",
+                "faithful_preserves_structure_and_protected_spans",
+                "faithful_preserves_conditions_exceptions_and_comparisons",
+            },
+        )
+        self.assertEqual(
+            set(activation_cases),
+            {
+                "faithful_implicit_form_only_activation",
+                "faithful_rework_structure_activation",
+                "faithful_contextual_preservation_activation",
+                "faithful_explicit_catalog_activation",
+            },
+        )
+        self.assertIn("negative_detector_evasion_only", faithful_cases)
+        self.assertFalse(faithful_cases["negative_detector_evasion_only"]["should_trigger"])
+        for case in quality_cases.values():
+            with self.subTest(case=case["id"]):
+                self.assertTrue(case["should_trigger"])
+                self.assertTrue(case["force_skill_file_read"])
+                self.assertFalse(case.get("force_reference_file_read", False))
+                self.assertIn(FAITHFUL_SKILL_TRACE_PATH, case["expected_trace_terms"])
+                self.assertEqual(case["rubric_id"], "faithful_humanizer_rewrite")
+                self.assertEqual(
+                    case["rubric"]["minimum_dimension_scores"],
+                    {"semantic_fidelity": 9},
+                )
+                mode_dimension_name = {
+                    "structural": "structural_initiative",
+                    "conservative": "conservative_restraint",
+                }[case["faithful_mode"]]
+                self.assertIn(
+                    mode_dimension_name,
+                    {
+                        dimension["name"]
+                        for dimension in case["rubric"]["dimensions"]
+                    },
+                )
+        explicit_activation_case = activation_cases[
+            "faithful_explicit_catalog_activation"
+        ]
+        self.assertFalse(explicit_activation_case.get("force_skill_file_read", False))
+        for case_id in {
+            "faithful_implicit_form_only_activation",
+            "faithful_rework_structure_activation",
+            "faithful_contextual_preservation_activation",
+            "faithful_explicit_catalog_activation",
+        }:
+            case = activation_cases[case_id]
+            with self.subTest(activation_case=case["id"]):
+                self.assertFalse(case.get("force_skill_file_read", False))
+                self.assertIn(FAITHFUL_SKILL_TRACE_PATH, case["expected_trace_terms"])
+                self.assertIn(SKILL_TRACE_PATH, case["forbidden_trace_terms"])
+                self.assertIn(
+                    "less formulaic rewrite appropriate to the requested Faithful mode",
+                    next(
+                        dimension["question"]
+                        for dimension in case["rubric"]["dimensions"]
+                        if dimension["name"] == "meaningful_surface_rewrite"
+                    ),
+                )
+        for case in activation_cases.values():
+            with self.subTest(activation_case=case["id"]):
+                self.assertIn(SKILL_TRACE_PATH, case["forbidden_trace_terms"])
+        scientific_case = faithful_cases["faithful_preserves_scientific_register"]
+        self.assertEqual(
+            scientific_case["force_reference_file_reads"],
+            ["skills/references/registers/scientific-writing.md"],
+        )
+
+        self.assertEqual(
+            {
+                case_id: case["faithful_mode"]
+                for case_id, case in activation_cases.items()
+            },
+            {
+                "faithful_implicit_form_only_activation": "structural",
+                "faithful_rework_structure_activation": "structural",
+                "faithful_contextual_preservation_activation": "conservative",
+                "faithful_explicit_catalog_activation": "structural",
+            },
+        )
+
+    def test_rubric_calibrations_cover_both_modes_and_key_failures(self):
+        calibrations = self.runner.load_rubric_calibrations(EVAL_CASES_PATH)
+
+        self.assertEqual(
+            {calibration["id"] for calibration in calibrations},
+            {
+                "faithful_structural_calibration_good_reconstruction",
+                "faithful_structural_calibration_rejects_unchanged_source",
+                "faithful_structural_calibration_rejects_local_only_repair",
+                "faithful_structural_calibration_rejects_semantic_drift",
+                "faithful_conservative_calibration_good_local_rewrite",
+                "faithful_conservative_calibration_rejects_broad_reconstruction",
+                "faithful_conservative_calibration_rejects_semantic_drift",
+            },
+        )
+        self.assertEqual(
+            [calibration["expected_pass"] for calibration in calibrations],
+            [True, False, False, False, True, False, False],
+        )
+        self.assertTrue(
+            all(
+                calibration["rubric"]["minimum_dimension_scores"]
+                == {"semantic_fidelity": 9}
+                for calibration in calibrations
+            )
+        )
+        self.assertEqual(
+            {calibration["faithful_mode"] for calibration in calibrations},
+            {"structural", "conservative"},
+        )
+
+    def test_eval_cases_cover_deterministic_mode_routing_language(self):
+        cases = {
+            case["id"]: case for case in self.runner.load_eval_cases(EVAL_CASES_PATH)
+        }
+
+        expected_modes = {
+            "faithful_structural_rebuilds_product_description": "structural",
+            "faithful_preserves_attribution_modality_scope": "conservative",
+            "faithful_implicit_form_only_activation": "structural",
+            "faithful_rework_structure_activation": "structural",
+            "faithful_contextual_preservation_activation": "conservative",
+            "faithful_explicit_catalog_activation": "structural",
+            "negative_detector_evasion_only": "structural",
+        }
+        for case_id, expected_mode in expected_modes.items():
+            with self.subTest(case=case_id):
+                self.assertEqual(cases[case_id]["faithful_mode"], expected_mode)
+
+        self.assertIn(
+            "Structural mode",
+            cases["faithful_structural_rebuilds_product_description"]["prompt"],
+        )
+        self.assertIn(
+            "Conservative mode",
+            cases["faithful_preserves_attribution_modality_scope"]["prompt"],
+        )
+        self.assertNotIn(
+            "Structural",
+            cases["faithful_implicit_form_only_activation"]["prompt"],
+        )
+        self.assertIn(
+            "Rework the sentence structure",
+            cases["faithful_rework_structure_activation"]["prompt"],
+        )
+        self.assertIn(
+            "minimal, light-touch",
+            cases["faithful_contextual_preservation_activation"]["prompt"],
+        )
+        self.assertIn(
+            "$faithful-humanizer",
+            cases["faithful_explicit_catalog_activation"]["prompt"],
+        )
+        self.assertFalse(
+            cases["negative_detector_evasion_only"]["should_trigger"]
+        )
+        self.assertNotIn(
+            "faithful_mode",
+            cases["editorial_routes_broader_rewrite_away_from_faithful"],
+        )
 
     def test_all_cases_reject_humanizer_plugin_loader_warnings(self):
         cases = self.runner.load_eval_cases(EVAL_CASES_PATH)
@@ -219,7 +473,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="duplicate",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             expected_trace_terms=[SKILL_TRACE_PATH],
                         ),
                         minimal_eval_case(
@@ -233,6 +487,100 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 }
             )
 
+    def test_load_eval_cases_rejects_unknown_target_skill(self):
+        with self.assertRaisesRegex(ValueError, "unsupported target_skill"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(target_skill="unknown-humanizer")
+                    ]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_requires_explicit_metadata_for_faithful_mode(self):
+        with self.assertRaisesRegex(ValueError, "faithful_mode must be one of"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(target_skill="faithful-humanizer")
+                    ]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_rejects_unknown_faithful_mode(self):
+        with self.assertRaisesRegex(ValueError, "faithful_mode must be one of"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(
+                            target_skill="faithful-humanizer",
+                            faithful_mode="aggressive",
+                        )
+                    ]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_rejects_faithful_mode_on_editorial_case(self):
+        with self.assertRaisesRegex(ValueError, "only valid for faithful-humanizer"):
+            self._load_cases_from_data(
+                {
+                    "cases": [minimal_eval_case(faithful_mode="structural")]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_rejects_faithful_reference_catalog_reads(self):
+        with self.assertRaisesRegex(ValueError, "not supported for faithful-humanizer"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(
+                            target_skill="faithful-humanizer",
+                            faithful_mode="structural",
+                            force_reference_file_read=True,
+                        )
+                    ]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_accepts_shared_scientific_reference_for_faithful(self):
+        cases = self._load_cases_from_data(
+            {
+                "cases": [
+                    minimal_eval_case(
+                        target_skill="faithful-humanizer",
+                        faithful_mode="structural",
+                        force_reference_file_reads=[
+                            "skills/references/registers/scientific-writing.md"
+                        ],
+                    )
+                ]
+            },
+            output_contract_cases={},
+        )
+
+        self.assertEqual(
+            self.runner.reference_paths_for_case(cases[0]),
+            ["skills/references/registers/scientific-writing.md"],
+        )
+
+    def test_load_eval_cases_rejects_unknown_reference_path(self):
+        with self.assertRaisesRegex(ValueError, "unsupported reference path"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(
+                            force_reference_file_reads=["../../outside.md"]
+                        )
+                    ]
+                },
+                output_contract_cases={},
+            )
+
     def test_load_eval_cases_rejects_unknown_output_contract_case_id(self):
         with self.assertRaisesRegex(ValueError, "unknown output contract"):
             self._load_cases_from_data(
@@ -240,7 +588,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="unknown_contract",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             output_contract_case_id="missing_contract",
                         )
                     ]
@@ -255,7 +603,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="unknown_rubric",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             rubric_id="missing_rubric",
                         )
                     ],
@@ -277,7 +625,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="bad_rubric",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             rubric_id="bad",
                         )
                     ],
@@ -301,7 +649,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="bad_rubric",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             rubric_id="bad",
                         )
                     ],
@@ -348,7 +696,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "cases": [
                         minimal_eval_case(
                             id="source_mismatch",
-                            prompt="Use Humanizer.",
+                            prompt="Use Editorial Humanizer.",
                             source="Different source text.",
                             output_contract_case_id="contract_case",
                         )
@@ -363,23 +711,49 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 },
             )
 
+    def test_load_eval_cases_rejects_mismatched_output_contract_mode(self):
+        with self.assertRaisesRegex(ValueError, "faithful_mode mismatch"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(
+                            id="mode_mismatch",
+                            target_skill="faithful-humanizer",
+                            faithful_mode="structural",
+                            source="Expected source text.",
+                            output_contract_case_id="contract_case",
+                        )
+                    ]
+                },
+                output_contract_cases={
+                    "contract_case": {
+                        "id": "contract_case",
+                        "faithful_mode": "conservative",
+                        "source": "Expected source text.",
+                        "constraints": {},
+                    }
+                },
+            )
+
     def test_build_codex_prompt_includes_source_and_output_rules(self):
         case = {
             "id": "sample",
             "category": "explicit",
             "should_trigger": True,
             "force_skill_file_read": True,
-            "prompt": "Use $humanizer to rewrite this.",
+            "prompt": "Use $editorial-humanizer to rewrite this.",
             "source": "Great question! This is a pivotal moment.",
             "output_contract_case_id": "dense_ai_rewrite",
         }
 
         prompt = self.runner.build_codex_prompt(case)
 
-        self.assertIn("Use $humanizer to rewrite this.", prompt)
-        self.assertIn("Read `skills/humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Use $editorial-humanizer to rewrite this.", prompt)
+        self.assertIn("Read `skills/editorial-humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Read the complete skill file from its first line through EOF", prompt)
+        self.assertIn("Reading every section of the skill file is essential", prompt)
         self.assertIn("Great question! This is a pivotal moment.", prompt)
-        self.assertIn("Return only the final Humanizer output", prompt)
+        self.assertIn("Return only the final Editorial Humanizer output", prompt)
         self.assertIn("Do not edit repository files", prompt)
 
     def test_build_codex_prompt_supports_unforced_activation_probes(self):
@@ -388,14 +762,34 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             "category": "contextual",
             "should_trigger": True,
             "force_skill_file_read": False,
+            "activation_probe": True,
             "prompt": "This sounds padded. Tighten it.",
             "source": "This release represents a pivotal step.",
         }
 
         prompt = self.runner.build_codex_prompt(case)
 
-        self.assertNotIn("Read `skills/humanizer/SKILL.md` before answering.", prompt)
-        self.assertIn("Return only the final Humanizer output", prompt)
+        self.assertNotIn("Read `skills/editorial-humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Return only the final answer", prompt)
+        self.assertNotIn("Editorial Humanizer output", prompt)
+
+    def test_build_codex_prompt_targets_faithful_skill(self):
+        case = {
+            "id": "faithful",
+            "target_skill": "faithful-humanizer",
+            "faithful_mode": "structural",
+            "category": "explicit",
+            "should_trigger": True,
+            "force_skill_file_read": True,
+            "prompt": "Use $faithful-humanizer to edit only the form.",
+            "source": "Experts believe this may help some patients.",
+        }
+
+        prompt = self.runner.build_codex_prompt(case)
+
+        self.assertIn("Read `skills/faithful-humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Return only the final Faithful Humanizer output", prompt)
+        self.assertNotIn("skills/editorial-humanizer/SKILL.md", prompt)
 
     def test_build_codex_prompt_can_force_reference_file_read(self):
         case = {
@@ -410,9 +804,33 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         prompt = self.runner.build_codex_prompt(case)
 
-        self.assertIn("Read `skills/humanizer/SKILL.md` before answering.", prompt)
+        self.assertIn("Read `skills/editorial-humanizer/SKILL.md` before answering.", prompt)
         self.assertIn(
-            "Read `skills/humanizer/references/banned-list.md` before answering.",
+            "Read `skills/editorial-humanizer/references/pattern-catalog.md` before answering.",
+            prompt,
+        )
+        self.assertIn("Read the complete reference from its first line through EOF", prompt)
+
+    def test_build_codex_prompt_can_read_shared_scientific_reference(self):
+        case = {
+            "id": "scientific",
+            "target_skill": "faithful-humanizer",
+            "faithful_mode": "conservative",
+            "category": "explicit",
+            "should_trigger": True,
+            "force_skill_file_read": True,
+            "force_reference_file_reads": [
+                "skills/references/registers/scientific-writing.md"
+            ],
+            "prompt": "Preserve this scientific register.",
+            "source": "The samples may be associated with the outcome.",
+        }
+
+        prompt = self.runner.build_codex_prompt(case)
+
+        self.assertIn("Read `skills/faithful-humanizer/SKILL.md`", prompt)
+        self.assertIn(
+            "Read `skills/references/registers/scientific-writing.md` before answering.",
             prompt,
         )
 
@@ -423,7 +841,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             "should_trigger": True,
             "force_skill_file_read": True,
             "force_reference_file_read": True,
-            "prompt": "Use $humanizer to rewrite this.",
+            "prompt": "Use $editorial-humanizer to rewrite this.",
             "source": "This is a pivotal moment.",
         }
         plugin_root = Path("/tmp/isolated-codex-home/plugins/humanizer")
@@ -431,11 +849,11 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         prompt = self.runner.build_codex_prompt(case, plugin_root=plugin_root)
 
         self.assertIn(
-            f"`{plugin_root}/skills/humanizer/SKILL.md`",
+            f"`{plugin_root}/skills/editorial-humanizer/SKILL.md`",
             prompt,
         )
         self.assertIn(
-            f"`{plugin_root}/skills/humanizer/references/banned-list.md`",
+            f"`{plugin_root}/skills/editorial-humanizer/references/pattern-catalog.md`",
             prompt,
         )
 
@@ -450,7 +868,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         prompt = self.runner.build_codex_prompt(case)
 
-        self.assertNotIn("skills/humanizer/SKILL.md", prompt)
+        self.assertNotIn("skills/editorial-humanizer/SKILL.md", prompt)
 
     def test_build_rubric_prompt_includes_source_output_and_schema(self):
         case = {
@@ -479,10 +897,34 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         )
 
         self.assertIn("Atlas Note adoption rose 43% last quarter.", prompt)
+        self.assertIn("Does the output avoid commentary?", prompt)
+        self.assertIn("Do not treat user-requested labels or audit explanations", prompt)
+        self.assertIn("<user_request>", prompt)
+        self.assertNotIn("Faithful intervention mode", prompt)
         self.assertIn("factual_fidelity", prompt)
         self.assertIn('"factual_fidelity": 9', prompt)
         self.assertIn('"scores"', prompt)
         self.assertIn("Return only JSON", prompt)
+
+    def test_build_rubric_prompt_names_faithful_mode(self):
+        case = {
+            "id": "faithful_rubric",
+            "target_skill": "faithful-humanizer",
+            "faithful_mode": "structural",
+            "source": "Source text.",
+            "rubric": {
+                "minimum_total_score": 8,
+                "minimum_dimension_score": 8,
+                "minimum_dimension_scores": {},
+                "dimensions": [
+                    {"name": "semantic_fidelity", "question": "Faithful?"}
+                ],
+            },
+        }
+
+        prompt = self.runner.build_rubric_prompt(case, "Output text.")
+
+        self.assertIn("Faithful intervention mode: structural.", prompt)
 
     def test_validate_rubric_grade_rejects_low_dimension_score(self):
         case = {
@@ -508,7 +950,32 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         }
 
         with self.assertRaisesRegex(AssertionError, "rewrite_only"):
-            self.runner.validate_rubric_grade(case, grade)
+                self.runner.validate_rubric_grade(case, grade)
+
+    def test_validate_rubric_grade_can_return_expected_failure_for_calibration(self):
+        case = {
+            "id": "calibration",
+            "rubric": two_dimension_rubric(),
+        }
+        grade = {
+            "case_id": "calibration",
+            "scores": {
+                "factual_fidelity": {"score": 7, "rationale": "claim drift"},
+                "rewrite_only": {"score": 9, "rationale": "correct format"},
+            },
+            "total_score": 16,
+            "passed": False,
+            "issues": ["claim drift"],
+        }
+
+        result = self.runner.validate_rubric_grade(
+            case,
+            grade,
+            require_pass=False,
+        )
+
+        self.assertFalse(result["rubric_passed"])
+        self.assertIn("factual_fidelity score 7", result["rubric_score_violations"][0])
 
     def test_validate_rubric_grade_uses_dimension_specific_threshold(self):
         case = {
@@ -566,12 +1033,12 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
     def test_check_trace_expectations_uses_recursive_event_search(self):
         events = [
-            {"type": "item.started", "item": {"path": "skills/humanizer/SKILL.md"}},
+            {"type": "item.started", "item": {"path": "skills/editorial-humanizer/SKILL.md"}},
             {"type": "turn.completed", "usage": {"input_tokens": 1234}},
         ]
         case = {
             "id": "trace",
-            "expected_trace_terms": ["skills/humanizer/SKILL.md"],
+            "expected_trace_terms": ["skills/editorial-humanizer/SKILL.md"],
             "forbidden_trace_terms": ["dangerously-bypass-approvals"],
         }
 
@@ -581,21 +1048,51 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         events = [
             {
                 "type": "agent_message",
-                "text": "I used skills/humanizer/SKILL.md for this rewrite.",
+                "text": "I used skills/editorial-humanizer/SKILL.md for this rewrite.",
             }
         ]
         case = {
             "id": "trace",
-            "expected_trace_terms": ["skills/humanizer/SKILL.md"],
+            "expected_trace_terms": ["skills/editorial-humanizer/SKILL.md"],
         }
 
         with self.assertRaisesRegex(AssertionError, "missing trace term"):
             self.runner.check_trace_expectations(case, events)
 
+    def test_check_trace_expectations_ignores_paths_only_listed_in_command_output(self):
+        events = [
+            {
+                "type": "item.completed",
+                "item": {
+                    "type": "command_execution",
+                    "command": "rg --files -g SKILL.md",
+                    "aggregated_output": (
+                        "skills/editorial-humanizer/SKILL.md\n"
+                        "skills/faithful-humanizer/SKILL.md\n"
+                    ),
+                },
+            },
+            {
+                "type": "item.completed",
+                "item": {
+                    "type": "command_execution",
+                    "command": "sed -n '1,240p' skills/faithful-humanizer/SKILL.md",
+                    "aggregated_output": "name: faithful-humanizer",
+                },
+            },
+        ]
+        case = {
+            "id": "trace",
+            "expected_trace_terms": ["skills/faithful-humanizer/SKILL.md"],
+            "forbidden_trace_terms": ["skills/editorial-humanizer/SKILL.md"],
+        }
+
+        self.runner.check_trace_expectations(case, events)
+
     def test_check_trace_expectations_fails_for_missing_required_term(self):
         with self.assertRaisesRegex(AssertionError, "missing trace term"):
             self.runner.check_trace_expectations(
-                {"id": "trace", "expected_trace_terms": ["skills/humanizer/SKILL.md"]},
+                {"id": "trace", "expected_trace_terms": ["skills/editorial-humanizer/SKILL.md"]},
                 [{"type": "turn.completed"}],
             )
 
@@ -660,7 +1157,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
     def test_build_codex_command_uses_read_only_json_trace_and_output_file(self):
         command = self.runner.build_codex_command(
             codex_bin="codex",
-            repo_root=REPO_ROOT,
+            working_directory=REPO_ROOT,
             output_path=Path("/tmp/final.txt"),
             prompt="Humanize this.",
             model="gpt-5.4",
@@ -671,6 +1168,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertIn("--sandbox", command)
         self.assertIn("read-only", command)
         self.assertIn("--ephemeral", command)
+        self.assertIn("--skip-git-repo-check", command)
         self.assertIn("--output-last-message", command)
         self.assertIn("/tmp/final.txt", command)
         self.assertIn("--model", command)
@@ -680,7 +1178,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         plugin_id = "humanizer-plugin@humanizer-eval-test"
         command = self.runner.build_codex_command(
             codex_bin="codex",
-            repo_root=REPO_ROOT,
+            working_directory=REPO_ROOT,
             output_path=Path("/tmp/final.txt"),
             prompt="Humanize this.",
             model=None,
@@ -729,11 +1227,51 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 REPO_ROOT.joinpath(".codex-plugin", "plugin.json").read_bytes(),
             )
             self.assertEqual(
-                plugin_root.joinpath("skills", "humanizer", "SKILL.md").read_bytes(),
-                REPO_ROOT.joinpath("skills", "humanizer", "SKILL.md").read_bytes(),
+                plugin_root.joinpath("skills", "editorial-humanizer", "SKILL.md").read_bytes(),
+                REPO_ROOT.joinpath("skills", "editorial-humanizer", "SKILL.md").read_bytes(),
+            )
+            self.assertEqual(
+                plugin_root.joinpath("skills", "faithful-humanizer", "SKILL.md").read_bytes(),
+                REPO_ROOT.joinpath("skills", "faithful-humanizer", "SKILL.md").read_bytes(),
+            )
+            self.assertEqual(
+                plugin_root.joinpath(
+                    "skills",
+                    "references",
+                    "registers",
+                    "scientific-writing.md",
+                ).read_bytes(),
+                REPO_ROOT.joinpath(
+                    "skills",
+                    "references",
+                    "registers",
+                    "scientific-writing.md",
+                ).read_bytes(),
             )
             self.assertFalse(plugin_root.joinpath(".git").exists())
             self.assertFalse(plugin_root.joinpath("tests").exists())
+
+    def test_verify_eval_plugin_is_model_visible_targets_both_skills(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            installed_path = Path(temporary_directory) / "plugin"
+            expected_paths = [
+                (installed_path / "skills" / skill_name / "SKILL.md").resolve()
+                for skill_name in ("editorial-humanizer", "faithful-humanizer")
+            ]
+            with mock.patch.object(
+                self.runner,
+                "run_cli_json",
+                return_value={
+                    "prompt_input": [str(path) for path in expected_paths]
+                },
+            ):
+                actual_paths = self.runner.verify_eval_plugin_is_model_visible(
+                    "codex",
+                    "humanizer-plugin@humanizer-eval-test",
+                    installed_path,
+                    {},
+                )
+            self.assertEqual(actual_paths, [str(path) for path in expected_paths])
 
     def test_require_isolated_codex_home_rejects_missing_and_default_home(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -843,7 +1381,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 codex_home / "staged",
                 "humanizer-eval-test",
             )
-            installed_path.joinpath("skills", "humanizer", "SKILL.md").write_text(
+            installed_path.joinpath("skills", "editorial-humanizer", "SKILL.md").write_text(
                 "stale installed content\n",
                 encoding="utf-8",
             )
@@ -945,6 +1483,154 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             installation.environment,
         )
 
+    def test_run_eval_suite_repeats_trials_with_distinct_artifacts_and_rubric_model(self):
+        case = minimal_eval_case(
+            id="repeated",
+            target_skill="faithful-humanizer",
+            faithful_mode="structural",
+        )
+        installation = self.runner.EvalPluginInstallation(
+            plugin_id="humanizer-plugin@humanizer-eval-test",
+            marketplace_name="humanizer-eval-test",
+            version="test-version",
+            installed_path=Path("/tmp/installed-humanizer"),
+            package_sha256="digest",
+            environment={"HOME": "/tmp/home", "CODEX_HOME": "/tmp/codex-home"},
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory, mock.patch.object(
+            self.runner,
+            "require_isolated_codex_home",
+            return_value=Path("/tmp/codex-home"),
+        ), mock.patch.object(
+            self.runner,
+            "installed_eval_plugin",
+            return_value=contextlib.nullcontext(installation),
+        ), mock.patch.object(
+            self.runner,
+            "run_eval_case",
+            side_effect=lambda current_case, *args, **kwargs: {
+                "id": current_case["id"],
+                "target_skill": current_case["target_skill"],
+                "trial": kwargs["trial"],
+                "passed": True,
+                "failure_stage": None,
+            },
+        ) as run_eval_case:
+            summaries, summary_path = self.runner.run_eval_suite(
+                [case],
+                Path(temporary_directory),
+                codex_bin="codex",
+                model="writer-model",
+                rubric_model="grader-model",
+                trials=3,
+            )
+
+            written_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        self.assertEqual([summary["trial"] for summary in summaries], [1, 2, 3])
+        self.assertEqual(
+            [call.kwargs["artifact_stem"] for call in run_eval_case.call_args_list],
+            [
+                "repeated.trial-01",
+                "repeated.trial-02",
+                "repeated.trial-03",
+            ],
+        )
+        self.assertTrue(
+            all(
+                call.kwargs["rubric_model"] == "grader-model"
+                for call in run_eval_case.call_args_list
+            )
+        )
+        self.assertEqual(written_summary["metadata"]["trials"], 3)
+        self.assertEqual(written_summary["metadata"]["rubric_model"], "grader-model")
+
+    def test_run_rubric_calibration_suite_accepts_expected_pass_and_failure(self):
+        calibrations = [
+            {
+                "id": "good",
+                "source": "Source.",
+                "output": "Good output.",
+                "expected_pass": True,
+            },
+            {
+                "id": "bad",
+                "source": "Source.",
+                "output": "Bad output.",
+                "expected_pass": False,
+            },
+        ]
+
+        def grade_calibration(calibration, *args, **kwargs):
+            rubric_passed = calibration["id"] == "good"
+            return {
+                "rubric_passed": rubric_passed,
+                "rubric_total_score": 40 if rubric_passed else 20,
+                "rubric_dimension_scores": {"semantic_fidelity": 10 if rubric_passed else 4},
+                "rubric_score_violations": [] if rubric_passed else ["semantic drift"],
+            }
+
+        with tempfile.TemporaryDirectory() as temporary_directory, mock.patch.object(
+            self.runner,
+            "require_isolated_codex_home",
+            return_value=Path("/tmp/codex-home"),
+        ), mock.patch.object(
+            self.runner,
+            "run_rubric_grade",
+            side_effect=grade_calibration,
+        ) as run_rubric_grade:
+            summaries, summary_path = self.runner.run_rubric_calibration_suite(
+                calibrations,
+                Path(temporary_directory),
+                codex_bin="codex",
+                model="grader-model",
+            )
+            written_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(all(summary["passed"] for summary in summaries))
+        self.assertEqual(written_summary["aggregate"]["passed"], 2)
+        self.assertEqual(run_rubric_grade.call_count, 2)
+        self.assertTrue(
+            all(
+                call.kwargs["require_pass"] is False
+                for call in run_rubric_grade.call_args_list
+            )
+        )
+
+    def test_run_rubric_calibration_suite_reports_expectation_mismatch(self):
+        calibration = {
+            "id": "unexpected_pass",
+            "source": "Source.",
+            "output": "Drifted output.",
+            "expected_pass": False,
+        }
+
+        with tempfile.TemporaryDirectory() as temporary_directory, mock.patch.object(
+            self.runner,
+            "require_isolated_codex_home",
+            return_value=Path("/tmp/codex-home"),
+        ), mock.patch.object(
+            self.runner,
+            "run_rubric_grade",
+            return_value={
+                "rubric_passed": True,
+                "rubric_total_score": 40,
+                "rubric_dimension_scores": {"semantic_fidelity": 10},
+                "rubric_score_violations": [],
+            },
+        ):
+            summaries, _ = self.runner.run_rubric_calibration_suite(
+                [calibration],
+                Path(temporary_directory),
+                codex_bin="codex",
+                model="grader-model",
+            )
+
+        self.assertFalse(summaries[0]["passed"])
+        self.assertEqual(summaries[0]["failure_stage"], "rubric_calibration")
+        self.assertIn("expected False", summaries[0]["error"])
+
     def test_dry_run_lists_cases_without_invoking_codex(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             result = subprocess.run(
@@ -967,10 +1653,177 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertIn("would run", result.stdout)
         self.assertIn("explicit_dense_rewrite", result.stdout)
 
+    def test_dry_run_lists_rubric_calibrations_without_invoking_codex(self):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(RUNNER_PATH),
+                "--cases",
+                str(EVAL_CASES_PATH),
+                "--calibrate-rubric",
+                "--dry-run",
+            ],
+            cwd=REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertIn("would run 7 rubric calibration(s)", result.stdout)
+        self.assertIn(
+            "faithful_conservative_calibration_rejects_broad_reconstruction",
+            result.stdout,
+        )
+
+    def test_main_runs_rubric_calibration_with_selected_grader_model(self):
+        calibrations = [
+            {
+                "id": "calibration",
+                "source": "Source.",
+                "output": "Output.",
+                "expected_pass": True,
+            }
+        ]
+        summaries = [{"id": "calibration", "passed": True}]
+
+        with tempfile.TemporaryDirectory() as temporary_directory, mock.patch.object(
+            self.runner,
+            "load_rubric_calibrations",
+            return_value=calibrations,
+        ), mock.patch.object(
+            self.runner,
+            "run_rubric_calibration_suite",
+            return_value=(summaries, Path(temporary_directory) / "summary.json"),
+        ) as run_calibrations, mock.patch.object(
+            self.runner,
+            "print_summary",
+        ):
+            returncode = self.runner.main(
+                [
+                    str(RUNNER_PATH),
+                    "--calibrate-rubric",
+                    "--rubric-model",
+                    "grader-model",
+                    "--artifacts-dir",
+                    temporary_directory,
+                ]
+            )
+
+        self.assertEqual(returncode, 0)
+        self.assertEqual(run_calibrations.call_args.kwargs["model"], "grader-model")
+        self.assertEqual(
+            run_calibrations.call_args.kwargs["artifacts_dir"],
+            Path(temporary_directory),
+        )
+
     def test_parser_pins_default_eval_model(self):
         args = self.runner.build_parser().parse_args([])
 
         self.assertEqual(args.model, "gpt-5.5")
+        self.assertIsNone(args.rubric_model)
+        self.assertEqual(args.trials, 1)
+        self.assertEqual(args.target_skill, [])
+        self.assertEqual(args.faithful_mode, [])
+
+    def test_parser_accepts_skill_filter_trials_and_separate_rubric_model(self):
+        args = self.runner.build_parser().parse_args(
+            [
+                "--target-skill",
+                "faithful-humanizer",
+                "--faithful-mode",
+                "structural",
+                "--trials",
+                "3",
+                "--rubric-model",
+                "grader-model",
+            ]
+        )
+
+        self.assertEqual(args.target_skill, ["faithful-humanizer"])
+        self.assertEqual(args.faithful_mode, ["structural"])
+        self.assertEqual(args.trials, 3)
+        self.assertEqual(args.rubric_model, "grader-model")
+
+    def test_select_cases_filters_by_target_skill_after_case_ids(self):
+        cases = [
+            minimal_eval_case(id="editorial"),
+            minimal_eval_case(
+                id="faithful",
+                target_skill="faithful-humanizer",
+                faithful_mode="structural",
+            ),
+        ]
+
+        selected = self.runner.select_cases(
+            cases,
+            ["faithful"],
+            target_skills=["faithful-humanizer"],
+        )
+
+        self.assertEqual([case["id"] for case in selected], ["faithful"])
+        with self.assertRaisesRegex(ValueError, "no eval cases match"):
+            self.runner.select_cases(
+                cases,
+                ["editorial"],
+                target_skills=["faithful-humanizer"],
+            )
+
+    def test_select_cases_filters_by_faithful_mode(self):
+        cases = [
+            minimal_eval_case(
+                id="structural",
+                target_skill="faithful-humanizer",
+                faithful_mode="structural",
+            ),
+            minimal_eval_case(
+                id="conservative",
+                target_skill="faithful-humanizer",
+                faithful_mode="conservative",
+            ),
+        ]
+
+        selected = self.runner.select_cases(
+            cases,
+            [],
+            faithful_modes=["conservative"],
+        )
+
+        self.assertEqual([case["id"] for case in selected], ["conservative"])
+
+    def test_aggregate_summaries_reports_skill_rates_dimensions_and_stages(self):
+        aggregate = self.runner.aggregate_summaries(
+            [
+                {
+                    "target_skill": "faithful-humanizer",
+                    "faithful_mode": "structural",
+                    "passed": True,
+                    "failure_stage": None,
+                    "rubric_dimension_scores": {"semantic_fidelity": 10},
+                },
+                {
+                    "target_skill": "faithful-humanizer",
+                    "faithful_mode": "conservative",
+                    "passed": False,
+                    "failure_stage": "output_contract",
+                    "rubric_dimension_scores": {"semantic_fidelity": 9},
+                },
+            ]
+        )
+
+        self.assertEqual(aggregate["runs"], 2)
+        self.assertEqual(aggregate["passed"], 1)
+        self.assertEqual(aggregate["pass_rate"], 0.5)
+        self.assertEqual(aggregate["failure_stages"], {"output_contract": 1})
+        faithful_summary = aggregate["by_target_skill"]["faithful-humanizer"]
+        self.assertEqual(faithful_summary["minimum_rubric_dimension_scores"], {"semantic_fidelity": 9})
+        self.assertEqual(
+            aggregate["by_faithful_mode"],
+            {
+                "conservative": {"runs": 1, "passed": 0, "pass_rate": 0.0},
+                "structural": {"runs": 1, "passed": 1, "pass_rate": 1.0},
+            },
+        )
 
     def test_parser_sets_default_case_timeout(self):
         args = self.runner.build_parser().parse_args([])
@@ -1071,6 +1924,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             artifact_dirs = self.runner.ensure_artifact_dirs(Path(temporary_directory))
+            observed_commands = []
             result = completed_codex_process(
                 skill_read_trace(
                     {
@@ -1083,6 +1937,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             )
 
             def run_and_write_output(*args, **kwargs):
+                observed_commands.append(args[0])
                 artifact_dirs["outputs"].joinpath("success.txt").write_text(
                     "AI coding assistants can help with doc work and tests.",
                     encoding="utf-8",
@@ -1110,6 +1965,25 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             self.assertTrue(summary["passed"], summary["error"])
             self.assertEqual(summary["command_count"], 1)
             self.assertEqual(summary["input_tokens"], 123)
+            self.assertIsNotNone(summary["editorial_source_diagnostics"])
+            self.assertIsNotNone(summary["editorial_output_diagnostics"])
+            self.assertNotIn("verdict", summary["editorial_output_diagnostics"])
+            command = observed_commands[0]
+            self.assertEqual(
+                Path(command[command.index("--cd") + 1]),
+                Path(temporary_directory).resolve(),
+            )
+
+    def test_editorial_diagnostics_are_not_applied_to_faithful_cases(self):
+        case = minimal_eval_case(
+            target_skill="faithful-humanizer",
+            faithful_mode="conservative",
+            source="It is important to note that the samples were measured.",
+        )
+
+        self.assertIsNone(
+            self.runner.editorial_diagnostics_for_case(case, case["source"])
+        )
 
     def test_run_eval_case_runs_rubric_grade_when_enabled(self):
         case = minimal_eval_case(
