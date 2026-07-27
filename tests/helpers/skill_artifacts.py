@@ -7,6 +7,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / ".codex-plugin" / "plugin.json"
 MARKETPLACE_PATH = REPO_ROOT / ".agents" / "plugins" / "marketplace.json"
 SKILL_PATH = REPO_ROOT / "skills" / "editorial-humanizer" / "SKILL.md"
+PLAIN_LANGUAGE_SKILL_PATH = (
+    REPO_ROOT / "skills" / "plain-language-humanizer" / "SKILL.md"
+)
 REFERENCE_PATH = (
     REPO_ROOT
     / "skills"

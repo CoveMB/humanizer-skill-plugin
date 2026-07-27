@@ -104,6 +104,24 @@ Punctuation, heading capitalization, lists, and citation style should follow the
 author, venue, or supplied style guide. An em dash, semicolon, three-item list,
 Oxford comma, or title-case heading is not an AI signal by itself.
 
+## Plain Language Humanizer
+
+Plain Language Humanizer uses this file as precision constraints while adapting
+scientific content for an informed non-specialist.
+
+- Retain exact technical terms when an everyday substitute would change meaning;
+  define the term briefly at first meaningful use.
+- Preserve citations, quantities, units, statistical estimates, intervals,
+  uncertainty, attribution, evidence boundaries, and causal strength.
+- Preserve legitimate passive constructions when the actor is unknown or the
+  measured object is the scientific focus.
+- Do not turn an association into a cause, a hypothesis into a finding, or a
+  population-specific result into a general claim.
+- Explain a conventional term only at the level supported by the source and its
+  unambiguous disciplinary meaning. Ask when a term is overloaded or context is
+  missing.
+- Prefer the shortest explanation that keeps the scientific distinction intact.
+
 ## Final register check
 
 Before returning an edit, verify that:
