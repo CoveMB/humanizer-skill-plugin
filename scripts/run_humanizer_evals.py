@@ -416,6 +416,20 @@ def is_positive_integer(value):
     return is_strict_integer(value) and value > 0
 
 
+def validate_plain_language_mode(record_id, target_skill, plain_language_mode):
+    if target_skill == PLAIN_LANGUAGE_TARGET_SKILL:
+        if plain_language_mode not in VALID_PLAIN_LANGUAGE_MODES:
+            raise ValueError(
+                f"{record_id}: plain_language_mode must be one of "
+                f"{', '.join(VALID_PLAIN_LANGUAGE_MODES)}"
+            )
+    elif plain_language_mode is not None:
+        raise ValueError(
+            f"{record_id}: plain_language_mode is only valid for "
+            f"{PLAIN_LANGUAGE_TARGET_SKILL}"
+        )
+
+
 def validate_eval_case(case):
     missing_keys = REQUIRED_CASE_KEYS - set(case)
     if missing_keys:
@@ -454,18 +468,11 @@ def validate_eval_case(case):
         raise ValueError(
             f"{case['id']}: faithful_mode is only valid for {FAITHFUL_TARGET_SKILL}"
         )
-    plain_language_mode = case.get("plain_language_mode")
-    if target_skill == PLAIN_LANGUAGE_TARGET_SKILL:
-        if plain_language_mode not in VALID_PLAIN_LANGUAGE_MODES:
-            raise ValueError(
-                f"{case['id']}: plain_language_mode must be one of "
-                f"{', '.join(VALID_PLAIN_LANGUAGE_MODES)}"
-            )
-    elif plain_language_mode is not None:
-        raise ValueError(
-            f"{case['id']}: plain_language_mode is only valid for "
-            f"{PLAIN_LANGUAGE_TARGET_SKILL}"
-        )
+    validate_plain_language_mode(
+        case["id"],
+        target_skill,
+        case.get("plain_language_mode"),
+    )
     for reference_path in reference_paths_for_case(case):
         supported_targets = REFERENCE_TARGET_SKILLS.get(reference_path)
         if supported_targets is None:
@@ -820,18 +827,11 @@ def load_rubric_calibrations(path=DEFAULT_CASES_PATH):
             "target_skill",
             DEFAULT_TARGET_SKILL,
         )
-        plain_language_mode = calibration.get("plain_language_mode")
-        if target_skill == PLAIN_LANGUAGE_TARGET_SKILL:
-            if plain_language_mode not in VALID_PLAIN_LANGUAGE_MODES:
-                raise ValueError(
-                    f"{calibration_id}: plain_language_mode must be one of "
-                    f"{', '.join(VALID_PLAIN_LANGUAGE_MODES)}"
-                )
-        elif plain_language_mode is not None:
-            raise ValueError(
-                f"{calibration_id}: plain_language_mode is only valid for "
-                f"{PLAIN_LANGUAGE_TARGET_SKILL}"
-            )
+        validate_plain_language_mode(
+            calibration_id,
+            target_skill,
+            calibration.get("plain_language_mode"),
+        )
         validated_calibrations.append(
             attach_case_rubric(normalized_calibration, rubrics)
         )

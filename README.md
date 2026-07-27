@@ -101,8 +101,9 @@ All three Humanizers:
 
 - preserve supplied names, numbers, dates, quotations, citations, code,
   identifiers, paths, and technical terms when they remain relevant to the output;
-- do not invent facts, sources, examples, metrics, experiences, attitudes,
-  benefits, or causal explanations;
+- do not present invented facts, sources, source examples, metrics, experiences,
+  attitudes, benefits, or causal explanations as source content; Plain Language
+  Explain may add only a bounded, labeled explanatory device under its rules;
 - preserve the epistemic status of claims that remain in the output;
 - respect genre, register, locale, and a supplied style guide rather than treating
   isolated punctuation or vocabulary as proof of AI authorship;

@@ -107,6 +107,28 @@ class OutputContractTests(unittest.TestCase):
                 "Short rewrite here.\n\nExplanation:\nThis explanation adds five more words.",
             )
 
+    def test_combined_output_accepts_source_grounded_explanation(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        case = cases["plain_language_combined_output"]
+
+        validate_case_output(case, case["passing_output"])
+
+    def test_combined_explanation_rejects_new_named_entity(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        case = cases["plain_language_combined_output"]
+        output = case["passing_output"] + " According to Gartner, this is reliable."
+
+        with self.assertRaisesRegex(AssertionError, "introduced named entity"):
+            validate_case_output(case, output)
+
+    def test_combined_explanation_rejects_new_number(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        case = cases["plain_language_combined_output"]
+        output = case["passing_output"] + " This behavior remains supported in 2027."
+
+        with self.assertRaisesRegex(AssertionError, "introduced number"):
+            validate_case_output(case, output)
+
     def test_maximum_word_count_requires_a_positive_integer(self):
         for invalid_value in (0, -1, True, 2.5, "8"):
             with self.subTest(value=invalid_value):

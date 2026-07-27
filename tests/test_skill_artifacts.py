@@ -353,6 +353,8 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "Same source, four results",
             "Would you accept the editor deleting a weak sentence",
             "every supplied idea and qualifier must survive",
+            "do not present invented facts, sources, source examples",
+            "bounded, labeled explanatory device",
         ]
         for term in required_terms:
             with self.subTest(term=term):

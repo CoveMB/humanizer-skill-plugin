@@ -45,6 +45,10 @@ REWRITE_SECTION_BOUNDARY_PATTERN = re.compile(
 NUMBER_PATTERN = re.compile(
     r"(?<![\w.])(?:[$])?\d[\d,]*(?:\.\d+)?%?(?!\w)"
 )
+AUDIT_SCORE_PATTERN = re.compile(
+    r"(?i)\b(?:score\s*:?\s*\d{1,2}/80|"
+    r"factual\s+integrity\s*:\s*(?:\d|10)/10)\b"
+)
 
 CAMEL_CASE_PATTERN = re.compile(r"\b[A-Z][a-z]+(?:[A-Z][A-Za-z0-9]*)+\b")
 ACRONYM_PATTERN = re.compile(r"\b[A-Z]{2,}\b")
@@ -308,6 +312,7 @@ def extract_number_tokens(text):
 
 
 def extract_named_entity_terms(text):
+    text = REWRITE_SECTION_BOUNDARY_PATTERN.sub("", text)
     matches = [
         *(match.group(0) for match in TITLE_CASE_PHRASE_PATTERN.finditer(text)),
         *(match.group(0) for match in CAMEL_CASE_PATTERN.finditer(text)),
@@ -340,7 +345,7 @@ def reject_introduced_terms(
     source_terms = set(extract_terms(source))
     introduced_terms = [
         term
-        for term in extract_terms(extract_rewrite_section(output))
+        for term in extract_terms(output)
         if term not in source_terms
         and not (allow_source_text_match and source_contains_term(source, term))
     ]
@@ -585,7 +590,16 @@ def validate_case_output(case, output):
         collect_violation(violations, reject_rule_of_three, case_id, normalized_output)
 
     if constraints.get("no_new_numbers", False):
-        collect_violation(violations, reject_new_numbers, case_id, source, output)
+        source_aware_output = output
+        if "minimum_score_out_of_80" in constraints:
+            source_aware_output = AUDIT_SCORE_PATTERN.sub("", output)
+        collect_violation(
+            violations,
+            reject_new_numbers,
+            case_id,
+            source,
+            source_aware_output,
+        )
 
     if constraints.get("no_new_named_entities", False):
         collect_violation(violations, reject_new_named_entities, case_id, source, output)
