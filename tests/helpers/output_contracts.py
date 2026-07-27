@@ -29,6 +29,8 @@ SUPPORTED_CONSTRAINT_KEYS = {
     "no_markdown_fence",
     "rewrite_must_not_include",
     "rewrite_only",
+    "explain_only",
+    "combined_output",
     "max_question_marks",
     "minimum_score_out_of_80",
     "minimum_sentence_count",
@@ -119,6 +121,10 @@ REWRITE_ONLY_META_FRAGMENTS = (
 )
 
 SENTENCE_END_PATTERN = re.compile(r"[.!?]+(?:[\"'”’)]*)?(?=\s|$)")
+EXACT_EXPLANATION_HEADING_PATTERN = re.compile(r"(?m)^[ \t]*Explanation:[ \t]*$")
+EXPLANATION_WRAPPER_PATTERN = re.compile(
+    r"(?im)^[ \t]*(?:#{1,6}[ \t]+)?(?:\*\*)?Explanation:(?:\*\*)?[^\r\n]*$"
+)
 
 
 def normalize_text(text):
@@ -381,6 +387,44 @@ def reject_rewrite_only_meta_commentary(case_id, output):
     )
 
 
+def find_explanation_wrappers(output):
+    return list(EXPLANATION_WRAPPER_PATTERN.finditer(output))
+
+
+def reject_explanation_heading(case_id, output, output_shape):
+    if find_explanation_wrappers(output):
+        raise AssertionError(
+            f"{case_id}: {output_shape} output contains an Explanation: heading"
+        )
+
+
+def require_combined_output_shape(case_id, output):
+    explanation_wrappers = find_explanation_wrappers(output)
+    if len(explanation_wrappers) != 1:
+        raise AssertionError(
+            f"{case_id}: combined output requires exactly one standalone "
+            "Explanation: heading"
+        )
+
+    explanation_heading = explanation_wrappers[0]
+    if (
+        EXACT_EXPLANATION_HEADING_PATTERN.fullmatch(explanation_heading.group(0))
+        is None
+    ):
+        raise AssertionError(
+            f"{case_id}: combined output requires an exact standalone "
+            "Explanation: heading"
+        )
+    if not output[: explanation_heading.start()].strip():
+        raise AssertionError(
+            f"{case_id}: combined output requires the rewrite before Explanation:"
+        )
+    if not output[explanation_heading.end() :].strip():
+        raise AssertionError(
+            f"{case_id}: combined output requires explanation prose after Explanation:"
+        )
+
+
 def reject_chatbot_wrapper(case_id, output):
     stripped_output = output.strip().lower()
     start_violations = (
@@ -610,6 +654,30 @@ def validate_case_output(case, output):
             reject_rewrite_only_meta_commentary,
             case_id,
             normalized_output,
+        )
+        collect_violation(
+            violations,
+            reject_explanation_heading,
+            case_id,
+            output,
+            "rewrite-only",
+        )
+
+    if constraints.get("explain_only", False):
+        collect_violation(
+            violations,
+            reject_explanation_heading,
+            case_id,
+            output,
+            "explain-only",
+        )
+
+    if constraints.get("combined_output", False):
+        collect_violation(
+            violations,
+            require_combined_output_shape,
+            case_id,
+            output,
         )
 
     if "max_question_marks" in constraints:

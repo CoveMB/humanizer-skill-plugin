@@ -1368,8 +1368,10 @@
           "HTTP 429",
           "requests above the threshold"
         ],
+        "must_match": [
+          "(?i)(?:\\brate limit\\b\\s*,?\\s*(?:or|also called)\\s+(?:the\\s+)?\\b(?:threshold|cutoff)\\b|\\b(?:threshold|cutoff)\\b\\s+(?:is|means)\\s+(?:the\\s+)?\\brate limit\\b)"
+        ],
         "must_not_match": [
-          "(?i)\\brate limit\\b(?!\\s*(?:means|is|,?\\s+which means))",
           "(?i)(?:\\b(?:requests?(?:\\s+above\\s+the\\s+threshold)?|excess\\s+requests?)\\s+(?:are|get)\\s+(?!not\\b)(?:slowed|delayed|(?:processed\\s+)?more\\s+slowly)\\b|\\b(?:the\\s+)?API\\s+(?:slows?|delays?)\\s+(?:requests?(?:\\s+above\\s+the\\s+threshold)?|excess\\s+requests?)\\b)"
         ],
         "must_differ_from_source": true,
@@ -1380,7 +1382,7 @@
         "rewrite_only": true,
         "maximum_word_count": 38
       },
-      "passing_output": "The API allows each client 120 requests per minute. It returns HTTP 429 for requests above the threshold.",
+      "passing_output": "The API (application programming interface) sets a rate limit, or threshold, of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests.",
       "failing_outputs": [
         {
           "label": "claims excess requests are slowed",
@@ -1400,7 +1402,17 @@
         {
           "label": "uses rate limit without defining it",
           "output": "The API sets a rate limit for each client at 120 requests per minute. It returns HTTP 429 for requests above the threshold.",
-          "expected_error": "forbidden pattern matched"
+          "expected_error": "required pattern missing"
+        },
+        {
+          "label": "omits the threshold definition",
+          "output": "The API (application programming interface) sets a rate limit of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests.",
+          "expected_error": "required pattern missing"
+        },
+        {
+          "label": "adds an unrequested Explanation section",
+          "output": "The API (application programming interface) sets a rate limit, or threshold, of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests.\n\nExplanation:\nSee above.",
+          "expected_error": "rewrite-only output contains an Explanation: heading"
         },
         {
           "label": "buries the behavior in needless repetition",
@@ -1446,10 +1458,16 @@
         "no_markdown_fence": true,
         "no_new_numbers": true,
         "no_new_named_entities": true,
+        "explain_only": true,
         "maximum_word_count": 65
       },
       "passing_output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts.",
       "failing_outputs": [
+        {
+          "label": "wraps explain-only output",
+          "output": "Explanation:\nLedger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts.",
+          "expected_error": "explain-only output contains an Explanation: heading"
+        },
         {
           "label": "claims delivery is guaranteed",
           "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. Guaranteed delivery means it retries for up to 24 hours and waits longer between attempts.",
@@ -1527,6 +1545,7 @@
         "no_markdown_fence": true,
         "no_new_numbers": true,
         "no_new_named_entities": true,
+        "combined_output": true,
         "maximum_word_count": 75
       },
       "passing_output": "The cache keeps an entry for 15 minutes. When it becomes stale, the next read gets a fresh value from the origin service.\n\nExplanation:\nA time to live is how long the cache keeps an entry before treating it as stale.",
@@ -1539,7 +1558,12 @@
         {
           "label": "places the explanation before the rewrite",
           "output": "Explanation:\nA time to live is how long the cache keeps an entry.\n\nThe cache keeps an entry for 15 minutes. When it becomes stale, the next read gets a fresh value from the origin service.",
-          "expected_error": "ordered fragment"
+          "expected_error": "combined output requires the rewrite before"
+        },
+        {
+          "label": "duplicates the Explanation heading",
+          "output": "The cache keeps an entry for 15 minutes. When it becomes stale, the next read gets a fresh value from the origin service.\n\nExplanation:\nA time to live is how long the cache keeps an entry before treating it as stale.\n\nExplanation:\nThe entry is stale after that time.",
+          "expected_error": "combined output requires exactly one"
         }
       ]
     },
@@ -1752,6 +1776,10 @@
           "does not remove",
           "retain the incident record"
         ],
+        "must_match": [
+          "(?i)\\bcontroller\\b[^.!?\\n]{0,30}\\bparty\\b[^.!?\\n]{0,40}\\b(?:required|responsible|must|has to)\\b[^.!?\\n]{0,20}\\b(?:give|giving|provide|providing|send|sending)\\b[^.!?\\n]{0,12}\\bnotice\\b",
+          "(?i)\\bprocessor\\b[^.!?\\n]{0,30}\\bparty\\b[^.!?\\n]{0,30}\\b(?:receive|receives|receiving|gets?)\\b[^.!?\\n]{0,12}\\b(?:the\\s+)?notice\\b"
+        ],
         "must_differ_from_source": true,
         "no_chatbot_wrapper": true,
         "no_markdown_fence": true,
@@ -1760,12 +1788,17 @@
         "rewrite_only": true,
         "maximum_word_count": 60
       },
-      "passing_output": "The controller must notify the processor within 24 hours unless disclosure is prohibited by applicable law. That exception does not remove the duty to retain the incident record.",
+      "passing_output": "The controller—the party required to give notice—must notify the processor, the party receiving the notice, within 24 hours unless disclosure is prohibited by applicable law. This exception does not remove the duty to retain the incident record.",
       "failing_outputs": [
         {
           "label": "weakens the notification duty",
           "output": "The controller may notify the processor within 24 hours unless disclosure is prohibited by applicable law. The exception does not remove the duty to retain the incident record.",
           "expected_error": "missing required fragment"
+        },
+        {
+          "label": "omits the controller role definition",
+          "output": "The controller must notify the processor, the party receiving the notice, within 24 hours unless disclosure is prohibited by applicable law. This exception does not remove the duty to retain the incident record.",
+          "expected_error": "required pattern missing"
         },
         {
           "label": "adds an extended legal overview",

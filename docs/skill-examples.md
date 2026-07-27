@@ -328,11 +328,31 @@ HTTP 429 for requests above the threshold.
 Expected rewrite:
 
 ```text
-The application programming interface (API), which lets software systems communicate, limits each client to 120 requests per minute. Requests above that limit receive HTTP 429, an error code meaning too many requests.
+The API (application programming interface) sets a rate limit, or threshold, of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests.
 ```
 
-The output defines the necessary term and error code without changing the rate,
-scope, threshold, or response.
+The output defines the necessary terms and error code while preserving the rate,
+per-client scope, cutoff behavior, and response.
+
+### Rewrite a legal obligation
+
+```text
+Use $plain-language-humanizer in Rewrite mode. Rewrite this legal obligation in
+plain language without weakening the duty or changing the exception:
+
+The controller must notify the processor within 24 hours unless disclosure is
+prohibited by applicable law. The exception does not remove the duty to retain the
+incident record.
+```
+
+Expected rewrite:
+
+```text
+The controller—the party required to give notice—must notify the processor, the party receiving the notice, within 24 hours unless disclosure is prohibited by applicable law. This exception does not remove the duty to retain the incident record.
+```
+
+The role definitions come from the notice relationship in the source. The duty,
+deadline, exception, and record-retention requirement keep their original force.
 
 ### Explain a webhook
 

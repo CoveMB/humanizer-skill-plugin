@@ -113,6 +113,90 @@ class OutputContractTests(unittest.TestCase):
 
         validate_case_output(case, case["passing_output"])
 
+    def test_rewrite_only_rejects_standalone_explanation_heading(self):
+        case = {"id": "rewrite", "constraints": {"rewrite_only": True}}
+        wrapped_outputs = (
+            "The rewrite stands alone.\n\nExplanation:\nThis was not requested.",
+            "The rewrite stands alone.\n\nExplanation: This was not requested.",
+            "The rewrite stands alone.\n\nexplanation: This was not requested.",
+            "The rewrite stands alone.\n\n## Explanation:\nThis was not requested.",
+            "The rewrite stands alone.\n\n**Explanation:**\nThis was not requested.",
+        )
+
+        for output in wrapped_outputs:
+            with self.subTest(output=output), self.assertRaisesRegex(
+                AssertionError,
+                "rewrite-only.*Explanation",
+            ):
+                validate_case_output(case, output)
+
+    def test_explain_only_returns_unwrapped_explanation_prose(self):
+        case = {"id": "explain", "constraints": {"explain_only": True}}
+
+        validate_case_output(case, "This prose explains the supplied behavior.")
+        wrapped_outputs = (
+            "Explanation:\nThis prose explains the supplied behavior.",
+            "Explanation: This prose explains the supplied behavior.",
+            "EXPLANATION: This prose explains the supplied behavior.",
+            "## Explanation:\nThis prose explains the supplied behavior.",
+            "**Explanation:**\nThis prose explains the supplied behavior.",
+        )
+        for output in wrapped_outputs:
+            with self.subTest(output=output), self.assertRaisesRegex(
+                AssertionError,
+                "explain-only.*Explanation",
+            ):
+                validate_case_output(case, output)
+
+    def test_combined_output_requires_one_heading_after_rewrite(self):
+        case = {"id": "combined", "constraints": {"combined_output": True}}
+        valid_output = "The rewritten text.\n\nExplanation:\nThe brief explanation."
+
+        validate_case_output(case, valid_output)
+        invalid_outputs = {
+            "missing": "The rewritten text. The brief explanation.",
+            "first": "Explanation:\nThe brief explanation.\n\nThe rewritten text.",
+            "duplicate": valid_output + "\n\nExplanation:\nAnother explanation.",
+            "inline": "The rewritten text.\n\nExplanation: The brief explanation.",
+            "Markdown": "The rewritten text.\n\n## Explanation:\nThe brief explanation.",
+            "bold": "The rewritten text.\n\n**Explanation:**\nThe brief explanation.",
+            "extra inline wrapper": valid_output + "\n\nExplanation: Another explanation.",
+            "extra uppercase wrapper": valid_output
+            + "\n\nEXPLANATION: Another explanation.",
+            "extra Markdown wrapper": valid_output
+            + "\n\n## Explanation:\nAnother explanation.",
+            "empty explanation": "The rewritten text.\n\nExplanation:",
+        }
+        for label, output in invalid_outputs.items():
+            with self.subTest(shape=label), self.assertRaisesRegex(
+                AssertionError,
+                "combined output",
+            ):
+                validate_case_output(case, output)
+
+    def test_plain_language_definitions_are_required_semantically(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        missing_definition_outputs = {
+            "plain_language_api_rewrite": (
+                "The API (application programming interface) sets a rate limit of "
+                "120 requests per minute for each client. Requests above the threshold "
+                "receive HTTP 429, an error code meaning too many requests."
+            ),
+            "plain_language_legal_obligation": (
+                "The controller must notify the processor, the party receiving the "
+                "notice, within 24 hours unless disclosure is prohibited by applicable "
+                "law. This exception does not remove the duty to retain the incident "
+                "record."
+            ),
+        }
+
+        for case_id, output in missing_definition_outputs.items():
+            with self.subTest(case=case_id), self.assertRaisesRegex(
+                AssertionError,
+                "required pattern missing",
+            ):
+                validate_case_output(cases[case_id], output)
+
     def test_combined_explanation_rejects_new_named_entity(self):
         cases = {case["id"]: case for case in load_fixture_cases()}
         case = cases["plain_language_combined_output"]
@@ -183,13 +267,15 @@ class OutputContractTests(unittest.TestCase):
         allowed_outputs = {
             "api_never_delayed": (
                 "plain_language_api_rewrite",
-                "The API allows each client 120 requests per minute. Requests above "
-                "the threshold are never delayed; they return HTTP 429.",
+                "The API sets a rate limit, or threshold, of 120 requests per minute "
+                "for each client. Requests above the threshold are never delayed; "
+                "they return HTTP 429.",
             ),
             "api_does_not_delay": (
                 "plain_language_api_rewrite",
-                "The API does not delay requests. It allows each client 120 requests "
-                "per minute and returns HTTP 429 for requests above the threshold.",
+                "The API does not delay requests. Its rate limit, or threshold, is "
+                "120 requests per minute for each client; requests above the "
+                "threshold return HTTP 429.",
             ),
             "webhook_does_not_guarantee": (
                 "plain_language_webhook_explain",

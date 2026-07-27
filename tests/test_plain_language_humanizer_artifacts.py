@@ -47,6 +47,9 @@ TASK_1_EXAMPLE_SOURCES = [
     "Run `make test` before deployment. Stop if any test fails.",
 ]
 
+CANONICAL_API_OUTPUT = "The API (application programming interface) sets a rate limit, or threshold, of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests."
+CANONICAL_LEGAL_OUTPUT = "The controller—the party required to give notice—must notify the processor, the party receiving the notice, within 24 hours unless disclosure is prohibited by applicable law. This exception does not remove the duty to retain the incident record."
+
 
 class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
     def setUp(self):
@@ -124,6 +127,14 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
             "bidirectional content check",
         ):
             self.assertIn(term, self.normalized_skill)
+
+    def test_canonical_definition_examples_align_across_public_artifacts(self):
+        public_examples = read_text(REPO_ROOT / "docs" / "skill-examples.md")
+
+        for output in (CANONICAL_API_OUTPUT, CANONICAL_LEGAL_OUTPUT):
+            with self.subTest(output=output):
+                self.assertIn(output, self.skill_markdown)
+                self.assertIn(output, public_examples)
 
     def test_required_headings_are_ordered_and_skill_stays_under_line_limit(self):
         actual_headings = [

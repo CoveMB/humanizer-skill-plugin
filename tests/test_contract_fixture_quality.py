@@ -45,6 +45,25 @@ SOURCE_AWARE_CONSTRAINT_KEYS = {
     "no_new_numbers",
 }
 
+OUTPUT_SHAPE_CONSTRAINT_KEYS = {
+    "rewrite_only",
+    "explain_only",
+    "combined_output",
+}
+
+CANONICAL_API_OUTPUT = (
+    "The API (application programming interface) sets a rate limit, or threshold, "
+    "of 120 requests per minute for each client. Requests above the threshold receive "
+    "HTTP 429, an error code meaning too many requests."
+)
+
+CANONICAL_LEGAL_OUTPUT = (
+    "The controller—the party required to give notice—must notify the processor, "
+    "the party receiving the notice, within 24 hours unless disclosure is prohibited "
+    "by applicable law. This exception does not remove the duty to retain the incident "
+    "record."
+)
+
 
 class ContractFixtureQualityTests(unittest.TestCase):
     def setUp(self):
@@ -299,6 +318,58 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 for case in plain_language_cases.values()
             )
         )
+
+        for case_id, case in plain_language_cases.items():
+            constraints = case["constraints"]
+            shape_constraints = set(constraints) & OUTPUT_SHAPE_CONSTRAINT_KEYS
+            if "plain_language_combined" in case["tags"]:
+                expected_shape = {"combined_output"}
+            elif case["plain_language_mode"] == "explain":
+                expected_shape = {"explain_only"}
+            else:
+                expected_shape = {"rewrite_only"}
+            with self.subTest(case=case_id, contract="output shape"):
+                self.assertEqual(shape_constraints, expected_shape)
+                shape_constraint = next(iter(shape_constraints))
+                self.assertIs(type(constraints[shape_constraint]), bool)
+                self.assertTrue(constraints[shape_constraint])
+
+    def test_plain_language_shape_mutations_cannot_drift(self):
+        cases = {case["id"]: case for case in self.cases}
+        required_mutations = {
+            "plain_language_api_rewrite": "adds an unrequested Explanation section",
+            "plain_language_webhook_explain": "wraps explain-only output",
+            "plain_language_combined_output": "duplicates the Explanation heading",
+        }
+
+        for case_id, required_label in required_mutations.items():
+            labels = {
+                failure["label"] for failure in cases[case_id]["failing_outputs"]
+            }
+            with self.subTest(case=case_id):
+                self.assertIn(required_label, labels)
+
+    def test_plain_language_definition_outputs_and_mutations_are_canonical(self):
+        cases = {case["id"]: case for case in self.cases}
+
+        self.assertEqual(
+            cases["plain_language_api_rewrite"]["passing_output"],
+            CANONICAL_API_OUTPUT,
+        )
+        self.assertEqual(
+            cases["plain_language_legal_obligation"]["passing_output"],
+            CANONICAL_LEGAL_OUTPUT,
+        )
+        required_mutations = {
+            "plain_language_api_rewrite": "omits the threshold definition",
+            "plain_language_legal_obligation": "omits the controller role definition",
+        }
+        for case_id, required_label in required_mutations.items():
+            labels = {
+                failure["label"] for failure in cases[case_id]["failing_outputs"]
+            }
+            with self.subTest(case=case_id):
+                self.assertIn(required_label, labels)
 
 
 if __name__ == "__main__":

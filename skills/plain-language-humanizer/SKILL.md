@@ -324,17 +324,17 @@ Restore the source wording or ask a precise question if any check cannot pass.
 
 **Rewrite**
 
-> The application programming interface (API), which lets software systems communicate, sets a per-client rate limit of 120 requests per minute. That rate is the threshold, or cutoff: requests above the threshold receive HTTP 429, an error code meaning too many requests.
+> The API (application programming interface) sets a rate limit, or threshold, of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests.
 
 ### Rewrite: describe unfamiliar roles from the passage
 
 **Source**
 
-> The controller must notify the processor.
+> The controller must notify the processor within 24 hours unless disclosure is prohibited by applicable law. The exception does not remove the duty to retain the incident record.
 
 **Rewrite**
 
-> The controller—the party that must give notice in this passage—must notify the processor, the party receiving that notice.
+> The controller—the party required to give notice—must notify the processor, the party receiving the notice, within 24 hours unless disclosure is prohibited by applicable law. This exception does not remove the duty to retain the incident record.
 
 ### Explain: retain and define webhook
 
