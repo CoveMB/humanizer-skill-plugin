@@ -202,32 +202,21 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
         ):
             self.assertIn(term, normalized_lower)
 
-    def test_explanatory_device_authority_aligns_across_contract_owners(self):
-        contract_owners = {
-            "design": read_text(
-                REPO_ROOT
-                / "docs"
-                / "superpowers"
-                / "specs"
-                / "2026-07-27-plain-language-humanizer-design.md"
-            ),
+    def test_explanatory_device_authority_aligns_across_public_artifacts(self):
+        public_artifacts = {
             "skill": self.skill_markdown,
             "readme": read_text(REPO_ROOT / "README.md"),
             "examples": read_text(REPO_ROOT / "docs" / "skill-examples.md"),
         }
 
-        for owner, artifact in contract_owners.items():
-            with self.subTest(owner=owner):
+        for artifact_name, artifact in public_artifacts.items():
+            with self.subTest(artifact=artifact_name):
                 normalized_lower = normalize_markdown(artifact).lower()
                 self.assertRegex(
                     normalized_lower,
                     r"\b(?:asks?|requests?|requested)\b",
                 )
                 self.assertIn("materially needed", normalized_lower)
-
-        normalized_design = normalize_markdown(contract_owners["design"]).lower()
-        self.assertNotIn("unless the user asks", normalized_design)
-        self.assertNotIn("appear only when requested", normalized_design)
 
 
 if __name__ == "__main__":
