@@ -92,6 +92,15 @@ class ContractFixtureQualityTests(unittest.TestCase):
                 self.assertGreaterEqual(threshold, 0)
                 self.assertLessEqual(threshold, 80)
 
+    def test_maximum_word_count_constraints_are_positive_integers(self):
+        for case in self.cases:
+            maximum_word_count = case["constraints"].get("maximum_word_count")
+            if maximum_word_count is None:
+                continue
+            with self.subTest(case=case["id"]):
+                self.assertIs(type(maximum_word_count), int)
+                self.assertGreater(maximum_word_count, 0)
+
     def test_exact_occurrence_constraints_are_valid(self):
         for case in self.cases:
             expected_occurrences = case["constraints"].get("exact_occurrences")

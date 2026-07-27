@@ -33,11 +33,12 @@ SUPPORTED_CONSTRAINT_KEYS = {
     "minimum_score_out_of_80",
     "minimum_sentence_count",
     "maximum_sentence_count",
+    "maximum_word_count",
 }
 
 REWRITE_SECTION_BOUNDARY_PATTERN = re.compile(
     r"(?im)^\s*(?:#{1,6}\s*)?(?:\*\*)?"
-    r"(?:brief\s+notes|notes|score|form\s+changes|preservation\s+notes)"
+    r"(?:brief\s+notes|notes|score|form\s+changes|preservation\s+notes|explanation)"
     r"(?:\*\*)?(?:\s*:\s*|\s*$)"
 )
 
@@ -436,6 +437,25 @@ def count_sentences(text):
     return len(SENTENCE_END_PATTERN.findall(text.strip()))
 
 
+def count_words(text):
+    normalized_text = normalize_text(text)
+    return len(normalized_text.split()) if normalized_text else 0
+
+
+def enforce_maximum_word_count(case_id, output, maximum_word_count):
+    if type(maximum_word_count) is not int or maximum_word_count < 1:
+        raise AssertionError(
+            f"{case_id}: maximum_word_count must be a positive integer"
+        )
+
+    actual_count = count_words(output)
+    if actual_count > maximum_word_count:
+        raise AssertionError(
+            f"{case_id}: found {actual_count} words; expected at most "
+            f"{maximum_word_count} words"
+        )
+
+
 def require_sentence_count_bound(case_id, output, expected_count, relation):
     if type(expected_count) is not int or expected_count < 1:
         raise AssertionError(
@@ -594,6 +614,15 @@ def validate_case_output(case, output):
             case_id,
             normalized_output,
             constraints["minimum_score_out_of_80"],
+        )
+
+    if "maximum_word_count" in constraints:
+        collect_violation(
+            violations,
+            enforce_maximum_word_count,
+            case_id,
+            output,
+            constraints["maximum_word_count"],
         )
 
     for relation in ("minimum", "maximum"):

@@ -82,6 +82,44 @@ class OutputContractTests(unittest.TestCase):
             "First sentence. Second sentence.\n\nForm changes:\nSplit one sentence.",
         )
 
+    def test_enforces_maximum_word_count_on_full_output(self):
+        case = {
+            "id": "plain_language_brevity",
+            "constraints": {"maximum_word_count": 8},
+        }
+
+        validate_case_output(case, "This concise explanation uses exactly seven words.")
+        with self.assertRaisesRegex(AssertionError, "expected at most 8 words"):
+            validate_case_output(
+                case,
+                "This explanation contains more than eight words in the complete output.",
+            )
+
+    def test_maximum_word_count_includes_combined_explanation(self):
+        case = {
+            "id": "plain_language_combined_brevity",
+            "constraints": {"maximum_word_count": 9},
+        }
+
+        with self.assertRaisesRegex(AssertionError, "found 10 words"):
+            validate_case_output(
+                case,
+                "Short rewrite here.\n\nExplanation:\nThis explanation adds five more words.",
+            )
+
+    def test_maximum_word_count_requires_a_positive_integer(self):
+        for invalid_value in (0, -1, True, 2.5, "8"):
+            with self.subTest(value=invalid_value):
+                case = {
+                    "id": "invalid_plain_language_limit",
+                    "constraints": {"maximum_word_count": invalid_value},
+                }
+                with self.assertRaisesRegex(
+                    AssertionError,
+                    "maximum_word_count must be a positive integer",
+                ):
+                    validate_case_output(case, "Short output.")
+
     def test_fixture_mutations_prove_each_declared_guard(self):
         mutation_cases = [
             case
