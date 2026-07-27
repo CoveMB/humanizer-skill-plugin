@@ -46,8 +46,8 @@ NUMBER_PATTERN = re.compile(
     r"(?<![\w.])(?:[$])?\d[\d,]*(?:\.\d+)?%?(?!\w)"
 )
 AUDIT_SCORE_PATTERN = re.compile(
-    r"(?i)\b(?:score\s*:?\s*\d{1,2}/80|"
-    r"factual\s+integrity\s*:\s*(?:\d|10)/10)\b"
+    r"(?im)^[ \t]*(?:score\s*:\s*\d{1,2}/80|"
+    r"factual\s+integrity\s*:\s*(?:\d|10)/10)[ \t]*[.!?]?[ \t]*$"
 )
 
 CAMEL_CASE_PATTERN = re.compile(r"\b[A-Z][a-z]+(?:[A-Z][A-Za-z0-9]*)+\b")

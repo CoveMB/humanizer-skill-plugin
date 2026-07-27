@@ -129,6 +129,23 @@ class OutputContractTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "introduced number"):
             validate_case_output(case, output)
 
+    def test_audit_score_exemption_rejects_differently_labeled_metric(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        case = cases["audit_mode"]
+        valid_output = (
+            "Teams collaborate better when they stay aligned.\n\n"
+            "Notes: removed inflated phrasing and fake naming.\n\n"
+            "Score: 72/80.\n"
+            "Factual integrity: 9/10."
+        )
+
+        validate_case_output(case, valid_output)
+        with self.assertRaisesRegex(AssertionError, "introduced number"):
+            validate_case_output(
+                case,
+                valid_output + "\nCustomer score: 10/80.",
+            )
+
     def test_maximum_word_count_requires_a_positive_integer(self):
         for invalid_value in (0, -1, True, 2.5, "8"):
             with self.subTest(value=invalid_value):
