@@ -401,6 +401,100 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             {"structural", "conservative"},
         )
 
+    def test_load_rubric_calibrations_accepts_plain_language_mode(self):
+        data = {
+            "rubrics": {"plain": two_dimension_rubric()},
+            "rubric_calibrations": [
+                {
+                    "id": "plain_rewrite",
+                    "target_skill": "plain-language-humanizer",
+                    "plain_language_mode": "rewrite",
+                    "source": "Source.",
+                    "output": "Output.",
+                    "rubric_id": "plain",
+                    "expected_pass": True,
+                }
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            calibrations = self.runner.load_rubric_calibrations(
+                write_cases_file(temporary_directory, data)
+            )
+
+        self.assertEqual(calibrations[0]["target_skill"], "plain-language-humanizer")
+        self.assertEqual(calibrations[0]["plain_language_mode"], "rewrite")
+
+    def test_load_rubric_calibrations_requires_plain_language_mode(self):
+        data = {
+            "rubrics": {"plain": two_dimension_rubric()},
+            "rubric_calibrations": [
+                {
+                    "id": "plain_missing_mode",
+                    "target_skill": "plain-language-humanizer",
+                    "source": "Source.",
+                    "output": "Output.",
+                    "rubric_id": "plain",
+                    "expected_pass": True,
+                }
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temporary_directory, self.assertRaisesRegex(
+            ValueError,
+            "plain_language_mode must be one of",
+        ):
+            self.runner.load_rubric_calibrations(
+                write_cases_file(temporary_directory, data)
+            )
+
+    def test_load_rubric_calibrations_rejects_unknown_plain_language_mode(self):
+        data = {
+            "rubrics": {"plain": two_dimension_rubric()},
+            "rubric_calibrations": [
+                {
+                    "id": "plain_unknown_mode",
+                    "target_skill": "plain-language-humanizer",
+                    "plain_language_mode": "tutorial",
+                    "source": "Source.",
+                    "output": "Output.",
+                    "rubric_id": "plain",
+                    "expected_pass": True,
+                }
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temporary_directory, self.assertRaisesRegex(
+            ValueError,
+            "plain_language_mode must be one of",
+        ):
+            self.runner.load_rubric_calibrations(
+                write_cases_file(temporary_directory, data)
+            )
+
+    def test_load_rubric_calibrations_rejects_plain_language_mode_on_other_target(self):
+        data = {
+            "rubrics": {"editorial": two_dimension_rubric()},
+            "rubric_calibrations": [
+                {
+                    "id": "editorial_with_plain_mode",
+                    "plain_language_mode": "rewrite",
+                    "source": "Source.",
+                    "output": "Output.",
+                    "rubric_id": "editorial",
+                    "expected_pass": True,
+                }
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temporary_directory, self.assertRaisesRegex(
+            ValueError,
+            "plain_language_mode is only valid for plain-language-humanizer",
+        ):
+            self.runner.load_rubric_calibrations(
+                write_cases_file(temporary_directory, data)
+            )
+
     def test_eval_cases_cover_deterministic_mode_routing_language(self):
         cases = {
             case["id"]: case for case in self.runner.load_eval_cases(EVAL_CASES_PATH)
@@ -529,6 +623,41 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 {
                     "cases": [minimal_eval_case(faithful_mode="structural")]
                 },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_requires_plain_language_mode(self):
+        with self.assertRaisesRegex(ValueError, "plain_language_mode must be one of"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(target_skill="plain-language-humanizer")
+                    ]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_rejects_unknown_plain_language_mode(self):
+        with self.assertRaisesRegex(ValueError, "plain_language_mode must be one of"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(
+                            target_skill="plain-language-humanizer",
+                            plain_language_mode="tutorial",
+                        )
+                    ]
+                },
+                output_contract_cases={},
+            )
+
+    def test_load_eval_cases_rejects_plain_language_mode_on_other_skill(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "plain_language_mode is only valid for plain-language-humanizer",
+        ):
+            self._load_cases_from_data(
+                {"cases": [minimal_eval_case(plain_language_mode="rewrite")]},
                 output_contract_cases={},
             )
 
@@ -735,6 +864,30 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 },
             )
 
+    def test_load_eval_cases_rejects_mismatched_plain_language_output_contract_mode(self):
+        with self.assertRaisesRegex(ValueError, "plain_language_mode mismatch"):
+            self._load_cases_from_data(
+                {
+                    "cases": [
+                        minimal_eval_case(
+                            id="plain_mode_mismatch",
+                            target_skill="plain-language-humanizer",
+                            plain_language_mode="rewrite",
+                            source="Expected source text.",
+                            output_contract_case_id="contract_case",
+                        )
+                    ]
+                },
+                output_contract_cases={
+                    "contract_case": {
+                        "id": "contract_case",
+                        "plain_language_mode": "explain",
+                        "source": "Expected source text.",
+                        "constraints": {},
+                    }
+                },
+            )
+
     def test_build_codex_prompt_includes_source_and_output_rules(self):
         case = {
             "id": "sample",
@@ -790,6 +943,19 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertIn("Read `skills/faithful-humanizer/SKILL.md` before answering.", prompt)
         self.assertIn("Return only the final Faithful Humanizer output", prompt)
         self.assertNotIn("skills/editorial-humanizer/SKILL.md", prompt)
+
+    def test_build_codex_prompt_targets_plain_language_mode(self):
+        case = minimal_eval_case(
+            target_skill="plain-language-humanizer",
+            plain_language_mode="explain",
+            force_skill_file_read=True,
+        )
+
+        prompt = self.runner.build_codex_prompt(case)
+
+        self.assertIn("skills/plain-language-humanizer/SKILL.md", prompt)
+        self.assertIn("Plain Language mode: explain.", prompt)
+        self.assertIn("Return only the final Plain Language Humanizer output", prompt)
 
     def test_build_codex_prompt_can_force_reference_file_read(self):
         case = {
@@ -901,6 +1067,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertIn("Do not treat user-requested labels or audit explanations", prompt)
         self.assertIn("<user_request>", prompt)
         self.assertNotIn("Faithful intervention mode", prompt)
+        self.assertNotIn("Plain Language mode", prompt)
         self.assertIn("factual_fidelity", prompt)
         self.assertIn('"factual_fidelity": 9', prompt)
         self.assertIn('"scores"', prompt)
@@ -925,6 +1092,26 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         prompt = self.runner.build_rubric_prompt(case, "Output text.")
 
         self.assertIn("Faithful intervention mode: structural.", prompt)
+
+    def test_build_rubric_prompt_names_plain_language_mode(self):
+        case = {
+            "id": "plain_language_rubric",
+            "target_skill": "plain-language-humanizer",
+            "plain_language_mode": "explain",
+            "source": "Source text.",
+            "rubric": {
+                "minimum_total_score": 8,
+                "minimum_dimension_score": 8,
+                "minimum_dimension_scores": {},
+                "dimensions": [
+                    {"name": "semantic_fidelity", "question": "Faithful?"}
+                ],
+            },
+        }
+
+        prompt = self.runner.build_rubric_prompt(case, "Output text.")
+
+        self.assertIn("Plain Language mode: explain.", prompt)
 
     def test_validate_rubric_grade_rejects_low_dimension_score(self):
         case = {
@@ -1251,12 +1438,16 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             self.assertFalse(plugin_root.joinpath(".git").exists())
             self.assertFalse(plugin_root.joinpath("tests").exists())
 
-    def test_verify_eval_plugin_is_model_visible_targets_both_skills(self):
+    def test_verify_eval_plugin_is_model_visible_targets_all_skills(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             installed_path = Path(temporary_directory) / "plugin"
             expected_paths = [
                 (installed_path / "skills" / skill_name / "SKILL.md").resolve()
-                for skill_name in ("editorial-humanizer", "faithful-humanizer")
+                for skill_name in (
+                    "editorial-humanizer",
+                    "faithful-humanizer",
+                    "plain-language-humanizer",
+                )
             ]
             with mock.patch.object(
                 self.runner,
@@ -1264,7 +1455,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 return_value={
                     "prompt_input": [str(path) for path in expected_paths]
                 },
-            ):
+            ) as run_cli_json:
                 actual_paths = self.runner.verify_eval_plugin_is_model_visible(
                     "codex",
                     "humanizer-plugin@humanizer-eval-test",
@@ -1272,6 +1463,9 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     {},
                 )
             self.assertEqual(actual_paths, [str(path) for path in expected_paths])
+            self.assertIn("Editorial Humanizer", run_cli_json.call_args.args[0][-1])
+            self.assertIn("Faithful Humanizer", run_cli_json.call_args.args[0][-1])
+            self.assertIn("Plain Language Humanizer", run_cli_json.call_args.args[0][-1])
 
     def test_require_isolated_codex_home_rejects_missing_and_default_home(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -1653,6 +1847,47 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertIn("would run", result.stdout)
         self.assertIn("explicit_dense_rewrite", result.stdout)
 
+    def test_dry_run_filters_and_labels_plain_language_modes(self):
+        data = {
+            "cases": [
+                minimal_eval_case(
+                    id="rewrite",
+                    target_skill="plain-language-humanizer",
+                    plain_language_mode="rewrite",
+                ),
+                minimal_eval_case(
+                    id="explain",
+                    target_skill="plain-language-humanizer",
+                    plain_language_mode="explain",
+                ),
+            ]
+        }
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cases_path = write_cases_file(temporary_directory, data)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(RUNNER_PATH),
+                    "--cases",
+                    str(cases_path),
+                    "--plain-language-mode",
+                    "explain",
+                    "--dry-run",
+                ],
+                cwd=REPO_ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertIn(
+            "explain [plain-language-humanizer, explain, explicit, trigger]",
+            result.stdout,
+        )
+        self.assertNotIn("rewrite [", result.stdout)
+
     def test_dry_run_lists_rubric_calibrations_without_invoking_codex(self):
         result = subprocess.run(
             [
@@ -1725,6 +1960,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertEqual(args.trials, 1)
         self.assertEqual(args.target_skill, [])
         self.assertEqual(args.faithful_mode, [])
+        self.assertEqual(args.plain_language_mode, [])
 
     def test_parser_accepts_skill_filter_trials_and_separate_rubric_model(self):
         args = self.runner.build_parser().parse_args(
@@ -1744,6 +1980,18 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertEqual(args.faithful_mode, ["structural"])
         self.assertEqual(args.trials, 3)
         self.assertEqual(args.rubric_model, "grader-model")
+
+    def test_parser_accepts_plain_language_mode_filter(self):
+        args = self.runner.build_parser().parse_args(
+            [
+                "--target-skill",
+                "plain-language-humanizer",
+                "--plain-language-mode",
+                "explain",
+            ]
+        )
+        self.assertEqual(args.target_skill, ["plain-language-humanizer"])
+        self.assertEqual(args.plain_language_mode, ["explain"])
 
     def test_select_cases_filters_by_target_skill_after_case_ids(self):
         cases = [
@@ -1791,6 +2039,40 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
         self.assertEqual([case["id"] for case in selected], ["conservative"])
 
+    def test_select_cases_filters_by_plain_language_mode(self):
+        selected = self.runner.select_cases(
+            [
+                minimal_eval_case(
+                    id="rewrite",
+                    target_skill="plain-language-humanizer",
+                    plain_language_mode="rewrite",
+                ),
+                minimal_eval_case(
+                    id="explain",
+                    target_skill="plain-language-humanizer",
+                    plain_language_mode="explain",
+                ),
+                minimal_eval_case(
+                    id="faithful",
+                    target_skill="faithful-humanizer",
+                    faithful_mode="structural",
+                ),
+            ],
+            filters=[],
+            plain_language_modes=["explain"],
+        )
+        self.assertEqual([case["id"] for case in selected], ["explain"])
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "no eval cases match the selected Plain Language mode",
+        ):
+            self.runner.select_cases(
+                [minimal_eval_case(id="editorial")],
+                filters=[],
+                plain_language_modes=["rewrite"],
+            )
+
     def test_aggregate_summaries_reports_skill_rates_dimensions_and_stages(self):
         aggregate = self.runner.aggregate_summaries(
             [
@@ -1808,13 +2090,28 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                     "failure_stage": "output_contract",
                     "rubric_dimension_scores": {"semantic_fidelity": 9},
                 },
+                {
+                    "target_skill": "plain-language-humanizer",
+                    "plain_language_mode": "rewrite",
+                    "passed": False,
+                    "failure_stage": "rubric",
+                },
+                {
+                    "target_skill": "plain-language-humanizer",
+                    "plain_language_mode": "explain",
+                    "passed": True,
+                    "failure_stage": None,
+                },
             ]
         )
 
-        self.assertEqual(aggregate["runs"], 2)
-        self.assertEqual(aggregate["passed"], 1)
+        self.assertEqual(aggregate["runs"], 4)
+        self.assertEqual(aggregate["passed"], 2)
         self.assertEqual(aggregate["pass_rate"], 0.5)
-        self.assertEqual(aggregate["failure_stages"], {"output_contract": 1})
+        self.assertEqual(
+            aggregate["failure_stages"],
+            {"output_contract": 1, "rubric": 1},
+        )
         faithful_summary = aggregate["by_target_skill"]["faithful-humanizer"]
         self.assertEqual(faithful_summary["minimum_rubric_dimension_scores"], {"semantic_fidelity": 9})
         self.assertEqual(
@@ -1822,6 +2119,13 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             {
                 "conservative": {"runs": 1, "passed": 0, "pass_rate": 0.0},
                 "structural": {"runs": 1, "passed": 1, "pass_rate": 1.0},
+            },
+        )
+        self.assertEqual(
+            aggregate["by_plain_language_mode"],
+            {
+                "explain": {"runs": 1, "passed": 1, "pass_rate": 1.0},
+                "rewrite": {"runs": 1, "passed": 0, "pass_rate": 0.0},
             },
         )
 
@@ -1887,6 +2191,32 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             self.assertFalse(summary["passed"])
             self.assertIn("failed to start codex", summary["error"])
             self.assertIn("missing codex", summary["error"])
+
+    def test_run_eval_case_reports_plain_language_mode_in_summary(self):
+        case = minimal_eval_case(
+            id="plain_summary",
+            target_skill="plain-language-humanizer",
+            plain_language_mode="rewrite",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            artifact_dirs = self.runner.ensure_artifact_dirs(Path(temporary_directory))
+
+            with mock.patch.object(
+                self.runner.subprocess,
+                "run",
+                side_effect=FileNotFoundError("missing codex"),
+            ):
+                summary = self.runner.run_eval_case(
+                    case,
+                    artifact_dirs,
+                    codex_bin="missing-codex",
+                    output_contract_cases={},
+                    model="gpt-5.5",
+                )
+
+        self.assertEqual(summary["plain_language_mode"], "rewrite")
+        self.assertIsNone(summary["faithful_mode"])
 
     def test_run_eval_case_does_not_reuse_stale_output_file(self):
         case = minimal_eval_case(

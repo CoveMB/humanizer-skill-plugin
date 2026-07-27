@@ -38,9 +38,12 @@ DEFAULT_TARGET_SKILL = "editorial-humanizer"
 TARGET_SKILL_DISPLAY_NAMES = {
     "editorial-humanizer": "Editorial Humanizer",
     "faithful-humanizer": "Faithful Humanizer",
+    "plain-language-humanizer": "Plain Language Humanizer",
 }
 FAITHFUL_TARGET_SKILL = "faithful-humanizer"
 VALID_FAITHFUL_MODES = ("structural", "conservative")
+PLAIN_LANGUAGE_TARGET_SKILL = "plain-language-humanizer"
+VALID_PLAIN_LANGUAGE_MODES = ("rewrite", "explain")
 FAITHFUL_MODE_DIMENSIONS_KEY = "faithful_mode_dimensions"
 EDITORIAL_PATTERN_CATALOG_PATH = (
     "skills/editorial-humanizer/references/pattern-catalog.md"
@@ -227,7 +230,8 @@ def verify_eval_plugin_is_model_visible(
             "prompt-input",
             "-c",
             f'plugins."{plugin_id}".enabled=true',
-            "Use Editorial Humanizer and Faithful Humanizer to rewrite this text.",
+            "Use Editorial Humanizer, Faithful Humanizer, and Plain Language "
+            "Humanizer to rewrite this text.",
         ],
         environment,
         "eval plugin provenance check",
@@ -450,6 +454,18 @@ def validate_eval_case(case):
         raise ValueError(
             f"{case['id']}: faithful_mode is only valid for {FAITHFUL_TARGET_SKILL}"
         )
+    plain_language_mode = case.get("plain_language_mode")
+    if target_skill == PLAIN_LANGUAGE_TARGET_SKILL:
+        if plain_language_mode not in VALID_PLAIN_LANGUAGE_MODES:
+            raise ValueError(
+                f"{case['id']}: plain_language_mode must be one of "
+                f"{', '.join(VALID_PLAIN_LANGUAGE_MODES)}"
+            )
+    elif plain_language_mode is not None:
+        raise ValueError(
+            f"{case['id']}: plain_language_mode is only valid for "
+            f"{PLAIN_LANGUAGE_TARGET_SKILL}"
+        )
     for reference_path in reference_paths_for_case(case):
         supported_targets = REFERENCE_TARGET_SKILLS.get(reference_path)
         if supported_targets is None:
@@ -526,20 +542,29 @@ def validate_output_contract_sources(cases, output_contract_cases):
 
 
 def validate_output_contract_modes(cases, output_contract_cases):
-    mismatches = []
+    mismatches_by_field = {
+        "faithful_mode": [],
+        "plain_language_mode": [],
+    }
     for case in cases:
         output_contract_case_id = case.get("output_contract_case_id")
         if not output_contract_case_id:
             continue
 
-        contract_mode = output_contract_cases[output_contract_case_id].get(
-            "faithful_mode"
-        )
-        if case.get("faithful_mode") != contract_mode:
-            mismatches.append(f"{case['id']} -> {output_contract_case_id}")
+        contract_case = output_contract_cases[output_contract_case_id]
+        for mode_field in ("faithful_mode", "plain_language_mode"):
+            contract_mode = contract_case.get(mode_field)
+            if case.get(mode_field) != contract_mode:
+                mismatches_by_field[mode_field].append(
+                    f"{case['id']} -> {output_contract_case_id}"
+                )
 
-    if mismatches:
-        raise ValueError("output contract faithful_mode mismatch: " + ", ".join(mismatches))
+    for mode_field in ("faithful_mode", "plain_language_mode"):
+        mismatches = mismatches_by_field[mode_field]
+        if mismatches:
+            raise ValueError(
+                f"output contract {mode_field} mismatch: " + ", ".join(mismatches)
+            )
 
 
 def require_rubric_score_threshold(rubric_id, rubric, key):
@@ -791,6 +816,22 @@ def load_rubric_calibrations(path=DEFAULT_CASES_PATH):
                     f"{', '.join(VALID_FAITHFUL_MODES)}"
                 )
             normalized_calibration["target_skill"] = FAITHFUL_TARGET_SKILL
+        target_skill = normalized_calibration.get(
+            "target_skill",
+            DEFAULT_TARGET_SKILL,
+        )
+        plain_language_mode = calibration.get("plain_language_mode")
+        if target_skill == PLAIN_LANGUAGE_TARGET_SKILL:
+            if plain_language_mode not in VALID_PLAIN_LANGUAGE_MODES:
+                raise ValueError(
+                    f"{calibration_id}: plain_language_mode must be one of "
+                    f"{', '.join(VALID_PLAIN_LANGUAGE_MODES)}"
+                )
+        elif plain_language_mode is not None:
+            raise ValueError(
+                f"{calibration_id}: plain_language_mode is only valid for "
+                f"{PLAIN_LANGUAGE_TARGET_SKILL}"
+            )
         validated_calibrations.append(
             attach_case_rubric(normalized_calibration, rubrics)
         )
@@ -809,6 +850,12 @@ def faithful_mode_for_case(case):
     if target_skill_for_case(case) != FAITHFUL_TARGET_SKILL:
         return None
     return case.get("faithful_mode")
+
+
+def plain_language_mode_for_case(case):
+    if target_skill_for_case(case) != PLAIN_LANGUAGE_TARGET_SKILL:
+        return None
+    return case.get("plain_language_mode")
 
 
 def editorial_diagnostics_for_case(case, text):
@@ -860,6 +907,10 @@ def build_codex_prompt(case, plugin_root=None):
                 "",
             ]
         )
+
+    plain_language_mode = plain_language_mode_for_case(case)
+    if plain_language_mode:
+        prompt_lines.extend([f"Plain Language mode: {plain_language_mode}.", ""])
 
     prompt_lines.extend(
         [
@@ -924,6 +975,9 @@ def build_rubric_prompt(case, output_text):
     faithful_mode = faithful_mode_for_case(case)
     if faithful_mode:
         prompt_lines.append(f"Faithful intervention mode: {faithful_mode}.")
+    plain_language_mode = plain_language_mode_for_case(case)
+    if plain_language_mode:
+        prompt_lines.append(f"Plain Language mode: {plain_language_mode}.")
     prompt_lines.extend(
         [
             "",
@@ -1411,6 +1465,7 @@ def run_eval_case(
         "category": case["category"],
         "target_skill": target_skill_for_case(case),
         "faithful_mode": faithful_mode_for_case(case),
+        "plain_language_mode": plain_language_mode_for_case(case),
         "activation_probe": case.get("activation_probe", False),
         "trial": trial,
         "model": model,
@@ -1505,7 +1560,13 @@ def run_eval_case(
     return summary
 
 
-def select_cases(cases, filters, target_skills=None, faithful_modes=None):
+def select_cases(
+    cases,
+    filters,
+    target_skills=None,
+    faithful_modes=None,
+    plain_language_modes=None,
+):
     selected_ids = set(filters)
     if selected_ids:
         selected_cases = [case for case in cases if case["id"] in selected_ids]
@@ -1534,6 +1595,18 @@ def select_cases(cases, filters, target_skills=None, faithful_modes=None):
         ]
         if not selected_cases:
             raise ValueError("no eval cases match the selected Faithful mode(s)")
+
+    selected_plain_language_modes = set(plain_language_modes or [])
+    if selected_plain_language_modes:
+        selected_cases = [
+            case
+            for case in selected_cases
+            if plain_language_mode_for_case(case) in selected_plain_language_modes
+        ]
+        if not selected_cases:
+            raise ValueError(
+                "no eval cases match the selected Plain Language mode(s)"
+            )
     return selected_cases
 
 
@@ -1550,6 +1623,7 @@ def summarize_pass_rate(summaries):
 def aggregate_summaries(summaries):
     grouped_summaries = {}
     faithful_mode_summaries = {}
+    plain_language_mode_summaries = {}
     failure_stages = {}
     for summary in summaries:
         target_skill = summary.get("target_skill", "unknown")
@@ -1557,6 +1631,12 @@ def aggregate_summaries(summaries):
         faithful_mode = summary.get("faithful_mode")
         if faithful_mode:
             faithful_mode_summaries.setdefault(faithful_mode, []).append(summary)
+        plain_language_mode = summary.get("plain_language_mode")
+        if plain_language_mode:
+            plain_language_mode_summaries.setdefault(
+                plain_language_mode,
+                [],
+            ).append(summary)
         failure_stage = summary.get("failure_stage")
         if failure_stage:
             failure_stages[failure_stage] = failure_stages.get(failure_stage, 0) + 1
@@ -1581,11 +1661,18 @@ def aggregate_summaries(summaries):
         faithful_mode: summarize_pass_rate(mode_summaries)
         for faithful_mode, mode_summaries in sorted(faithful_mode_summaries.items())
     }
+    by_plain_language_mode = {
+        plain_language_mode: summarize_pass_rate(mode_summaries)
+        for plain_language_mode, mode_summaries in sorted(
+            plain_language_mode_summaries.items()
+        )
+    }
     return {
         **summarize_pass_rate(summaries),
         "failure_stages": dict(sorted(failure_stages.items())),
         "by_target_skill": by_target_skill,
         "by_faithful_mode": by_faithful_mode,
+        "by_plain_language_mode": by_plain_language_mode,
     }
 
 
@@ -1670,8 +1757,8 @@ def print_dry_run(cases, trials=1):
     )
     for case in cases:
         trigger_label = "trigger" if case["should_trigger"] else "no-trigger"
-        faithful_mode = faithful_mode_for_case(case)
-        mode_label = f", {faithful_mode}" if faithful_mode else ""
+        mode = faithful_mode_for_case(case) or plain_language_mode_for_case(case)
+        mode_label = f", {mode}" if mode else ""
         print(
             f"- {case['id']} "
             f"[{target_skill_for_case(case)}{mode_label}, "
@@ -1720,6 +1807,12 @@ def build_parser():
         choices=VALID_FAITHFUL_MODES,
         default=[],
     )
+    parser.add_argument(
+        "--plain-language-mode",
+        action="append",
+        choices=VALID_PLAIN_LANGUAGE_MODES,
+        default=[],
+    )
     parser.add_argument("--trials", type=positive_integer, default=1)
     parser.add_argument("--rubric-grade", action="store_true")
     parser.add_argument("--calibrate-rubric", action="store_true")
@@ -1765,6 +1858,7 @@ def main(argv):
             args.filter,
             target_skills=args.target_skill,
             faithful_modes=args.faithful_mode,
+            plain_language_modes=args.plain_language_mode,
         )
     except (OSError, ValueError) as error:
         print(str(error), file=sys.stderr)
