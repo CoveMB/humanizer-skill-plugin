@@ -4,3 +4,4 @@ __pycache__/
 .coverage
 evals/artifacts/
 .worktrees/
+docs/superpowers/
