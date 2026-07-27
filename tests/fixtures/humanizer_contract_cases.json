@@ -1348,6 +1348,471 @@
         "no_markdown_fence": true,
         "rewrite_only": true
       }
+    },
+    {
+      "id": "plain_language_api_rewrite",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_jargon",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Rewrite this API behavior in plain language for a nontechnical reader. Return only the rewrite.",
+      "source": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
+      "constraints": {
+        "must_include": [
+          "API",
+          "each client",
+          "120 requests per minute",
+          "HTTP 429",
+          "requests above the threshold"
+        ],
+        "must_not_match": [
+          "(?i)\\brate limit\\b(?!\\s*(?:means|is|,?\\s+which means))",
+          "(?i)\\b(?:slow(?:ed|s|ing)?|more slowly)\\b"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true,
+        "maximum_word_count": 38
+      },
+      "passing_output": "The API allows each client 120 requests per minute. It returns HTTP 429 for requests above the threshold.",
+      "failing_outputs": [
+        {
+          "label": "claims excess requests are slowed",
+          "output": "The API allows each client 120 requests per minute. It returns HTTP 429 because requests above the threshold are slowed.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "uses rate limit without defining it",
+          "output": "The API sets a rate limit for each client at 120 requests per minute. It returns HTTP 429 for requests above the threshold.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "buries the behavior in needless repetition",
+          "output": "The API allows each client 120 requests per minute. It returns HTTP 429 for requests above the threshold. This is useful information for readers who want a broad and detailed understanding of how the request threshold works in practice for each client using the API during every minute.",
+          "expected_error": "expected at most 38 words"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_webhook_explain",
+      "plain_language_mode": "explain",
+      "mode": "answer",
+      "tags": [
+        "plain_language_explain",
+        "plain_language_jargon",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Explain this webhook behavior in plain language for an informed non-specialist.",
+      "source": "When an invoice is paid, Ledger emits an `invoice.paid` webhook to the configured HTTPS endpoint. Delivery is retried with exponential backoff for up to 24 hours.",
+      "constraints": {
+        "must_include": [
+          "invoice is paid",
+          "retries",
+          "waits longer between attempts"
+        ],
+        "must_include_exact": [
+          "`invoice.paid`",
+          "HTTPS",
+          "24 hours"
+        ],
+        "must_match": [
+          "(?i)(?:sends?|notification)"
+        ],
+        "must_not_include": [
+          "guaranteed delivery"
+        ],
+        "must_not_match": [
+          "(?i)(?:\\b(?:one|two|three|four|five|six|seven|eight|nine|ten|\\d+)\\s+retr(?:y|ies)\\b|\\bretr(?:y|ies)\\s+(?:one|two|three|four|five|six|seven|eight|nine|ten|\\d+)\\s+times?\\b)"
+        ],
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "maximum_word_count": 65
+      },
+      "passing_output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts.",
+      "failing_outputs": [
+        {
+          "label": "claims delivery is guaranteed",
+          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. Guaranteed delivery means it retries for up to 24 hours and waits longer between attempts.",
+          "expected_error": "forbidden fragment present"
+        },
+        {
+          "label": "invents a retry count",
+          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It makes three retries within 24 hours and waits longer between attempts.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "adds an unrequested extended explanation",
+          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts. This explanation gives the reader extra background about the general purpose of notifications, the broad role of endpoints, the practical value of retrying, and the way a system may keep trying when a delivery does not work immediately for reasons outside the description.",
+          "expected_error": "expected at most 65 words"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_combined_output",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_explain",
+        "plain_language_combined",
+        "plain_language_jargon",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Rewrite this in plain language, then add a brief explanation under an Explanation: heading.",
+      "source": "The cache uses a time to live of 15 minutes. After that period, the entry is stale and the next read must retrieve a fresh value from the origin service.",
+      "constraints": {
+        "must_include": [
+          "15 minutes",
+          "stale",
+          "next read",
+          "fresh value",
+          "origin service",
+          "Explanation:"
+        ],
+        "ordered_fragments": [
+          "15 minutes",
+          "stale",
+          "next read",
+          "fresh value",
+          "origin service",
+          "Explanation:"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "maximum_word_count": 75
+      },
+      "passing_output": "The cache keeps an entry for 15 minutes. When it becomes stale, the next read gets a fresh value from the origin service.\n\nExplanation:\nA time to live is how long the cache keeps an entry before treating it as stale.",
+      "failing_outputs": [
+        {
+          "label": "drops the stale boundary",
+          "output": "The cache keeps an entry for 15 minutes. The next read gets a fresh value from the origin service.\n\nExplanation:\nA time to live is how long the cache keeps an entry.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "places the explanation before the rewrite",
+          "output": "Explanation:\nA time to live is how long the cache keeps an entry.\n\nThe cache keeps an entry for 15 minutes. When it becomes stale, the next read gets a fresh value from the origin service.",
+          "expected_error": "ordered fragment"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_protected_procedure",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_protected_literals",
+        "plain_language_high_stakes",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Rewrite this procedure in plain language while preserving every command, flag, condition, and path exactly.",
+      "source": "Run `atlas migrate --dry-run` before `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
+      "constraints": {
+        "must_include_exact": [
+          "`atlas migrate --dry-run`",
+          "`atlas migrate --apply`",
+          "`--apply`",
+          "incompatible schema",
+          "`/srv/atlas/schema.json`"
+        ],
+        "ordered_fragments": [
+          "`atlas migrate --dry-run`",
+          "`atlas migrate --apply`",
+          "`--apply`",
+          "incompatible schema",
+          "`/srv/atlas/schema.json`"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true,
+        "maximum_word_count": 70
+      },
+      "passing_output": "First, run `atlas migrate --dry-run`, then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
+      "failing_outputs": [
+        {
+          "label": "changes the protected restore path",
+          "output": "First, run `atlas migrate --dry-run`, then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.backup.json`.",
+          "expected_error": "missing required exact fragment"
+        },
+        {
+          "label": "runs apply before dry run",
+          "output": "First, run `atlas migrate --apply`, then run `atlas migrate --dry-run`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
+          "expected_error": "ordered fragment"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_security_uncertainty",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_high_stakes",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Rewrite this security update in plain language without strengthening any uncertain claim.",
+      "source": "At 14:20 UTC, telemetry indicated possible credential replay against two accounts. The evidence may be consistent with token theft, but it does not establish how the credentials were obtained.",
+      "constraints": {
+        "must_include": [
+          "14:20 UTC",
+          "possible",
+          "two accounts",
+          "may",
+          "token theft",
+          "does not establish"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true,
+        "maximum_word_count": 55
+      },
+      "passing_output": "At 14:20 UTC, monitoring showed possible reuse of credentials against two accounts. The evidence may fit token theft, but it does not establish how anyone obtained the credentials.",
+      "failing_outputs": [
+        {
+          "label": "turns a possibility into a conclusion",
+          "output": "At 14:20 UTC, monitoring showed credential reuse against two accounts. The evidence confirms token theft and establishes how the credentials were obtained.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "adds a long generic security aside",
+          "output": "At 14:20 UTC, monitoring showed possible reuse of credentials against two accounts. The evidence may fit token theft, but it does not establish how anyone obtained the credentials. This kind of update can be difficult to understand, so it is helpful to review each statement carefully and remember that an investigation may develop over time as more information becomes available to the people reviewing the matter.",
+          "expected_error": "expected at most 55 words"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_scientific_boundary",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_jargon",
+        "plain_language_high_stakes",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Rewrite this scientific result in plain language while preserving the statistical and causal boundaries.",
+      "source": "Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This association does not establish causality.",
+      "constraints": {
+        "must_include": [
+          "hazard ratio",
+          "association",
+          "does not establish causality"
+        ],
+        "must_include_exact": [
+          "Smith et al. (2024)",
+          "0.78",
+          "95% CI 0.61–0.99"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true,
+        "maximum_word_count": 65
+      },
+      "passing_output": "Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This shows an association, but it does not establish causality.",
+      "failing_outputs": [
+        {
+          "label": "changes association into causation",
+          "output": "Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This association establishes causality.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "adds an unrequested statistics tutorial",
+          "output": "Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This shows an association, but it does not establish causality. A reader may want to pause here and think through the result in a broader way, considering how researchers compare groups, how uncertain findings are discussed, and why careful language matters when presenting a scientific result to people who do not work with this kind of evidence every day.",
+          "expected_error": "expected at most 65 words"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_medical_condition",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_protected_literals",
+        "plain_language_high_stakes",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Rewrite these medication instructions plainly while preserving the dose, condition, actions, and order exactly.",
+      "source": "Take 5 mg once daily. If systolic blood pressure falls below 90 mmHg, do not take the next dose and contact the prescribing clinician.",
+      "constraints": {
+        "must_include_exact": [
+          "5 mg",
+          "once daily",
+          "systolic blood pressure",
+          "below 90 mmHg",
+          "do not take the next dose",
+          "contact the prescribing clinician"
+        ],
+        "ordered_fragments": [
+          "5 mg",
+          "once daily",
+          "systolic blood pressure",
+          "below 90 mmHg",
+          "do not take the next dose",
+          "contact the prescribing clinician"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true,
+        "maximum_word_count": 55
+      },
+      "passing_output": "Take 5 mg once daily. If your systolic blood pressure is below 90 mmHg, do not take the next dose and contact the prescribing clinician.",
+      "failing_outputs": [
+        {
+          "label": "changes the prescribed dose",
+          "output": "Take 10 mg once daily. If your systolic blood pressure is below 90 mmHg, do not take the next dose and contact the prescribing clinician.",
+          "expected_error": "missing required exact fragment"
+        },
+        {
+          "label": "reverses the required response order",
+          "output": "Take 5 mg once daily. If your systolic blood pressure is below 90 mmHg, contact the prescribing clinician and do not take the next dose.",
+          "expected_error": "ordered fragment"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_legal_obligation",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_high_stakes",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Rewrite this legal obligation in plain language without weakening the duty or changing the exception.",
+      "source": "The controller must notify the processor within 24 hours unless disclosure is prohibited by applicable law. The exception does not remove the duty to retain the incident record.",
+      "constraints": {
+        "must_include": [
+          "controller",
+          "must notify",
+          "processor",
+          "within 24 hours",
+          "unless",
+          "prohibited by applicable law",
+          "does not remove",
+          "retain the incident record"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true,
+        "maximum_word_count": 60
+      },
+      "passing_output": "The controller must notify the processor within 24 hours unless disclosure is prohibited by applicable law. That exception does not remove the duty to retain the incident record.",
+      "failing_outputs": [
+        {
+          "label": "weakens the notification duty",
+          "output": "The controller may notify the processor within 24 hours unless disclosure is prohibited by applicable law. The exception does not remove the duty to retain the incident record.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "adds an extended legal overview",
+          "output": "The controller must notify the processor within 24 hours unless disclosure is prohibited by applicable law. The exception does not remove the duty to retain the incident record. This statement describes a duty and an exception in a way that readers can follow, but readers may still benefit from reviewing the surrounding agreement and considering how the separate parts relate to each other before they act on the wording in a practical setting.",
+          "expected_error": "expected at most 60 words"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_financial_assumptions",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_high_stakes",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Rewrite this forecast in plain language while preserving its assumptions, exclusion, and uncertainty.",
+      "source": "The forecast assumes 4% annual revenue growth and excludes foreign-exchange effects. Actual results may differ if either assumption changes.",
+      "constraints": {
+        "must_include": [
+          "forecast",
+          "assumes",
+          "4% annual revenue growth",
+          "excludes foreign-exchange effects",
+          "may differ",
+          "either assumption changes"
+        ],
+        "must_differ_from_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true,
+        "maximum_word_count": 60
+      },
+      "passing_output": "The forecast assumes 4% annual revenue growth and excludes foreign-exchange effects. Results may differ if either assumption changes.",
+      "failing_outputs": [
+        {
+          "label": "turns an assumption into a guarantee",
+          "output": "The forecast guarantees 4% annual revenue growth and excludes foreign-exchange effects. Results will not differ if either assumption changes.",
+          "expected_error": "missing required fragment"
+        },
+        {
+          "label": "adds a long generic forecasting aside",
+          "output": "The forecast assumes 4% annual revenue growth and excludes foreign-exchange effects. Results may differ if either assumption changes. Forecasts can help readers think about possible outcomes, and assumptions can make those outcomes easier to discuss, but it is often useful to read every part carefully, consider what has been left out, and remember that a forecast describes an expected result rather than a certain result in every possible situation.",
+          "expected_error": "expected at most 60 words"
+        }
+      ]
+    },
+    {
+      "id": "plain_language_already_clear",
+      "plain_language_mode": "rewrite",
+      "mode": "rewrite",
+      "tags": [
+        "plain_language_rewrite",
+        "plain_language_protected_literals",
+        "plain_language_already_clear",
+        "plain_language_anti_bloat"
+      ],
+      "prompt": "Use Plain Language Rewrite mode, but leave this already-clear deployment instruction unchanged.",
+      "source": "Run `make test` before deployment. Stop if any test fails.",
+      "constraints": {
+        "must_equal_source": true,
+        "no_chatbot_wrapper": true,
+        "no_markdown_fence": true,
+        "no_new_numbers": true,
+        "no_new_named_entities": true,
+        "rewrite_only": true,
+        "maximum_word_count": 12
+      },
+      "passing_output": "Run `make test` before deployment. Stop if any test fails.",
+      "failing_outputs": [
+        {
+          "label": "rewrites already-clear instructions",
+          "output": "Execute `make test` before deployment. Stop if any test fails.",
+          "expected_error": "changed already-natural source"
+        },
+        {
+          "label": "adds an unnecessary explanation",
+          "output": "Run `make test` before deployment. Stop if any test fails. This protects the deployment.",
+          "expected_error": "expected at most 12 words"
+        }
+      ]
     }
   ]
 }

@@ -119,6 +119,36 @@
           "question": "Does the answer preserve the supplied entity, metric, and timeframe while discussing verification?"
         }
       ]
+    },
+    "plain_language_humanizer": {
+      "minimum_total_score": 42,
+      "minimum_dimension_score": 8,
+      "minimum_dimension_scores": {
+        "technical_fidelity": 9,
+        "protected_literals_and_operational_safety": 9
+      },
+      "dimensions": [
+        {
+          "name": "technical_fidelity",
+          "question": "Does the output preserve every claim, actor, attribution, qualifier, condition, exception, warning, dependency, quantity, chronology, causal boundary, and conclusion without adding source-specific behavior?"
+        },
+        {
+          "name": "protected_literals_and_operational_safety",
+          "question": "Does the output preserve exact commands, flags, identifiers, configuration keys, API names, schema fields, error messages, URLs, paths, versions, citations, formulas, units, warnings, prerequisites, and operational order?"
+        },
+        {
+          "name": "plain_language_clarity_and_audience_fit",
+          "question": "Would an informed non-specialist understand the content without a patronizing tone or loss of domain seriousness?"
+        },
+        {
+          "name": "jargon_and_definition_quality",
+          "question": "Does the output replace unnecessary jargon precisely, retain necessary technical terms, and define each necessary term once at the level supported by the source or its unambiguous conventional meaning?"
+        },
+        {
+          "name": "concision_and_mode_compliance",
+          "question": "Does every added sentence define a term, clarify a relationship, or explain a required action or supported consequence, and does the output match Rewrite, Explain, or the explicitly combined shape?"
+        }
+      ]
     }
   },
   "rubric_calibrations": [
@@ -176,6 +206,78 @@
       "faithful_mode": "conservative",
       "source": "At this point in time, the committee is in the process of conducting an evaluation of the proposal, and it may potentially recommend revisions for some sections.",
       "output": "The committee is evaluating the proposal and will recommend revisions for most sections.",
+      "expected_pass": false
+    },
+    {
+      "id": "plain_language_calibration_api_concise_pass",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "rubric_id": "plain_language_humanizer",
+      "source": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
+      "output": "The API allows each client 120 requests per minute. It returns HTTP 429 for requests above the threshold.",
+      "expected_pass": true
+    },
+    {
+      "id": "plain_language_calibration_webhook_explanation_pass",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "explain",
+      "rubric_id": "plain_language_humanizer",
+      "source": "When an invoice is paid, Ledger emits an `invoice.paid` webhook to the configured HTTPS endpoint. Delivery is retried with exponential backoff for up to 24 hours.",
+      "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts.",
+      "expected_pass": true
+    },
+    {
+      "id": "plain_language_calibration_rejects_unchanged_jargon",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "rubric_id": "plain_language_humanizer",
+      "source": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
+      "output": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
+      "expected_pass": false
+    },
+    {
+      "id": "plain_language_calibration_rejects_slowed_requests_claim",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "rubric_id": "plain_language_humanizer",
+      "source": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
+      "output": "The API allows each client 120 requests per minute. Requests above the threshold are slowed and return HTTP 429.",
+      "expected_pass": false
+    },
+    {
+      "id": "plain_language_calibration_rejects_procedure_reordering",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "rubric_id": "plain_language_humanizer",
+      "source": "Run `atlas migrate --dry-run` before `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
+      "output": "Run `atlas migrate --apply` before `atlas migrate --dry-run`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
+      "expected_pass": false
+    },
+    {
+      "id": "plain_language_calibration_rejects_scientific_causation",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "rubric_id": "plain_language_humanizer",
+      "source": "Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This association does not establish causality.",
+      "output": "Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This result shows that the measured factor caused the outcome.",
+      "expected_pass": false
+    },
+    {
+      "id": "plain_language_calibration_rejects_bloated_tutorial",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "rubric_id": "plain_language_humanizer",
+      "source": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
+      "output": "The API allows each client 120 requests per minute. It returns HTTP 429 for requests above the threshold. This is useful information for readers who want a broad and detailed understanding of how the request threshold works in practice for each client using the API during every minute.",
+      "expected_pass": false
+    },
+    {
+      "id": "plain_language_calibration_rejects_rewrite_for_explain",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "explain",
+      "rubric_id": "plain_language_humanizer",
+      "source": "When an invoice is paid, Ledger emits an `invoice.paid` webhook to the configured HTTPS endpoint. Delivery is retried with exponential backoff for up to 24 hours.",
+      "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook to the configured HTTPS endpoint. It retries delivery with increasing delays for up to 24 hours.",
       "expected_pass": false
     }
   ],
@@ -748,6 +850,220 @@
         "skills/faithful-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "negative_spellcheck_only"
+    },
+    {
+      "id": "plain_language_explicit_api_rewrite",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode to make this API behavior understandable to a nontechnical reader. Return only the rewrite.",
+      "source": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_api_rewrite",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_explicit_webhook_explain",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "explain",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Explain mode to explain this webhook behavior for an informed non-specialist.",
+      "source": "When an invoice is paid, Ledger emits an `invoice.paid` webhook to the configured HTTPS endpoint. Delivery is retried with exponential backoff for up to 24 hours.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_webhook_explain",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_explicit_combined",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode. Rewrite this in plain language, then add a brief explanation under an Explanation: heading.",
+      "source": "The cache uses a time to live of 15 minutes. After that period, the entry is stale and the next read must retrieve a fresh value from the origin service.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_combined_output",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_protected_procedure",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode. Make this procedure clearer while preserving every command, flag, condition, and path exactly.",
+      "source": "Run `atlas migrate --dry-run` before `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_protected_procedure",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_security_rewrite",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode. Make this security update clear without strengthening any uncertain claim.",
+      "source": "At 14:20 UTC, telemetry indicated possible credential replay against two accounts. The evidence may be consistent with token theft, but it does not establish how the credentials were obtained.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_security_uncertainty",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_scientific_rewrite",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode. Make this scientific result understandable while preserving its statistics and causal boundary.",
+      "source": "Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This association does not establish causality.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_scientific_boundary",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_medical_rewrite",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode. Make these medication instructions easier to understand without changing the dose, condition, actions, or order.",
+      "source": "Take 5 mg once daily. If systolic blood pressure falls below 90 mmHg, do not take the next dose and contact the prescribing clinician.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_medical_condition",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_legal_rewrite",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode. Make this obligation clear without weakening the duty or changing the exception.",
+      "source": "The controller must notify the processor within 24 hours unless disclosure is prohibited by applicable law. The exception does not remove the duty to retain the incident record.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_legal_obligation",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_financial_rewrite",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode. Make this forecast clear while preserving its assumptions, exclusion, and uncertainty.",
+      "source": "The forecast assumes 4% annual revenue growth and excludes foreign-exchange effects. Actual results may differ if either assumption changes.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_financial_assumptions",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_already_clear_rewrite",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "explicit",
+      "should_trigger": true,
+      "force_skill_file_read": true,
+      "prompt": "Use $plain-language-humanizer in Rewrite mode, but leave this already-clear deployment instruction unchanged.",
+      "source": "Run `make test` before deployment. Stop if any test fails.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_already_clear",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_implicit_rewrite_activation",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "implicit",
+      "should_trigger": true,
+      "activation_probe": true,
+      "prompt": "Make this technical passage understandable to a nontechnical project manager.",
+      "source": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "forbidden_trace_terms": [
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/faithful-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_api_rewrite",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_implicit_explain_activation",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "explain",
+      "category": "implicit",
+      "should_trigger": true,
+      "activation_probe": true,
+      "prompt": "What does this technical passage mean for an informed non-specialist?",
+      "source": "When an invoice is paid, Ledger emits an `invoice.paid` webhook to the configured HTTPS endpoint. Delivery is retried with exponential backoff for up to 24 hours.",
+      "expected_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ],
+      "forbidden_trace_terms": [
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/faithful-humanizer/SKILL.md"
+      ],
+      "output_contract_case_id": "plain_language_webhook_explain",
+      "rubric_id": "plain_language_humanizer"
+    },
+    {
+      "id": "plain_language_negative_troubleshooting",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "explain",
+      "category": "negative",
+      "should_trigger": false,
+      "activation_probe": true,
+      "prompt": "Debug why this webhook endpoint returns HTTP 500 and give me the code fix.",
+      "source": "The endpoint returns HTTP 500 after `invoice.paid` events.",
+      "forbidden_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ]
+    },
+    {
+      "id": "plain_language_negative_generic_humanize",
+      "target_skill": "plain-language-humanizer",
+      "plain_language_mode": "rewrite",
+      "category": "negative",
+      "should_trigger": false,
+      "activation_probe": true,
+      "prompt": "Humanize this prose and make the voice more distinctive.",
+      "source": "This release introduces a comprehensive enhancement to the validation pipeline.",
+      "forbidden_trace_terms": [
+        "skills/plain-language-humanizer/SKILL.md"
+      ]
     }
   ]
 }

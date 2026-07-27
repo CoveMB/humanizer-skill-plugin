@@ -30,6 +30,14 @@ REQUIRED_TAGS = {
     "faithful_voice_matching",
     "faithful_structure_preservation",
     "faithful_structural_reconstruction",
+    "plain_language_rewrite",
+    "plain_language_explain",
+    "plain_language_combined",
+    "plain_language_jargon",
+    "plain_language_protected_literals",
+    "plain_language_high_stakes",
+    "plain_language_already_clear",
+    "plain_language_anti_bloat",
 }
 
 SOURCE_AWARE_CONSTRAINT_KEYS = {
@@ -259,6 +267,38 @@ class ContractFixtureQualityTests(unittest.TestCase):
             },
         )
         self.assertTrue(conservative_cases)
+
+    def test_plain_language_contracts_cover_modes_domains_and_boundaries(self):
+        plain_language_cases = {
+            case["id"]: case
+            for case in self.cases
+            if case["id"].startswith("plain_language_")
+        }
+        self.assertEqual(
+            set(plain_language_cases),
+            {
+                "plain_language_api_rewrite",
+                "plain_language_webhook_explain",
+                "plain_language_combined_output",
+                "plain_language_protected_procedure",
+                "plain_language_security_uncertainty",
+                "plain_language_scientific_boundary",
+                "plain_language_medical_condition",
+                "plain_language_legal_obligation",
+                "plain_language_financial_assumptions",
+                "plain_language_already_clear",
+            },
+        )
+        self.assertEqual(
+            {case["plain_language_mode"] for case in plain_language_cases.values()},
+            {"rewrite", "explain"},
+        )
+        self.assertTrue(
+            all(
+                "maximum_word_count" in case["constraints"]
+                for case in plain_language_cases.values()
+            )
+        )
 
 
 if __name__ == "__main__":

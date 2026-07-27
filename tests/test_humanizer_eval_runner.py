@@ -17,6 +17,7 @@ RUNNER_PATH = REPO_ROOT / "scripts" / "run_humanizer_evals.py"
 EVAL_CASES_PATH = REPO_ROOT / "evals" / "humanizer_eval_cases.json"
 SKILL_TRACE_PATH = "skills/editorial-humanizer/SKILL.md"
 FAITHFUL_SKILL_TRACE_PATH = "skills/faithful-humanizer/SKILL.md"
+PLAIN_LANGUAGE_SKILL_TRACE_PATH = "skills/plain-language-humanizer/SKILL.md"
 DEFAULT_OUTPUT_CONTRACT_CASES = object()
 
 
@@ -121,6 +122,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             case["prompt"].lower() for case in cases if case["should_trigger"]
         )
         positive_case_ids = {case["id"] for case in cases if case["should_trigger"]}
+        case_ids = {case["id"] for case in cases}
         positive_cases_without_forced_skill_read = [
             case["id"]
             for case in cases
@@ -140,6 +142,24 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         ]
 
         self.assertGreaterEqual(len(cases), 38)
+        self.assertTrue(
+            {
+                "plain_language_explicit_api_rewrite",
+                "plain_language_explicit_webhook_explain",
+                "plain_language_explicit_combined",
+                "plain_language_protected_procedure",
+                "plain_language_security_rewrite",
+                "plain_language_scientific_rewrite",
+                "plain_language_medical_rewrite",
+                "plain_language_legal_rewrite",
+                "plain_language_financial_rewrite",
+                "plain_language_already_clear_rewrite",
+                "plain_language_implicit_rewrite_activation",
+                "plain_language_implicit_explain_activation",
+                "plain_language_negative_troubleshooting",
+                "plain_language_negative_generic_humanize",
+            }.issubset(case_ids)
+        )
         self.assertTrue({"explicit", "implicit", "contextual", "negative"}.issubset(categories))
         self.assertTrue(
             {
@@ -196,6 +216,8 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 "faithful_rework_structure_activation",
                 "faithful_contextual_preservation_activation",
                 "faithful_explicit_catalog_activation",
+                "plain_language_implicit_rewrite_activation",
+                "plain_language_implicit_explain_activation",
             },
         )
         self.assertTrue(
@@ -217,7 +239,14 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             FAITHFUL_SKILL_TRACE_PATH,
             editorial_boundary_case["forbidden_trace_terms"],
         )
-        self.assertEqual(negative_cases_without_contract, ["negative_detector_evasion_only"])
+        self.assertEqual(
+            set(negative_cases_without_contract),
+            {
+                "negative_detector_evasion_only",
+                "plain_language_negative_troubleshooting",
+                "plain_language_negative_generic_humanize",
+            },
+        )
         self.assertTrue(
             next(
                 case for case in cases if case["id"] == "negative_detector_evasion_only"
@@ -253,6 +282,89 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         for case in cases:
             if case.get("rubric_id"):
                 self.assertIn("rubric", case)
+
+    def test_eval_cases_cover_plain_language_modes_and_boundaries(self):
+        cases = self.runner.load_eval_cases(EVAL_CASES_PATH)
+        plain_language_cases = {
+            case["id"]: case
+            for case in cases
+            if case.get("target_skill") == "plain-language-humanizer"
+        }
+        expected_positive_contracts = {
+            "plain_language_explicit_api_rewrite": (
+                "rewrite",
+                "plain_language_api_rewrite",
+            ),
+            "plain_language_explicit_webhook_explain": (
+                "explain",
+                "plain_language_webhook_explain",
+            ),
+            "plain_language_explicit_combined": (
+                "rewrite",
+                "plain_language_combined_output",
+            ),
+            "plain_language_protected_procedure": (
+                "rewrite",
+                "plain_language_protected_procedure",
+            ),
+            "plain_language_security_rewrite": (
+                "rewrite",
+                "plain_language_security_uncertainty",
+            ),
+            "plain_language_scientific_rewrite": (
+                "rewrite",
+                "plain_language_scientific_boundary",
+            ),
+            "plain_language_medical_rewrite": (
+                "rewrite",
+                "plain_language_medical_condition",
+            ),
+            "plain_language_legal_rewrite": (
+                "rewrite",
+                "plain_language_legal_obligation",
+            ),
+            "plain_language_financial_rewrite": (
+                "rewrite",
+                "plain_language_financial_assumptions",
+            ),
+            "plain_language_already_clear_rewrite": (
+                "rewrite",
+                "plain_language_already_clear",
+            ),
+            "plain_language_implicit_rewrite_activation": (
+                "rewrite",
+                "plain_language_api_rewrite",
+            ),
+            "plain_language_implicit_explain_activation": (
+                "explain",
+                "plain_language_webhook_explain",
+            ),
+        }
+        expected_negative_ids = {
+            "plain_language_negative_troubleshooting",
+            "plain_language_negative_generic_humanize",
+        }
+
+        self.assertEqual(
+            set(plain_language_cases),
+            set(expected_positive_contracts) | expected_negative_ids,
+        )
+        for case_id, (mode, contract_id) in expected_positive_contracts.items():
+            case = plain_language_cases[case_id]
+            with self.subTest(positive_case=case_id):
+                self.assertTrue(case["should_trigger"])
+                self.assertEqual(case["plain_language_mode"], mode)
+                self.assertEqual(case["output_contract_case_id"], contract_id)
+                self.assertEqual(case["rubric_id"], "plain_language_humanizer")
+                self.assertIn(PLAIN_LANGUAGE_SKILL_TRACE_PATH, case["expected_trace_terms"])
+
+        for case_id in expected_negative_ids:
+            case = plain_language_cases[case_id]
+            with self.subTest(negative_case=case_id):
+                self.assertFalse(case["should_trigger"])
+                self.assertNotIn("output_contract_case_id", case)
+                self.assertNotIn("rubric_id", case)
+                self.assertIn(PLAIN_LANGUAGE_SKILL_TRACE_PATH, case["forbidden_trace_terms"])
 
     def test_eval_cases_cover_faithful_preservation_invariants(self):
         cases = self.runner.load_eval_cases(EVAL_CASES_PATH)
@@ -372,9 +484,19 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
 
     def test_rubric_calibrations_cover_both_modes_and_key_failures(self):
         calibrations = self.runner.load_rubric_calibrations(EVAL_CASES_PATH)
+        faithful_calibrations = [
+            calibration
+            for calibration in calibrations
+            if calibration["rubric_id"] == "faithful_humanizer_rewrite"
+        ]
+        plain_language_calibrations = [
+            calibration
+            for calibration in calibrations
+            if calibration["rubric_id"] == "plain_language_humanizer"
+        ]
 
         self.assertEqual(
-            {calibration["id"] for calibration in calibrations},
+            {calibration["id"] for calibration in faithful_calibrations},
             {
                 "faithful_structural_calibration_good_reconstruction",
                 "faithful_structural_calibration_rejects_unchanged_source",
@@ -386,19 +508,52 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             },
         )
         self.assertEqual(
-            [calibration["expected_pass"] for calibration in calibrations],
+            [calibration["expected_pass"] for calibration in faithful_calibrations],
             [True, False, False, False, True, False, False],
         )
         self.assertTrue(
             all(
                 calibration["rubric"]["minimum_dimension_scores"]
                 == {"semantic_fidelity": 9}
-                for calibration in calibrations
+                for calibration in faithful_calibrations
             )
         )
         self.assertEqual(
-            {calibration["faithful_mode"] for calibration in calibrations},
+            {
+                calibration["faithful_mode"]
+                for calibration in faithful_calibrations
+            },
             {"structural", "conservative"},
+        )
+        self.assertEqual(
+            {
+                calibration["id"]: calibration["expected_pass"]
+                for calibration in plain_language_calibrations
+            },
+            {
+                "plain_language_calibration_api_concise_pass": True,
+                "plain_language_calibration_webhook_explanation_pass": True,
+                "plain_language_calibration_rejects_unchanged_jargon": False,
+                "plain_language_calibration_rejects_slowed_requests_claim": False,
+                "plain_language_calibration_rejects_procedure_reordering": False,
+                "plain_language_calibration_rejects_scientific_causation": False,
+                "plain_language_calibration_rejects_bloated_tutorial": False,
+                "plain_language_calibration_rejects_rewrite_for_explain": False,
+            },
+        )
+        self.assertTrue(
+            all(
+                calibration["target_skill"] == "plain-language-humanizer"
+                and calibration["rubric_id"] == "plain_language_humanizer"
+                for calibration in plain_language_calibrations
+            )
+        )
+        self.assertEqual(
+            {
+                calibration["plain_language_mode"]
+                for calibration in plain_language_calibrations
+            },
+            {"rewrite", "explain"},
         )
 
     def test_load_rubric_calibrations_accepts_plain_language_mode(self):
@@ -1905,9 +2060,13 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("would run 7 rubric calibration(s)", result.stdout)
+        self.assertIn("would run 15 rubric calibration(s)", result.stdout)
         self.assertIn(
             "faithful_conservative_calibration_rejects_broad_reconstruction",
+            result.stdout,
+        )
+        self.assertIn(
+            "plain_language_calibration_rejects_rewrite_for_explain",
             result.stdout,
         )
 
