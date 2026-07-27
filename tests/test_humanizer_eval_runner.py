@@ -710,6 +710,19 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             "threshold, of 120 requests per minute for each client. Requests above "
             "the threshold receive HTTP 429, an error code meaning too many requests.",
         )
+        webhook_explanation_calibration = next(
+            calibration
+            for calibration in plain_language_calibrations
+            if calibration["id"]
+            == "plain_language_calibration_webhook_explanation_pass"
+        )
+        self.assertEqual(
+            webhook_explanation_calibration["output"],
+            "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a "
+            "message that one system automatically sends to another—to the configured "
+            "HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, "
+            "waiting progressively longer between attempts; this is exponential backoff.",
+        )
         self.assertTrue(
             all(
                 calibration["target_skill"] == "plain-language-humanizer"

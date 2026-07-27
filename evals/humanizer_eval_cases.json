@@ -223,7 +223,7 @@
       "plain_language_mode": "explain",
       "rubric_id": "plain_language_humanizer",
       "source": "When an invoice is paid, Ledger emits an `invoice.paid` webhook to the configured HTTPS endpoint. Delivery is retried with exponential backoff for up to 24 hours.",
-      "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts.",
+      "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
       "expected_pass": true
     },
     {
