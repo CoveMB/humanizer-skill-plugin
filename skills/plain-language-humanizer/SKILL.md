@@ -114,13 +114,16 @@ substitute.
 Classify technical language before editing:
 
 1. **Protected literal:** Preserve it exactly and explain nearby when necessary.
-2. **Necessary technical term:** Source terms naming actor roles and thresholds are
-   always necessary. Copy their source wording into the output. For a
-   non-specialist, when the source supports a bounded definition, define each
-   briefly at first meaningful use: identify an actor role by its source-stated
-   duty or relationship and a threshold by the cutoff and consequence it governs.
-   Do not import external facts. Apply the same retain-then-define recipe to any
-   other term whose replacement would reduce precision.
+2. **Necessary technical term:** Preserve every actor, threshold value, condition,
+   and consequence through the ledger. For a non-specialist, an unfamiliar or
+   domain-specific actor-role label whose source states its duty or relationship
+   is precision-bearing: retain it and add a brief description of its function in
+   this passage beside first meaningful use. The source-stated duty or relationship
+   is sufficient context for that bounded description. Retain an explicit technical
+   threshold term when replacement would reduce precision and define it from the
+   source cutoff and consequence. Skip definitions for familiar or already-clear
+   language. If context cannot support a bounded definition, preserve the term and
+   ask a precise question; do not import external facts.
 3. **Unnecessary jargon:** Replace it with a precise everyday equivalent.
 4. **Already-familiar language:** Retain it without explanation.
 5. **Ambiguous or context-dependent term:** Preserve it and ask a precise question
@@ -195,10 +198,12 @@ content:
 
 - retain required domain terminology and define it rather than replacing it with
   an imprecise approximation;
-- retain exact source wording for dosage and frequency, thresholds, prohibitions,
-  escalation roles, uncertainty and evidence boundaries, and comparable
-  operational directives; explain around that wording when clarification is
-  needed;
+- retain exact source wording for terms or short phrases whose substitution could
+  change safety, directive, or epistemic force, including medication action,
+  frequency, and escalation wording and explicit evidence-boundary phrases such
+  as `does not establish`; explain around them when clarification is needed;
+- preserve broader clauses with the same meaning and force, allowing equivalent
+  grammar and acronym expansion; protected literals remain exact;
 - preserve uncertainty, evidence boundaries, attribution, statistical meaning,
   causal strength, warnings, prerequisites, exceptions, and escalation conditions;
 - preserve exact procedural and operational literals; and
@@ -281,11 +286,15 @@ Before responding, run a bidirectional content check:
 - Confirm that every protected literal remains exact.
 - Confirm that procedural order, warnings, conditions, and exceptions remain
   intact.
-- Confirm that every source term naming an actor role or threshold appears in the
-  output. For a non-specialist, when the source supports a bounded definition,
-  define each once from source context: actor roles by their source-stated duty or
-  relationship and thresholds by their cutoff and consequence. Do not import
-  external facts.
+- Confirm that every actor, threshold value, condition, and consequence survives
+  through the ledger. For a non-specialist, confirm that each unfamiliar or
+  domain-specific actor-role label with a source-stated duty or relationship
+  appears with one brief description of its function in this passage; the stated
+  duty or relationship is sufficient context. Retain each explicit technical
+  threshold term whose replacement would reduce precision and define its cutoff
+  and consequence from source context. Skip definitions for familiar or
+  already-clear language. If context cannot support a bounded definition, preserve
+  the term and ask a precise question; do not import external facts.
 - Confirm that necessary terminology is defined once and unnecessary jargon is
   removed.
 - Confirm that already-clear text changed only when comprehension benefited.
@@ -316,6 +325,16 @@ Restore the source wording or ask a precise question if any check cannot pass.
 **Rewrite**
 
 > The application programming interface (API), which lets software systems communicate, sets a per-client rate limit of 120 requests per minute. That rate is the threshold, or cutoff: requests above the threshold receive HTTP 429, an error code meaning too many requests.
+
+### Rewrite: describe unfamiliar roles from the passage
+
+**Source**
+
+> The controller must notify the processor.
+
+**Rewrite**
+
+> The controller—the party that must give notice in this passage—must notify the processor, the party receiving that notice.
 
 ### Explain: retain and define webhook
 
