@@ -909,7 +909,7 @@ def build_codex_prompt(case, plugin_root=None):
         )
 
     plain_language_mode = plain_language_mode_for_case(case)
-    if plain_language_mode:
+    if plain_language_mode and not case.get("activation_probe", False):
         prompt_lines.extend([f"Plain Language mode: {plain_language_mode}.", ""])
 
     prompt_lines.extend(

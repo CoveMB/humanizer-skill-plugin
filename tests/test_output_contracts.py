@@ -535,6 +535,75 @@ class OutputContractTests(unittest.TestCase):
                 "Atlas Draft adoption may be rising.",
             )
 
+    def test_plain_language_scientific_definitions_accept_varied_accurate_phrasings(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        case = cases["plain_language_scientific_boundary"]
+        valid_outputs = (
+            (
+                "Smith et al. (2024) reported a hazard ratio of 0.78 "
+                "(95% CI 0.61–0.99). A hazard ratio compares the rate at which "
+                "an event occurs between groups over time. CI means confidence "
+                "interval, the range of uncertainty around the estimate. This "
+                "association does not establish causality."
+            ),
+            (
+                "Smith et al. (2024) reported a hazard ratio of 0.78 "
+                "(95% CI 0.61–0.99). A hazard ratio describes the relative hazard "
+                "between groups over time. The confidence interval is a plausible "
+                "range around the estimate. This association does not establish "
+                "causality."
+            ),
+        )
+
+        for output in valid_outputs:
+            with self.subTest(output=output):
+                validate_case_output(case, output)
+
+    def test_plain_language_scientific_definitions_reject_misinterpretations(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        case = cases["plain_language_scientific_boundary"]
+        invalid_outputs = {
+            "missing definitions": (
+                "Smith et al. (2024) reported a hazard ratio of 0.78 "
+                "(95% CI 0.61–0.99). This shows an association, but it does not "
+                "establish causality."
+            ),
+            "confidence interval as observations": (
+                "Smith et al. (2024) reported a hazard ratio of 0.78 "
+                "(95% CI 0.61–0.99). A hazard ratio compares how quickly an event "
+                "occurs between groups over time. CI means confidence interval, "
+                "a range containing observations rather than uncertainty around the "
+                "estimate. This association "
+                "does not establish causality."
+            ),
+            "hazard ratio as absolute risk": (
+                "Smith et al. (2024) reported a hazard ratio of 0.78 "
+                "(95% CI 0.61–0.99). A hazard ratio is the absolute risk that an "
+                "event will occur. CI means confidence interval, a range expressing "
+                "uncertainty around the estimate. This association does not "
+                "establish causality."
+            ),
+            "invented favored group": (
+                "Smith et al. (2024) reported a hazard ratio of 0.78 "
+                "(95% CI 0.61–0.99). A hazard ratio compares groups over time and "
+                "shows the treated group had lower risk. CI means confidence interval, "
+                "a range expressing uncertainty around the estimate. This association "
+                "does not establish causality."
+            ),
+        }
+
+        for label, output in invalid_outputs.items():
+            expected_error = (
+                "required pattern missing"
+                if label == "missing definitions"
+                else "forbidden pattern matched"
+            )
+            with self.subTest(output=label), self.assertRaisesRegex(
+                AssertionError,
+                expected_error,
+            ):
+                validate_case_output(case, output)
+
     def test_accepts_output_that_satisfies_constraints(self):
         output = "Atlas Note adoption rose 43%. The source is unnamed, so the claim should stay general."
         validate_case_output(BASE_CASE, output)

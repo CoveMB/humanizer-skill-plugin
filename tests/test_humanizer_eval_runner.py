@@ -1263,6 +1263,37 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         self.assertIn("Return only the final answer", prompt)
         self.assertNotIn("Editorial Humanizer output", prompt)
 
+    def test_plain_language_activation_probe_prompts_are_unprimed(self):
+        cases = {
+            case["id"]: case for case in self.runner.load_eval_cases(EVAL_CASES_PATH)
+        }
+        expected_probes = {
+            "plain_language_implicit_rewrite_activation": (True, "rewrite"),
+            "plain_language_implicit_explain_activation": (True, "explain"),
+            "plain_language_negative_troubleshooting": (False, "explain"),
+            "plain_language_negative_generic_humanize": (False, "rewrite"),
+        }
+
+        for case_id, (should_trigger, mode) in expected_probes.items():
+            with self.subTest(case=case_id):
+                case = cases[case_id]
+                self.assertTrue(case["activation_probe"])
+                self.assertEqual(case["should_trigger"], should_trigger)
+                self.assertEqual(case["plain_language_mode"], mode)
+
+                prompt = self.runner.build_codex_prompt(case)
+
+                self.assertNotIn("Plain Language mode:", prompt)
+                self.assertNotIn(
+                    "Read `skills/plain-language-humanizer/",
+                    prompt,
+                )
+                self.assertNotIn("Read `skills/references/", prompt)
+                self.assertIn(case["prompt"], prompt)
+                self.assertIn(case["source"], prompt)
+                self.assertIn("Return only the final answer", prompt)
+                self.assertNotIn("Plain Language Humanizer output", prompt)
+
     def test_build_codex_prompt_targets_faithful_skill(self):
         case = {
             "id": "faithful",

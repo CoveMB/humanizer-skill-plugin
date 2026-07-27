@@ -79,6 +79,14 @@ CANONICAL_PROCEDURE_OUTPUT = (
     "`/srv/atlas/schema.json`."
 )
 
+CANONICAL_SCIENTIFIC_OUTPUT = (
+    "Smith et al. (2024) reported a hazard ratio of 0.78 "
+    "(95% CI 0.61–0.99). A hazard ratio compares how quickly an event occurs "
+    "between groups over time. CI means confidence interval, a range that "
+    "expresses uncertainty around the estimate. This association does not "
+    "establish causality."
+)
+
 
 class ContractFixtureQualityTests(unittest.TestCase):
     def setUp(self):
@@ -383,6 +391,10 @@ class ContractFixtureQualityTests(unittest.TestCase):
             cases["plain_language_protected_procedure"]["passing_output"],
             CANONICAL_PROCEDURE_OUTPUT,
         )
+        self.assertEqual(
+            cases["plain_language_scientific_boundary"]["passing_output"],
+            CANONICAL_SCIENTIFIC_OUTPUT,
+        )
         required_mutations = {
             "plain_language_api_rewrite": {"omits the threshold definition"},
             "plain_language_legal_obligation": {
@@ -394,6 +406,12 @@ class ContractFixtureQualityTests(unittest.TestCase):
             },
             "plain_language_protected_procedure": {
                 "omits the incompatible schema definition",
+            },
+            "plain_language_scientific_boundary": {
+                "omits hazard ratio and confidence interval definitions",
+                "misstates confidence interval as observations",
+                "equates hazard ratio with absolute risk",
+                "assigns lower risk to an unnamed group",
             },
         }
         for case_id, required_labels in required_mutations.items():

@@ -410,7 +410,7 @@ Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This a
 Plain Language Rewrite may return:
 
 ```text
-Smith et al. (2024) reported a hazard ratio of 0.78, which compares the rate of an event between two groups over time. The 95% confidence interval (CI) was 0.61–0.99, a range that expresses uncertainty around the estimate. This association does not establish causality.
+Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). A hazard ratio compares how quickly an event occurs between groups over time. CI means confidence interval, a range that expresses uncertainty around the estimate. This association does not establish causality.
 ```
 
 The explanation keeps the citation, estimate, interval, uncertainty, and statement

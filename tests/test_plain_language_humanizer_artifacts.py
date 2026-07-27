@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from tests.helpers.skill_artifacts import (
@@ -51,6 +52,13 @@ CANONICAL_API_OUTPUT = "The API (application programming interface) sets a rate 
 CANONICAL_LEGAL_OUTPUT = "The controller—the party required to give notice—must notify the processor, the party receiving the notice, within 24 hours unless disclosure is prohibited by applicable law. This exception does not remove the duty to retain the incident record."
 CANONICAL_WEBHOOK_OUTPUT = "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff."
 CANONICAL_PROCEDURE_OUTPUT = "First, run `atlas migrate --dry-run`, which checks the migration without applying it. Then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema, meaning the existing and proposed data structures cannot work together. If `atlas migrate --apply` fails, restore `/srv/atlas/schema.json`."
+CANONICAL_SCIENTIFIC_OUTPUT = (
+    "Smith et al. (2024) reported a hazard ratio of 0.78 "
+    "(95% CI 0.61–0.99). A hazard ratio compares how quickly an event occurs "
+    "between groups over time. CI means confidence interval, a range that "
+    "expresses uncertainty around the estimate. This association does not "
+    "establish causality."
+)
 
 
 class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
@@ -143,6 +151,20 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
                 self.assertIn(output, self.skill_markdown)
                 self.assertIn(output, public_examples)
 
+    def test_scientific_canonical_example_aligns_across_contract_owners(self):
+        public_examples = read_text(REPO_ROOT / "docs" / "skill-examples.md")
+        fixture_data = json.loads(
+            read_text(REPO_ROOT / "tests" / "fixtures" / "humanizer_contract_cases.json")
+        )
+        cases = {case["id"]: case for case in fixture_data["cases"]}
+
+        self.assertEqual(
+            cases["plain_language_scientific_boundary"]["passing_output"],
+            CANONICAL_SCIENTIFIC_OUTPUT,
+        )
+        self.assertIn(CANONICAL_SCIENTIFIC_OUTPUT, self.skill_markdown)
+        self.assertIn(CANONICAL_SCIENTIFIC_OUTPUT, public_examples)
+
     def test_required_headings_are_ordered_and_skill_stays_under_line_limit(self):
         actual_headings = [
             line
@@ -179,6 +201,33 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
             "extra caution",
         ):
             self.assertIn(term, normalized_lower)
+
+    def test_explanatory_device_authority_aligns_across_contract_owners(self):
+        contract_owners = {
+            "design": read_text(
+                REPO_ROOT
+                / "docs"
+                / "superpowers"
+                / "specs"
+                / "2026-07-27-plain-language-humanizer-design.md"
+            ),
+            "skill": self.skill_markdown,
+            "readme": read_text(REPO_ROOT / "README.md"),
+            "examples": read_text(REPO_ROOT / "docs" / "skill-examples.md"),
+        }
+
+        for owner, artifact in contract_owners.items():
+            with self.subTest(owner=owner):
+                normalized_lower = normalize_markdown(artifact).lower()
+                self.assertRegex(
+                    normalized_lower,
+                    r"\b(?:asks?|requests?|requested)\b",
+                )
+                self.assertIn("materially needed", normalized_lower)
+
+        normalized_design = normalize_markdown(contract_owners["design"]).lower()
+        self.assertNotIn("unless the user asks", normalized_design)
+        self.assertNotIn("appear only when requested", normalized_design)
 
 
 if __name__ == "__main__":

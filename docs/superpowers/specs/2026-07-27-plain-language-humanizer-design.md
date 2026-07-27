@@ -61,7 +61,9 @@ The skill does not:
 - perform research, fact-checking, troubleshooting, translation, summarization, or
   AI-detector evasion;
 - provide professional medical, legal, financial, security, or scientific advice;
-- add tutorials, history, background, examples, or analogies unless the user asks;
+- add tutorials, history, background, decorative examples, or repeated explanations;
+  or add an example or analogy unless the user explicitly requests it or it is
+  materially needed for comprehension;
 - delete substantive source content merely to make the output shorter; or
 - simplify protected technical literals into approximate substitutes.
 
@@ -207,8 +209,13 @@ does in the supplied context, and what action the source requires. Include why
 something matters only when the source establishes that consequence.
 
 Use headings or bullets only when they materially reduce reading effort. Examples
-and analogies appear only when requested. Label them as explanatory and ensure they
-do not introduce a false equivalence or source claim.
+and analogies may appear when the user explicitly requests one or when one is
+materially needed to explain a technical concept. If ordinary wording or a
+conventional definition is sufficient, do not add one. Label every device as
+explanatory rather than a source fact, retain the technical term and protected
+literals, state the device's limits, and do not imply exact equivalence or add
+source-specific behavior, guarantees, numbers, consequences, or advice. Apply extra
+caution to high-stakes content.
 
 ## Anti-bloat contract
 
@@ -266,9 +273,10 @@ is updated with Plain Language-specific preservation guidance.
 Before returning output, compare source and output in both directions:
 
 - Every substantive source element appears with the same force and relationships.
-- Every output claim is supported by the source or is a conventional definition or
-  explicitly requested explanatory device that does not assert source-specific
-  facts.
+- Every output claim is supported by the source, is a conventional definition, or
+  is an explanatory device that the user explicitly requested or that is materially
+  needed for comprehension. Every device remains labeled, limited, and unable to
+  assert source-specific facts or exact equivalence.
 - All protected literals remain exact.
 - Procedural order, warnings, conditions, and exceptions remain intact.
 - Necessary terminology is defined once and unnecessary jargon is removed.
