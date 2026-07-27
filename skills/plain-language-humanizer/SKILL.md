@@ -143,14 +143,20 @@ Retain a technical term when changing it would reduce precision.
 
 ## Explain mode
 
-Produce a concise, source-grounded explanation rather than replacement copy. Group
-the source into concepts such as what something is, what it does in the supplied
-context, and what action the source requires. Include why something matters only
-when the source establishes that consequence.
+Produce a concise explanation rather than replacement copy. Ground every factual
+claim in the source or an unambiguous conventional definition. Group the source
+into concepts such as what something is, what it does in the supplied context, and
+what action the source requires. Include why something matters only when the source
+establishes that consequence.
 
 Use headings or bullets only when they materially reduce reading effort. Add an
-example or analogy only when the user requests one; label it as explanatory and
-keep it from introducing a false equivalence or source claim.
+example or analogy when the user explicitly requests one or when it is materially
+needed to explain a technical concept. Label it as explanatory rather than a source
+fact. Retain the technical term and every protected literal. State its limits so it
+does not imply exact equivalence. Add no source-specific behavior, guarantees,
+numbers, consequences, or advice. Apply extra caution to scientific, medical,
+legal, financial, and security content. Make every device satisfy the anti-bloat
+contract.
 
 ## Combined requests
 
@@ -167,7 +173,7 @@ Build the output from the source plus only the explanation required for
 comprehension. Every added sentence must do at least one of the following:
 
 - define a necessary term;
-- clarify a relationship between source elements; or
+- clarify a technical concept or a relationship between source elements; or
 - explain a required action or source-supported consequence.
 
 Preserve already-clear passages. Prefer the shortest output that remains complete
@@ -232,7 +238,7 @@ Run this process internally:
    explanation.
 6. **Run the final check.** Compare source and output in both directions and restore
    any unsafe change.
-7. **Deliver.** Return only the rewrite unless the user requested another shape.
+7. **Deliver.** Return only the rewrite.
 
 ## Explain workflow
 
@@ -245,12 +251,12 @@ Run this process internally:
 3. **Classify the language.** Identify what needs definition and what is already
    clear.
 4. **Explain from the source.** Group ideas for comprehension while retaining every
-   material detail and adding only conventional definitions or source-supported
-   relationships.
+   material detail and adding only conventional definitions, source-supported
+   relationships, or a permitted bounded explanatory device.
 5. **Apply the anti-bloat contract.** Use the shortest complete explanation.
 6. **Run the final check.** Compare source and explanation in both directions and
    restore any unsupported or imprecise statement.
-7. **Deliver.** Return only the explanation unless the user requested another shape.
+7. **Deliver.** Return only the explanation.
 
 ## Final bidirectional content check
 
@@ -258,9 +264,9 @@ Before responding, run a bidirectional content check:
 
 - Map every substantive source element to an output element with the same force and
   relationships.
-- Map every output claim back to the source, an unambiguous conventional
-  definition, or an explicitly requested explanatory device that does not assert
-  source-specific facts.
+- Map every factual output claim back to the source or an unambiguous conventional
+  definition. Treat every permitted example or analogy as a labeled explanatory
+  device rather than a source fact, and confirm its limits satisfy Explain mode.
 - Confirm that every protected literal remains exact.
 - Confirm that procedural order, warnings, conditions, and exceptions remain
   intact.
@@ -274,10 +280,10 @@ Restore the source wording or ask a precise question if any check cannot pass.
 
 ## Output
 
-- **Rewrite mode:** Return only the rewrite unless the user requests another output
-  shape. Add no preamble, change log, or closing invitation.
-- **Explain mode:** Return only the explanation unless the user requests another
-  output shape. Add no rewrite or unrequested wrapper.
+- **Rewrite mode:** Return only the rewrite. Add no preamble, change log, or closing
+  invitation.
+- **Explain mode:** Return only the explanation. Add no rewrite or unrequested
+  wrapper.
 - **Combined request:** Return the rewrite first, followed by a short section
   labeled exactly `Explanation:`.
 - **Missing or conflicting context:** Ask only the precise question needed to
