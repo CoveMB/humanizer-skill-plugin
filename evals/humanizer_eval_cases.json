@@ -214,7 +214,7 @@
       "plain_language_mode": "rewrite",
       "rubric_id": "plain_language_humanizer",
       "source": "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
-      "output": "The API allows each client 120 requests per minute. It returns HTTP 429 for requests above the threshold.",
+      "output": "The API (application programming interface) sets a rate limit, or threshold, of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests.",
       "expected_pass": true
     },
     {
@@ -709,7 +709,8 @@
         "skills/faithful-humanizer/SKILL.md"
       ],
       "forbidden_trace_terms": [
-        "skills/editorial-humanizer/SKILL.md"
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "faithful_structural_product_reconstruction",
       "rubric_id": "faithful_humanizer_rewrite"
@@ -727,7 +728,8 @@
         "skills/faithful-humanizer/SKILL.md"
       ],
       "forbidden_trace_terms": [
-        "skills/editorial-humanizer/SKILL.md"
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "faithful_structural_product_reconstruction",
       "rubric_id": "faithful_humanizer_rewrite"
@@ -745,7 +747,8 @@
         "skills/faithful-humanizer/SKILL.md"
       ],
       "forbidden_trace_terms": [
-        "skills/editorial-humanizer/SKILL.md"
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "faithful_mixed_local_edit",
       "rubric_id": "faithful_humanizer_rewrite"
@@ -763,7 +766,8 @@
         "skills/faithful-humanizer/SKILL.md"
       ],
       "forbidden_trace_terms": [
-        "skills/editorial-humanizer/SKILL.md"
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "faithful_structural_product_reconstruction",
       "rubric_id": "faithful_humanizer_rewrite"
@@ -795,7 +799,8 @@
       "source": "At its core, the platform may improve planning for some teams.",
       "forbidden_trace_terms": [
         "skills/faithful-humanizer/SKILL.md",
-        "skills/editorial-humanizer/SKILL.md"
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ]
     },
     {
@@ -807,7 +812,8 @@
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
         "Editorial Humanizer: Fact-Safe Editorial Rewrite",
-        "skills/faithful-humanizer/SKILL.md"
+        "skills/faithful-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "negative_fact_check_only",
       "rubric_id": "negative_fact_check"
@@ -821,7 +827,8 @@
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
         "Editorial Humanizer: Fact-Safe Editorial Rewrite",
-        "skills/faithful-humanizer/SKILL.md"
+        "skills/faithful-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "negative_translate_only"
     },
@@ -834,7 +841,8 @@
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
         "Editorial Humanizer: Fact-Safe Editorial Rewrite",
-        "skills/faithful-humanizer/SKILL.md"
+        "skills/faithful-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "negative_summary_only"
     },
@@ -847,9 +855,22 @@
       "forbidden_trace_terms": [
         "skills/editorial-humanizer/SKILL.md",
         "Editorial Humanizer: Fact-Safe Editorial Rewrite",
-        "skills/faithful-humanizer/SKILL.md"
+        "skills/faithful-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
       ],
       "output_contract_case_id": "negative_spellcheck_only"
+    },
+    {
+      "id": "negative_research_only",
+      "category": "negative",
+      "should_trigger": false,
+      "prompt": "Research whether this claim is supported by reliable sources. Report what you find and cite the sources; do not rewrite the claim.",
+      "source": "Atlas Note was the first note-taking product to support offline comments.",
+      "forbidden_trace_terms": [
+        "skills/editorial-humanizer/SKILL.md",
+        "skills/faithful-humanizer/SKILL.md",
+        "skills/plain-language-humanizer/SKILL.md"
+      ]
     },
     {
       "id": "plain_language_explicit_api_rewrite",

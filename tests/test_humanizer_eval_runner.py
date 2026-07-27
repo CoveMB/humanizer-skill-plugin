@@ -141,25 +141,63 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             and case.get("force_reference_file_read", False)
         ]
 
-        self.assertGreaterEqual(len(cases), 38)
-        self.assertTrue(
-            {
-                "plain_language_explicit_api_rewrite",
-                "plain_language_explicit_webhook_explain",
-                "plain_language_explicit_combined",
-                "plain_language_protected_procedure",
-                "plain_language_security_rewrite",
-                "plain_language_scientific_rewrite",
-                "plain_language_medical_rewrite",
-                "plain_language_legal_rewrite",
-                "plain_language_financial_rewrite",
-                "plain_language_already_clear_rewrite",
-                "plain_language_implicit_rewrite_activation",
-                "plain_language_implicit_explain_activation",
-                "plain_language_negative_troubleshooting",
-                "plain_language_negative_generic_humanize",
-            }.issubset(case_ids)
-        )
+        expected_case_ids = {
+            "plain_language_explicit_api_rewrite",
+            "plain_language_explicit_webhook_explain",
+            "plain_language_explicit_combined",
+            "plain_language_protected_procedure",
+            "plain_language_security_rewrite",
+            "plain_language_scientific_rewrite",
+            "plain_language_medical_rewrite",
+            "plain_language_legal_rewrite",
+            "plain_language_financial_rewrite",
+            "plain_language_already_clear_rewrite",
+            "plain_language_implicit_rewrite_activation",
+            "plain_language_implicit_explain_activation",
+            "plain_language_negative_troubleshooting",
+            "plain_language_negative_generic_humanize",
+            "explicit_dense_rewrite",
+            "explicit_missing_source",
+            "explicit_audit_mode",
+            "implicit_dense_rewrite",
+            "implicit_voice_calibration",
+            "implicit_dense_pattern_catalog",
+            "contextual_release_notes",
+            "contextual_docs_cleanup",
+            "explicit_unsupported_benefit",
+            "implicit_epistemic_status",
+            "contextual_already_natural",
+            "editorial_preserves_contextual_false_positives",
+            "editorial_uses_scientific_profile",
+            "faithful_structural_rebuilds_product_description",
+            "faithful_structural_rebuilds_academic_limitation",
+            "faithful_structural_rebuilds_opinion",
+            "faithful_structural_leaves_natural_methods_unchanged",
+            "faithful_preserves_attribution_modality_scope",
+            "faithful_preserves_promotional_opinion_chronology",
+            "faithful_preserves_exact_anchors_and_list_membership",
+            "faithful_performs_meaningful_local_rewrite",
+            "faithful_preserves_scientific_register",
+            "faithful_leaves_already_natural_text_unchanged",
+            "faithful_edits_only_formulaic_sentence",
+            "faithful_returns_audit_sections_without_score",
+            "faithful_matches_voice_without_importing_content",
+            "faithful_preserves_structure_and_protected_spans",
+            "faithful_preserves_conditions_exceptions_and_comparisons",
+            "faithful_implicit_form_only_activation",
+            "faithful_rework_structure_activation",
+            "faithful_contextual_preservation_activation",
+            "faithful_explicit_catalog_activation",
+            "editorial_routes_broader_rewrite_away_from_faithful",
+            "negative_detector_evasion_only",
+            "negative_fact_check_only",
+            "negative_translate_only",
+            "negative_summary_only",
+            "negative_spellcheck_only",
+            "negative_research_only",
+        }
+        self.assertEqual(len(cases), 53)
+        self.assertEqual(case_ids, expected_case_ids)
         self.assertTrue({"explicit", "implicit", "contextual", "negative"}.issubset(categories))
         self.assertTrue(
             {
@@ -243,6 +281,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             set(negative_cases_without_contract),
             {
                 "negative_detector_evasion_only",
+                "negative_research_only",
                 "plain_language_negative_troubleshooting",
                 "plain_language_negative_generic_humanize",
             },
@@ -349,6 +388,16 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             set(plain_language_cases),
             set(expected_positive_contracts) | expected_negative_ids,
         )
+        self.assertEqual(
+            {
+                mode: sum(
+                    case["plain_language_mode"] == mode
+                    for case in plain_language_cases.values()
+                )
+                for mode in {"rewrite", "explain"}
+            },
+            {"rewrite": 11, "explain": 3},
+        )
         for case_id, (mode, contract_id) in expected_positive_contracts.items():
             case = plain_language_cases[case_id]
             with self.subTest(positive_case=case_id):
@@ -365,6 +414,114 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 self.assertNotIn("output_contract_case_id", case)
                 self.assertNotIn("rubric_id", case)
                 self.assertIn(PLAIN_LANGUAGE_SKILL_TRACE_PATH, case["forbidden_trace_terms"])
+
+    def test_eval_cases_enforce_asymmetric_activation_and_negative_boundaries(self):
+        cases = {
+            case["id"]: case for case in self.runner.load_eval_cases(EVAL_CASES_PATH)
+        }
+        faithful_activation_ids = {
+            "faithful_implicit_form_only_activation",
+            "faithful_rework_structure_activation",
+            "faithful_contextual_preservation_activation",
+            "faithful_explicit_catalog_activation",
+        }
+        non_plain_activation_probe_ids = {
+            case_id
+            for case_id, case in cases.items()
+            if case.get("activation_probe", False)
+            and case.get("target_skill", "editorial-humanizer")
+            != "plain-language-humanizer"
+        }
+        excluded_negative_ids = {
+            "negative_detector_evasion_only",
+            "negative_fact_check_only",
+            "negative_translate_only",
+            "negative_summary_only",
+            "negative_spellcheck_only",
+            "negative_research_only",
+            "plain_language_negative_troubleshooting",
+            "plain_language_negative_generic_humanize",
+        }
+
+        self.assertEqual(
+            non_plain_activation_probe_ids,
+            faithful_activation_ids | {"negative_detector_evasion_only"},
+        )
+        self.assertEqual(
+            {case_id for case_id, case in cases.items() if not case["should_trigger"]},
+            excluded_negative_ids,
+        )
+        for case_id in faithful_activation_ids:
+            with self.subTest(faithful_activation=case_id):
+                case = cases[case_id]
+                self.assertEqual(
+                    case["expected_trace_terms"],
+                    [FAITHFUL_SKILL_TRACE_PATH],
+                )
+                self.assertEqual(
+                    set(case["forbidden_trace_terms"]),
+                    {SKILL_TRACE_PATH, PLAIN_LANGUAGE_SKILL_TRACE_PATH},
+                )
+        for case_id in excluded_negative_ids:
+            with self.subTest(excluded_negative=case_id):
+                self.assertIn(
+                    PLAIN_LANGUAGE_SKILL_TRACE_PATH,
+                    cases[case_id]["forbidden_trace_terms"],
+                )
+
+        research_case = cases["negative_research_only"]
+        self.assertEqual(research_case["category"], "negative")
+        self.assertFalse(research_case["should_trigger"])
+        self.assertEqual(
+            set(research_case["forbidden_trace_terms"]),
+            {
+                SKILL_TRACE_PATH,
+                FAITHFUL_SKILL_TRACE_PATH,
+                PLAIN_LANGUAGE_SKILL_TRACE_PATH,
+            },
+        )
+        self.assertNotIn("output_contract_case_id", research_case)
+        self.assertNotIn("rubric_id", research_case)
+
+    def test_plain_language_trace_fails_faithful_and_excluded_negative_cases(self):
+        cases = {
+            case["id"]: case for case in self.runner.load_eval_cases(EVAL_CASES_PATH)
+        }
+        trace_events_by_case_id = {
+            "faithful_implicit_form_only_activation": [
+                {
+                    "type": "item.completed",
+                    "item": {
+                        "type": "command_execution",
+                        "command": (
+                            f"sed -n '1,240p' {FAITHFUL_SKILL_TRACE_PATH} "
+                            f"{PLAIN_LANGUAGE_SKILL_TRACE_PATH}"
+                        ),
+                    },
+                }
+            ],
+            "negative_fact_check_only": [
+                {
+                    "type": "item.completed",
+                    "item": {
+                        "type": "command_execution",
+                        "command": (
+                            f"sed -n '1,240p' {PLAIN_LANGUAGE_SKILL_TRACE_PATH}"
+                        ),
+                    },
+                }
+            ],
+        }
+
+        for case_id, events in trace_events_by_case_id.items():
+            with self.subTest(case=case_id), self.assertRaisesRegex(
+                AssertionError,
+                "forbidden trace term present.*plain-language-humanizer",
+            ):
+                self.runner.check_trace_expectations(
+                    cases[case_id],
+                    events,
+                )
 
     def test_eval_cases_cover_faithful_preservation_invariants(self):
         cases = self.runner.load_eval_cases(EVAL_CASES_PATH)
@@ -495,6 +652,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             if calibration["rubric_id"] == "plain_language_humanizer"
         ]
 
+        self.assertEqual(len(calibrations), 15)
         self.assertEqual(
             {calibration["id"] for calibration in faithful_calibrations},
             {
@@ -540,6 +698,17 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
                 "plain_language_calibration_rejects_bloated_tutorial": False,
                 "plain_language_calibration_rejects_rewrite_for_explain": False,
             },
+        )
+        api_concise_calibration = next(
+            calibration
+            for calibration in plain_language_calibrations
+            if calibration["id"] == "plain_language_calibration_api_concise_pass"
+        )
+        self.assertEqual(
+            api_concise_calibration["output"],
+            "The API (application programming interface) sets a rate limit, or "
+            "threshold, of 120 requests per minute for each client. Requests above "
+            "the threshold receive HTTP 429, an error code meaning too many requests.",
         )
         self.assertTrue(
             all(
@@ -1999,7 +2168,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
             )
 
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("would run", result.stdout)
+        self.assertIn("would run 53 Humanizer eval case(s)", result.stdout)
         self.assertIn("explicit_dense_rewrite", result.stdout)
 
     def test_dry_run_filters_and_labels_plain_language_modes(self):
