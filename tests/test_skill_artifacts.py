@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 
 from tests.helpers.skill_artifacts import (
@@ -24,6 +25,26 @@ SKILL_EXAMPLES_PATH = REPO_ROOT / "docs" / "skill-examples.md"
 COMPARISON_EXAMPLES_PATH = (
     REPO_ROOT / "docs" / "humanizer-comparison-examples.md"
 )
+EXPECTED_DEFAULT_PROMPTS = [
+    (
+        "Use $editorial-humanizer to improve this draft with broader editorial "
+        "judgment:"
+    ),
+    (
+        "Use $faithful-humanizer to improve the wording without changing the "
+        "substance:"
+    ),
+    (
+        "Use $plain-language-humanizer to rewrite this technical content for an "
+        "informed non-specialist:"
+    ),
+]
+EXPECTED_LIVE_EVAL_TARGET_OPTIONS = [
+    "all",
+    "editorial-humanizer",
+    "faithful-humanizer",
+    "plain-language-humanizer",
+]
 
 
 class EditorialHumanizerArtifactTests(unittest.TestCase):
@@ -35,6 +56,58 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.reference_markdown = read_text(REFERENCE_PATH)
         self.readme_markdown = read_text(REPO_ROOT / "README.md")
         self.comparison_examples_markdown = read_text(COMPARISON_EXAMPLES_PATH)
+
+    def assert_manifest_prompt_contract(self, manifest):
+        self.assertEqual(
+            manifest["interface"]["defaultPrompt"],
+            EXPECTED_DEFAULT_PROMPTS,
+        )
+
+    def extract_indented_block(self, text, header):
+        lines = text.splitlines()
+        self.assertIn(header, lines)
+        header_index = lines.index(header)
+        header_indent = len(header) - len(header.lstrip())
+        block_lines = []
+
+        for line in lines[header_index + 1 :]:
+            if line.strip() and len(line) - len(line.lstrip()) <= header_indent:
+                break
+            block_lines.append(line)
+
+        return "\n".join(block_lines)
+
+    def assert_live_eval_workflow_contract(self, workflow):
+        trigger_block = self.extract_indented_block(workflow, "on:")
+        trigger_names = [
+            match.group(1)
+            for line in trigger_block.splitlines()
+            if (match := re.match(r"^  ([A-Za-z_][\w-]*):", line))
+        ]
+        self.assertEqual(trigger_names, ["workflow_dispatch"])
+
+        workflow_dispatch_block = self.extract_indented_block(
+            trigger_block,
+            "  workflow_dispatch:",
+        )
+        inputs_block = self.extract_indented_block(
+            workflow_dispatch_block,
+            "    inputs:",
+        )
+        target_skill_block = self.extract_indented_block(
+            inputs_block,
+            "      target_skill:",
+        )
+        options_block = self.extract_indented_block(
+            target_skill_block,
+            "        options:",
+        )
+        target_options = [
+            match.group(1)
+            for line in options_block.splitlines()
+            if (match := re.match(r"^          - (.+)$", line))
+        ]
+        self.assertEqual(target_options, EXPECTED_LIVE_EVAL_TARGET_OPTIONS)
 
     def test_required_files_exist(self):
         for path in [
@@ -245,16 +318,17 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             with self.subTest(term=term):
                 self.assertIn(term, normalized)
 
-    def test_manifest_prompts_use_new_skill_names(self):
-        prompts = self.manifest["interface"]["defaultPrompt"]
-        self.assertEqual(len(prompts), 3)
-        self.assertTrue(any("$editorial-humanizer" in prompt for prompt in prompts))
-        self.assertTrue(any("$faithful-humanizer" in prompt for prompt in prompts))
-        self.assertTrue(
-            any("$plain-language-humanizer" in prompt for prompt in prompts)
+    def test_manifest_prompts_match_public_contract(self):
+        self.assert_manifest_prompt_contract(self.manifest)
+
+    def test_manifest_prompt_contract_rejects_copy_drift_with_skill_names_intact(self):
+        mutated_manifest = json.loads(json.dumps(self.manifest))
+        mutated_manifest["interface"]["defaultPrompt"][0] = (
+            "Use $editorial-humanizer to revise this draft:"
         )
-        for prompt in prompts:
-            self.assertLessEqual(len(prompt), 128)
+
+        with self.assertRaises(AssertionError):
+            self.assert_manifest_prompt_contract(mutated_manifest)
 
     def test_readme_clearly_distinguishes_the_skills(self):
         normalized_readme = " ".join(self.readme_markdown.split())
@@ -497,12 +571,42 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "make eval-humanizer-dry-run",
             "scripts/run_humanizer_evals.py",
             "actions/upload-artifact@v4",
-            "plain-language-humanizer",
         ]:
             with self.subTest(term=term):
                 self.assertIn(term, workflow)
-        self.assertNotIn("push:", workflow)
-        self.assertNotIn("pull_request:", workflow)
+        self.assert_live_eval_workflow_contract(workflow)
+
+    def test_live_eval_contract_rejects_target_option_moved_to_another_input(self):
+        workflow = read_text(LIVE_EVAL_WORKFLOW_PATH)
+        mutated_workflow = workflow.replace(
+            "          - plain-language-humanizer\n",
+            "",
+            1,
+        )
+        mutated_workflow = mutated_workflow.replace(
+            "      trials:\n",
+            "      unrelated_choice:\n"
+            "        description: \"Controlled mutation\"\n"
+            "        type: choice\n"
+            "        options:\n"
+            "          - plain-language-humanizer\n"
+            "      trials:\n",
+            1,
+        )
+
+        with self.assertRaises(AssertionError):
+            self.assert_live_eval_workflow_contract(mutated_workflow)
+
+    def test_live_eval_contract_rejects_automatic_trigger(self):
+        workflow = read_text(LIVE_EVAL_WORKFLOW_PATH)
+        mutated_workflow = workflow.replace(
+            "on:\n  workflow_dispatch:",
+            "on:\n  schedule:\n    - cron: '0 3 * * *'\n  workflow_dispatch:",
+            1,
+        )
+
+        with self.assertRaises(AssertionError):
+            self.assert_live_eval_workflow_contract(mutated_workflow)
 
 
 if __name__ == "__main__":
