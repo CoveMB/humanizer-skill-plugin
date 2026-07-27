@@ -1436,7 +1436,8 @@
         "must_include": [
           "invoice is paid",
           "retries",
-          "waits longer between attempts"
+          "webhook",
+          "exponential backoff"
         ],
         "must_include_exact": [
           "`invoice.paid`",
@@ -1444,7 +1445,9 @@
           "24 hours"
         ],
         "must_match": [
-          "(?i)(?:sends?|notification)"
+          "(?i)(?:sends?|notification)",
+          "(?i)\\bwebhook\\b[^.!?\\n]{0,100}\\b(?:message|notification)\\b[^.!?\\n]{0,80}\\b(?:one|a)\\s+(?:system|service|application)\\b[^.!?\\n]{0,80}\\b(?:another|other)\\b",
+          "(?i)(?:\\bwait(?:s|ing)?\\s+(?:progressively\\s+)?longer\\s+between\\s+(?:retry\\s+)?attempts\\b|\\b(?:the\\s+)?delay\\s+(?:progressively\\s+)?(?:increases?|grows?|gets\\s+longer)\\s+between\\s+(?:retry\\s+)?attempts\\b|\\b(?:increasing|progressively\\s+longer)\\s+delays?\\s+between\\s+(?:retry\\s+)?attempts\\b)"
         ],
         "must_not_include": [
           "guaranteed delivery"
@@ -1461,51 +1464,61 @@
         "explain_only": true,
         "maximum_word_count": 65
       },
-      "passing_output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts.",
+      "passing_output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
       "failing_outputs": [
         {
           "label": "wraps explain-only output",
-          "output": "Explanation:\nLedger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts.",
+          "output": "Explanation:\nWhen an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
           "expected_error": "explain-only output contains an Explanation: heading"
         },
         {
+          "label": "replaces webhook with notification",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` notification—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
+          "expected_error": "missing required fragment 'webhook'"
+        },
+        {
+          "label": "omits the webhook definition",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
+          "expected_error": "required pattern missing"
+        },
+        {
           "label": "claims delivery is guaranteed",
-          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. Guaranteed delivery means it retries for up to 24 hours and waits longer between attempts.",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. Guaranteed delivery means Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
           "expected_error": "forbidden fragment present"
         },
         {
           "label": "states delivery is guaranteed",
-          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. Delivery is guaranteed because it retries for up to 24 hours and waits longer between attempts.",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. Delivery is guaranteed because Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
           "expected_error": "forbidden pattern matched"
         },
         {
           "label": "claims delivery always succeeds",
-          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. Delivery always succeeds because it retries for up to 24 hours and waits longer between attempts.",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. Delivery always succeeds because Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
           "expected_error": "forbidden pattern matched"
         },
         {
           "label": "invents a retry count",
-          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It makes three retries within 24 hours and waits longer between attempts.",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger makes three retries within 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
           "expected_error": "forbidden pattern matched"
         },
         {
           "label": "invents a delivery-attempt count",
-          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It retries with three delivery attempts within 24 hours and waits longer between attempts.",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries with three delivery attempts within 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
           "expected_error": "forbidden pattern matched"
         },
         {
           "label": "invents a delivery-attempt count above ten",
-          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It retries with eleven delivery attempts within 24 hours and waits longer between attempts.",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries with eleven delivery attempts within 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
           "expected_error": "forbidden pattern matched"
         },
         {
           "label": "invents a hyphenated retry-times count",
-          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It retries twenty-one times within 24 hours and waits longer between attempts.",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries twenty-one times within 24 hours, waiting progressively longer between attempts; this is exponential backoff.",
           "expected_error": "forbidden pattern matched"
         },
         {
           "label": "adds an unrequested extended explanation",
-          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. If delivery fails, it retries for up to 24 hours and waits longer between attempts. This explanation gives the reader extra background about the general purpose of notifications, the broad role of endpoints, the practical value of retrying, and the way a system may keep trying when a delivery does not work immediately for reasons outside the description.",
+          "output": "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff. This explanation gives the reader extra background about the general purpose of notifications, the broad role of endpoints, the practical value of retrying, and the way a system may keep trying when a delivery does not work immediately for reasons outside the description.",
           "expected_error": "expected at most 65 words"
         }
       ]
@@ -1587,6 +1600,9 @@
           "incompatible schema",
           "`/srv/atlas/schema.json`"
         ],
+        "must_match": [
+          "(?i)\\bincompatible schema\\b[^.!?\\n]{0,120}\\b(?:existing|current)\\b[^.!?\\n]{0,80}\\b(?:proposed|new)\\b[^.!?\\n]{0,80}\\b(?:cannot|can't|do not|don't)\\b[^.!?\\n]{0,30}\\b(?:work|operate|be used)\\b[^.!?\\n]{0,20}\\b(?:together|with)\\b"
+        ],
         "ordered_fragments": [
           "`atlas migrate --dry-run`",
           "`atlas migrate --apply`",
@@ -1602,17 +1618,22 @@
         "rewrite_only": true,
         "maximum_word_count": 70
       },
-      "passing_output": "First, run `atlas migrate --dry-run`, then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
+      "passing_output": "First, run `atlas migrate --dry-run`, which checks the migration without applying it. Then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema, meaning the existing and proposed data structures cannot work together. If `atlas migrate --apply` fails, restore `/srv/atlas/schema.json`.",
       "failing_outputs": [
         {
           "label": "changes the protected restore path",
-          "output": "First, run `atlas migrate --dry-run`, then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.backup.json`.",
+          "output": "First, run `atlas migrate --dry-run`, which checks the migration without applying it. Then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema, meaning the existing and proposed data structures cannot work together. If `atlas migrate --apply` fails, restore `/srv/atlas/schema.backup.json`.",
           "expected_error": "missing required exact fragment"
         },
         {
           "label": "runs apply before dry run",
-          "output": "First, run `atlas migrate --apply`, then run `atlas migrate --dry-run`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
+          "output": "First, run `atlas migrate --apply`. Then run `atlas migrate --dry-run`, which checks the migration without applying it. Do not use `--apply` if validation reports an incompatible schema, meaning the existing and proposed data structures cannot work together. If `atlas migrate --apply` fails, restore `/srv/atlas/schema.json`.",
           "expected_error": "ordered fragment"
+        },
+        {
+          "label": "omits the incompatible schema definition",
+          "output": "First, run `atlas migrate --dry-run`, which checks the migration without applying it. Then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If `atlas migrate --apply` fails, restore `/srv/atlas/schema.json`.",
+          "expected_error": "required pattern missing"
         }
       ]
     },

@@ -188,6 +188,18 @@ class OutputContractTests(unittest.TestCase):
                 "law. This exception does not remove the duty to retain the incident "
                 "record."
             ),
+            "plain_language_webhook_explain": (
+                "When an invoice is paid, Ledger sends an `invoice.paid` webhook to "
+                "the configured HTTPS endpoint. If delivery fails, Ledger retries for "
+                "up to 24 hours and waits longer between attempts; this is exponential "
+                "backoff."
+            ),
+            "plain_language_protected_procedure": (
+                "First, run `atlas migrate --dry-run`, which checks the migration "
+                "without applying it. Then run `atlas migrate --apply`. Do not use "
+                "`--apply` if validation reports an incompatible schema. If "
+                "`atlas migrate --apply` fails, restore `/srv/atlas/schema.json`."
+            ),
         }
 
         for case_id, output in missing_definition_outputs.items():
@@ -196,6 +208,30 @@ class OutputContractTests(unittest.TestCase):
                 "required pattern missing",
             ):
                 validate_case_output(cases[case_id], output)
+
+    def test_webhook_delay_guard_accepts_precise_increasing_delay_wording(self):
+        case = {
+            case["id"]: case for case in load_fixture_cases()
+        }["plain_language_webhook_explain"]
+        valid_outputs = (
+            "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a "
+            "message that one system automatically sends to another—to the configured "
+            "HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, "
+            "waiting progressively longer between attempts; this is exponential "
+            "backoff.",
+            "When an invoice is paid, Ledger sends an `invoice.paid` webhook, a "
+            "message sent automatically from one system to another, to the configured "
+            "HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours and "
+            "waits longer between attempts; this is exponential backoff.",
+            "When an invoice is paid, Ledger sends an `invoice.paid` webhook, a "
+            "message sent automatically from one system to another, to the configured "
+            "HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours; "
+            "the delay increases between retry attempts. This is exponential backoff.",
+        )
+
+        for output in valid_outputs:
+            with self.subTest(output=output):
+                validate_case_output(case, output)
 
     def test_combined_explanation_rejects_new_named_entity(self):
         cases = {case["id"]: case for case in load_fixture_cases()}
@@ -279,17 +315,19 @@ class OutputContractTests(unittest.TestCase):
             ),
             "webhook_does_not_guarantee": (
                 "plain_language_webhook_explain",
-                "Ledger does not guarantee delivery. It sends an `invoice.paid` "
-                "notification to the configured HTTPS endpoint when an invoice is "
-                "paid. If delivery fails, it retries for up to 24 hours and waits "
-                "longer between attempts.",
+                "Ledger does not guarantee delivery. When an invoice is paid, Ledger "
+                "sends an `invoice.paid` webhook, a message sent automatically from "
+                "one system to another, to the configured HTTPS endpoint. If delivery "
+                "fails, Ledger retries for up to 24 hours and waits longer between "
+                "attempts; this is exponential backoff.",
             ),
             "webhook_never_guarantees": (
                 "plain_language_webhook_explain",
-                "Ledger never guarantees delivery. It sends an `invoice.paid` "
-                "notification to the configured HTTPS endpoint when an invoice is "
-                "paid. If delivery fails, it retries for up to 24 hours and waits "
-                "longer between attempts.",
+                "Ledger never guarantees delivery. When an invoice is paid, Ledger "
+                "sends an `invoice.paid` webhook, a message sent automatically from "
+                "one system to another, to the configured HTTPS endpoint. If delivery "
+                "fails, Ledger retries for up to 24 hours and waits longer between "
+                "attempts; this is exponential backoff.",
             ),
         }
 

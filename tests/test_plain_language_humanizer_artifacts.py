@@ -49,6 +49,8 @@ TASK_1_EXAMPLE_SOURCES = [
 
 CANONICAL_API_OUTPUT = "The API (application programming interface) sets a rate limit, or threshold, of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests."
 CANONICAL_LEGAL_OUTPUT = "The controller—the party required to give notice—must notify the processor, the party receiving the notice, within 24 hours unless disclosure is prohibited by applicable law. This exception does not remove the duty to retain the incident record."
+CANONICAL_WEBHOOK_OUTPUT = "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff."
+CANONICAL_PROCEDURE_OUTPUT = "First, run `atlas migrate --dry-run`, which checks the migration without applying it. Then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema, meaning the existing and proposed data structures cannot work together. If `atlas migrate --apply` fails, restore `/srv/atlas/schema.json`."
 
 
 class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
@@ -131,7 +133,12 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
     def test_canonical_definition_examples_align_across_public_artifacts(self):
         public_examples = read_text(REPO_ROOT / "docs" / "skill-examples.md")
 
-        for output in (CANONICAL_API_OUTPUT, CANONICAL_LEGAL_OUTPUT):
+        for output in (
+            CANONICAL_API_OUTPUT,
+            CANONICAL_LEGAL_OUTPUT,
+            CANONICAL_WEBHOOK_OUTPUT,
+            CANONICAL_PROCEDURE_OUTPUT,
+        ):
             with self.subTest(output=output):
                 self.assertIn(output, self.skill_markdown)
                 self.assertIn(output, public_examples)

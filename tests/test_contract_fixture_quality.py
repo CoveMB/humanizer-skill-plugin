@@ -64,6 +64,21 @@ CANONICAL_LEGAL_OUTPUT = (
     "record."
 )
 
+CANONICAL_WEBHOOK_OUTPUT = (
+    "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that "
+    "one system automatically sends to another—to the configured HTTPS endpoint. If "
+    "delivery fails, Ledger retries for up to 24 hours, waiting progressively longer "
+    "between attempts; this is exponential backoff."
+)
+
+CANONICAL_PROCEDURE_OUTPUT = (
+    "First, run `atlas migrate --dry-run`, which checks the migration without applying "
+    "it. Then run `atlas migrate --apply`. Do not use `--apply` if validation reports "
+    "an incompatible schema, meaning the existing and proposed data structures cannot "
+    "work together. If `atlas migrate --apply` fails, restore "
+    "`/srv/atlas/schema.json`."
+)
+
 
 class ContractFixtureQualityTests(unittest.TestCase):
     def setUp(self):
@@ -360,16 +375,33 @@ class ContractFixtureQualityTests(unittest.TestCase):
             cases["plain_language_legal_obligation"]["passing_output"],
             CANONICAL_LEGAL_OUTPUT,
         )
+        self.assertEqual(
+            cases["plain_language_webhook_explain"]["passing_output"],
+            CANONICAL_WEBHOOK_OUTPUT,
+        )
+        self.assertEqual(
+            cases["plain_language_protected_procedure"]["passing_output"],
+            CANONICAL_PROCEDURE_OUTPUT,
+        )
         required_mutations = {
-            "plain_language_api_rewrite": "omits the threshold definition",
-            "plain_language_legal_obligation": "omits the controller role definition",
+            "plain_language_api_rewrite": {"omits the threshold definition"},
+            "plain_language_legal_obligation": {
+                "omits the controller role definition"
+            },
+            "plain_language_webhook_explain": {
+                "replaces webhook with notification",
+                "omits the webhook definition",
+            },
+            "plain_language_protected_procedure": {
+                "omits the incompatible schema definition",
+            },
         }
-        for case_id, required_label in required_mutations.items():
+        for case_id, required_labels in required_mutations.items():
             labels = {
                 failure["label"] for failure in cases[case_id]["failing_outputs"]
             }
             with self.subTest(case=case_id):
-                self.assertIn(required_label, labels)
+                self.assertTrue(required_labels.issubset(labels), required_labels - labels)
 
 
 if __name__ == "__main__":
