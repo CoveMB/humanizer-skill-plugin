@@ -1370,7 +1370,7 @@
         ],
         "must_not_match": [
           "(?i)\\brate limit\\b(?!\\s*(?:means|is|,?\\s+which means))",
-          "(?i)\\b(?:slow(?:ed|s|ing)?|more slowly)\\b"
+          "(?i)(?:\\b(?:requests?(?:\\s+above\\s+the\\s+threshold)?|excess\\s+requests?)\\s+(?:are|get)\\s+(?!not\\b)(?:slowed|delayed|(?:processed\\s+)?more\\s+slowly)\\b|\\b(?:the\\s+)?API\\s+(?:slows?|delays?)\\s+(?:requests?(?:\\s+above\\s+the\\s+threshold)?|excess\\s+requests?)\\b)"
         ],
         "must_differ_from_source": true,
         "no_chatbot_wrapper": true,
@@ -1385,6 +1385,16 @@
         {
           "label": "claims excess requests are slowed",
           "output": "The API allows each client 120 requests per minute. It returns HTTP 429 because requests above the threshold are slowed.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "claims excess requests are delayed",
+          "output": "The API allows each client 120 requests per minute. It returns HTTP 429 because requests above the threshold are delayed.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "claims API requests are delayed",
+          "output": "The API allows each client 120 requests per minute, but API requests are delayed. It returns HTTP 429 for requests above the threshold.",
           "expected_error": "forbidden pattern matched"
         },
         {
@@ -1428,7 +1438,8 @@
           "guaranteed delivery"
         ],
         "must_not_match": [
-          "(?i)(?:\\b(?:one|two|three|four|five|six|seven|eight|nine|ten|\\d+)\\s+retr(?:y|ies)\\b|\\bretr(?:y|ies)\\s+(?:one|two|three|four|five|six|seven|eight|nine|ten|\\d+)\\s+times?\\b)"
+          "(?i)(?:\\bdelivery\\s+(?:is|will\\s+be)\\s+guaranteed\\b|\\bguarantees?\\s+delivery\\b|\\bdelivery\\s+(?:will\\s+)?always\\s+succeeds?\\b)",
+          "(?i)(?:\\b(?:(?:up\\s+to|at\\s+most|exactly)\\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|\\d+)\\s+(?:retr(?:y|ies)|(?:(?:retry|delivery)\\s+)?attempts?)\\b|\\b(?:retries|tries)\\s+(?:(?:up\\s+to|at\\s+most|exactly)\\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|\\d+)\\s+times?\\b)"
         ],
         "no_chatbot_wrapper": true,
         "no_markdown_fence": true,
@@ -1444,8 +1455,23 @@
           "expected_error": "forbidden fragment present"
         },
         {
+          "label": "states delivery is guaranteed",
+          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. Delivery is guaranteed because it retries for up to 24 hours and waits longer between attempts.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "claims delivery always succeeds",
+          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. Delivery always succeeds because it retries for up to 24 hours and waits longer between attempts.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
           "label": "invents a retry count",
           "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It makes three retries within 24 hours and waits longer between attempts.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "invents a delivery-attempt count",
+          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It retries with three delivery attempts within 24 hours and waits longer between attempts.",
           "expected_error": "forbidden pattern matched"
         },
         {
