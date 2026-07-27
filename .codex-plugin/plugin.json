@@ -1,7 +1,7 @@
 {
   "name": "humanizer-plugin",
-  "version": "3.0.0",
-  "description": "Codex plugin with Editorial Humanizer and Faithful Humanizer.",
+  "version": "3.1.0",
+  "description": "Codex plugin with Editorial, Faithful, and Plain Language Humanizers.",
   "author": {
     "name": "CoveMB",
     "url": "https://github.com/CoveMB"
@@ -16,13 +16,15 @@
     "humanizer",
     "codex",
     "editorial-editing",
-    "semantic-preservation"
+    "semantic-preservation",
+    "plain-language",
+    "technical-accessibility"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Humanizer Plugin",
-    "shortDescription": "Editorial and faithful AI-writing cleanup.",
-    "longDescription": "Two clearly separated Codex writing editors: Editorial Humanizer applies broader anti-slop judgment and may reshape or remove weak material, while Faithful Humanizer changes only presentation and preserves every supplied claim, qualifier, attribution, example, and logical relation.",
+    "shortDescription": "Editorial, faithful, and plain-language technical editing.",
+    "longDescription": "Three clearly separated Codex writing editors: Editorial Humanizer applies broader anti-slop judgment, Faithful Humanizer changes presentation while preserving every substantive element, and Plain Language Humanizer adapts supplied technical content for an informed non-specialist through Rewrite and Explain modes.",
     "developerName": "CoveMB",
     "category": "Productivity",
     "capabilities": [
@@ -34,7 +36,7 @@
     "defaultPrompt": [
       "Use $editorial-humanizer to improve this draft with broader editorial judgment:",
       "Use $faithful-humanizer to improve the wording without changing the substance:",
-      "Use $editorial-humanizer to audit and score this draft for AI-writing patterns."
+      "Use $plain-language-humanizer to rewrite this technical content for an informed non-specialist:"
     ],
     "screenshots": [],
     "brandColor": "#475569"

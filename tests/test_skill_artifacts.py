@@ -4,6 +4,7 @@ import unittest
 from tests.helpers.skill_artifacts import (
     MANIFEST_PATH,
     MARKETPLACE_PATH,
+    PLAIN_LANGUAGE_SKILL_PATH,
     REFERENCE_PATH,
     REPO_ROOT,
     SCIENTIFIC_REFERENCE_PATH,
@@ -43,6 +44,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             REFERENCE_PATH,
             SCIENTIFIC_REFERENCE_PATH,
             FAITHFUL_SKILL_PATH,
+            PLAIN_LANGUAGE_SKILL_PATH,
             RESEARCH_PATH,
             SKILL_EXAMPLES_PATH,
             COMPARISON_EXAMPLES_PATH,
@@ -55,11 +57,18 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.assertEqual(self.manifest["name"], "humanizer-plugin")
         self.assertEqual(self.manifest["interface"]["displayName"], "Humanizer Plugin")
 
-    def test_manifest_and_editorial_skill_versions_match(self):
-        self.assertEqual(self.manifest["version"], "3.0.0")
+    def test_manifest_and_skill_versions_are_explicit(self):
+        self.assertEqual(self.manifest["version"], "3.1.0")
+        self.assertEqual(frontmatter_scalar(self.frontmatter, "version"), "3.0.0")
+        faithful_frontmatter = extract_frontmatter(read_text(FAITHFUL_SKILL_PATH))
+        plain_language_frontmatter = extract_frontmatter(
+            read_text(PLAIN_LANGUAGE_SKILL_PATH)
+        )
         self.assertEqual(
-            self.manifest["version"],
-            frontmatter_scalar(self.frontmatter, "version"),
+            frontmatter_scalar(faithful_frontmatter, "version"), "1.0.0"
+        )
+        self.assertEqual(
+            frontmatter_scalar(plain_language_frontmatter, "version"), "1.0.0"
         )
 
     def test_editorial_frontmatter_name_and_trigger_contract(self):
@@ -238,9 +247,12 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
 
     def test_manifest_prompts_use_new_skill_names(self):
         prompts = self.manifest["interface"]["defaultPrompt"]
-        self.assertLessEqual(len(prompts), 3)
+        self.assertEqual(len(prompts), 3)
         self.assertTrue(any("$editorial-humanizer" in prompt for prompt in prompts))
         self.assertTrue(any("$faithful-humanizer" in prompt for prompt in prompts))
+        self.assertTrue(
+            any("$plain-language-humanizer" in prompt for prompt in prompts)
+        )
         for prompt in prompts:
             self.assertLessEqual(len(prompt), 128)
 
@@ -249,16 +261,22 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         required_terms = [
             "Editorial Humanizer",
             "Faithful Humanizer",
-            "exactly two prose-editing skills",
-            "three user-facing behaviors",
+            "Plain Language Humanizer",
+            "three prose-editing skills",
+            "five user-facing behaviors",
             "Faithful Humanizer — Structural",
             "Faithful Humanizer — Conservative",
+            "Plain Language Humanizer — Rewrite",
+            "Plain Language Humanizer — Explain",
             "Structural is the default",
+            "Rewrite is the default",
+            "informed non-specialist",
             "Conservative mode. Give this a minimal, light-touch edit",
             "$editorial-humanizer",
             "$faithful-humanizer",
+            "$plain-language-humanizer",
             "Detailed comparison",
-            "Same source, three results",
+            "Same source, four results",
             "Would you accept the editor deleting a weak sentence",
             "every supplied idea and qualifier must survive",
         ]
@@ -323,6 +341,11 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "Start a new Codex session",
             "~/.agents/skills/editorial-humanizer",
             "~/.agents/skills/faithful-humanizer",
+            "~/.agents/skills/plain-language-humanizer",
+            "~/.claude/skills/plain-language-humanizer",
+            "~/.config/opencode/skills/plain-language-humanizer",
+            "--target-skill plain-language-humanizer --plain-language-mode rewrite",
+            "--target-skill plain-language-humanizer --plain-language-mode explain",
             "Do not enable the plain skills and plugin copies at the same time",
         ]:
             with self.subTest(term=term):
@@ -342,7 +365,11 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.assertLess(clone_position, plain_position)
         self.assertLess(plain_position, claude_position)
         self.assertLess(claude_position, opencode_position)
-        for skill_name in ("editorial-humanizer", "faithful-humanizer"):
+        for skill_name in (
+            "editorial-humanizer",
+            "faithful-humanizer",
+            "plain-language-humanizer",
+        ):
             source_path = f"humanizer-skill-plugin/skills/{skill_name}"
             self.assertGreaterEqual(self.readme_markdown.count(source_path), 3)
         shared_reference_path = "humanizer-skill-plugin/skills/references"
@@ -356,14 +383,25 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.assertIn("Codex accepts the `$skill-name` form", normalized_examples)
         self.assertIn("Use $editorial-humanizer", examples)
         self.assertIn("Use $faithful-humanizer", examples)
-        self.assertIn("Claude Code exposes installed skills as slash commands", normalized_examples)
+        self.assertIn("Use $plain-language-humanizer", examples)
+        self.assertIn(
+            "Claude Code exposes installed skills as slash commands",
+            normalized_examples,
+        )
         self.assertIn("/editorial-humanizer", examples)
         self.assertIn("/faithful-humanizer", examples)
+        self.assertIn("/plain-language-humanizer", examples)
         self.assertIn("native `skill` tool", normalized_examples)
         self.assertIn(
             "does not define a direct OpenCode invocation command",
             normalized_examples,
         )
+        for skill_name in (
+            "editorial-humanizer",
+            "faithful-humanizer",
+            "plain-language-humanizer",
+        ):
+            self.assertIn(f"Load `{skill_name}` with the skill tool", examples)
         self.assertIn(
             "docs/skill-examples.md#client-specific-activation",
             self.readme_markdown,
@@ -380,6 +418,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         )
         for term in [
             "Faithful Humanizer",
+            "Plain Language Humanizer",
             "Editorial Humanizer",
             "CC BY-SA 4.0",
             "https://creativecommons.org/licenses/by-sa/4.0/",
@@ -387,8 +426,8 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             with self.subTest(term=term):
                 self.assertIn(term, notice + self.readme_markdown)
         self.assertIn(
-            "tests, repository-authored documentation, and Faithful Humanizer "
-            "are released under the MIT License",
+            "tests, repository-authored documentation, Faithful Humanizer, and "
+            "Plain Language Humanizer are released under the MIT License",
             normalized_readme,
         )
         self.assertIn(
@@ -440,6 +479,10 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "--rubric-model gpt-5.5",
             "Check rubric calibration matrix",
             "--calibrate-rubric",
+            "Check Plain Language eval mode flags",
+            "--target-skill plain-language-humanizer",
+            "--plain-language-mode rewrite",
+            "--plain-language-mode explain",
         ]:
             with self.subTest(command=command):
                 self.assertIn(command, workflow)
@@ -454,6 +497,7 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "make eval-humanizer-dry-run",
             "scripts/run_humanizer_evals.py",
             "actions/upload-artifact@v4",
+            "plain-language-humanizer",
         ]:
             with self.subTest(term=term):
                 self.assertIn(term, workflow)

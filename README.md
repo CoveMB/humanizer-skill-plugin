@@ -1,13 +1,15 @@
 # Humanizer Plugin
 
-Humanizer Plugin contains exactly two prose-editing skills and exposes three
-user-facing behaviors:
+Humanizer Plugin contains three prose-editing skills and exposes five user-facing
+behaviors:
 
 | Behavior | Invocation | Core promise |
 |---|---|---|
 | **Editorial Humanizer** | `$editorial-humanizer` | Produce a substantive, voice-oriented editorial rewrite while preserving factual integrity |
 | **Faithful Humanizer — Structural** (default) | `$faithful-humanizer` or an explicit Structural request | Reconstruct sentence and paragraph form while preserving every substantive element |
 | **Faithful Humanizer — Conservative** (opt-in) | `$faithful-humanizer` with `Conservative`, `minimal`, `light touch`, `stay close`, or equivalent language | Make the smallest useful localized form edits under the same preservation contract |
+| **Plain Language Humanizer — Rewrite** (default) | `$plain-language-humanizer` or an explicit Rewrite request | Produce replacement technical text for an informed non-specialist while preserving substantive content and protected literals |
+| **Plain Language Humanizer — Explain** (opt-in) | `$plain-language-humanizer` with an explicit Explain request | Explain supplied technical content concisely for an informed non-specialist |
 
 The names describe what each editor is allowed to do:
 
@@ -17,6 +19,10 @@ The names describe what each editor is allowed to do:
 - **Faithful** means the supplied text remains authoritative. Both modes can improve
   grammar, syntax, punctuation, transitions, repetition, and rhythm, but neither can
   add, remove, strengthen, weaken, fact-check, neutralize, or reinterpret content.
+- **Plain Language** means the technical content remains authoritative while its
+  presentation is adapted for a less technical audience. It preserves every
+  substantive element and exact technical literal, while allowing only the brief
+  definitions and explanations needed for comprehension.
 
 “Faithful” is more precise than “non-opinionated.” The skill still makes form
 judgments, but it cannot impose a new position or editorial agenda. Structural is
@@ -24,18 +30,28 @@ the default and can rebuild form; Conservative preserves the current local-first
 behavior. Neither is a no-op or proofreading-only mode.
 
 Editorial Humanizer may change content selection, argument architecture, emphasis,
-and rhetorical presentation. Faithful Humanizer may change only form. Structural
-may change grammatical subjects, sentence boundaries, local clause order, cohesion,
-and non-meaningful paragraph boundaries without changing semantic invariants.
+and rhetorical presentation. Faithful Humanizer may change only form. Plain
+Language Humanizer adapts the audience and may add tightly bounded explanation, but
+it does not authorize substantive selection. Structural may change grammatical
+subjects, sentence boundaries, local clause order, cohesion, and non-meaningful
+paragraph boundaries without changing semantic invariants.
 
 ## Choose the correct skill
 
-Choose the skill by editorial authority, then choose the Faithful mode by
-intervention strategy. Faithful Structural can make substantial formal changes,
-Faithful Conservative stays local, and Editorial may leave a sound passage nearly
-unchanged.
+Choose the skill first by the real goal: editorial authority, strict form-only
+preservation, or audience adaptation. Then choose the mode. Faithful Structural
+can make substantial formal changes, Faithful Conservative stays local, Editorial
+may leave a sound passage nearly unchanged, and Plain Language Rewrite is the
+default when its mode is not named.
 
-Use this decision rule:
+Use these decision rules:
+
+> Does supplied technical content need to be rewritten or explained for a less
+> technical reader?
+
+- **Yes:** use Plain Language Humanizer. Use Rewrite for replacement copy and
+  Explain when the user wants an explanation rather than replacement copy.
+- **No:** decide between Editorial and Faithful by authority:
 
 > Would you accept the editor deleting a weak sentence, changing the structure, or
 > sharpening the voice?
@@ -58,6 +74,8 @@ closing call to action.”
 | Preserve every supplied proposition with minimal, stay-close edits | Faithful Conservative |
 | Remove unsupported benefits, vague authority, hype, or repeated conclusions | Editorial Humanizer |
 | Keep approved marketing, legal, policy, or stakeholder language intact in force | Either Faithful mode |
+| Rewrite supplied technical content for an informed non-specialist | Plain Language Rewrite |
+| Explain what supplied technical content means without replacing it | Plain Language Explain |
 | Reorganize an argument, headings, paragraphs, or lists | Editorial Humanizer |
 | Protect meaningful order, list membership, examples, conditions, scope, and attribution | Either Faithful mode |
 | Produce an editorial-quality audit and optional 80-point score | Editorial Humanizer |
@@ -65,24 +83,21 @@ closing call to action.”
 
 ### Detailed comparison
 
-| Dimension | Editorial Humanizer | Faithful Structural | Faithful Conservative |
-|---|---|---|---|
-| Source authority | Editor may decide what belongs, within factual-integrity limits | Source is authoritative in full | Same as Structural |
-| Content selection | May cut, consolidate, or reshape material | Every proposition, reason, example, caveat, and conclusion survives | Same as Structural |
-| Semantic invariants | Preserves facts and epistemic status that remain | Preserves propositions, stance, attribution, modality, scope, chronology, logic, comparisons, exact anchors, register, and meaningful order | Same as Structural |
-| Form strategy | May alter content selection, argument architecture, emphasis, and voice | Reconstructs sentence and non-meaningful paragraph form from a semantic ledger | Makes the smallest useful localized edit |
-| Subjects and boundaries | May change them editorially | May change grammatical subjects and split or merge sentences when semantically safe | Preserves subjects and boundaries unless a local defect requires change |
-| Clause and paragraph order | May reorganize the argument | May move clauses or non-meaningful paragraph boundaries while preserving chronology, causality, scope, emphasis, and argument order | Preserves existing architecture and ordering by default |
-| Already-natural prose | Preserves it unless an authorized broader edit requires change | Leaves it unchanged | Leaves it unchanged |
-| Scientific register | May tighten and restructure within evidence boundaries | Preservation checks become stricter; the mode does not change silently | Same as Structural |
-| Promotional or weak claims | May neutralize or delete them | Must retain their supplied force | Same as Structural |
-| Default | Separate skill | Default Faithful mode | Opt-in only |
-| Audit and score | Optional 80-point editorial-quality audit | `Form changes:` and `Preservation notes:` only; no AI-likeness score | Same as Structural |
-| Detector optimization | Not a goal | Forbidden | Forbidden |
+| Dimension | Editorial Humanizer | Faithful Structural | Faithful Conservative | Plain Language Rewrite | Plain Language Explain |
+|---|---|---|---|---|---|
+| Source authority | Editor may decide what belongs, within factual-integrity limits | Source is authoritative in full | Same as Structural | Source is authoritative in full; conventional definitions may be added | Same as Rewrite |
+| Content selection | May cut, consolidate, or reshape material | Every proposition, reason, example, caveat, and conclusion survives | Same as Structural | Every substantive technical element survives | Explains every material element concisely |
+| Semantic invariants | Preserves facts and epistemic status that remain | Preserves propositions, stance, attribution, modality, scope, chronology, logic, comparisons, exact anchors, register, and meaningful order | Same as Structural | Preserves substantive content, relationships, operational order, and protected literals | Same as Rewrite |
+| Form strategy | May alter content selection, argument architecture, emphasis, and voice | Reconstructs sentence and non-meaningful paragraph form from a semantic ledger | Makes the smallest useful localized edit | Produces audience-adapted replacement copy | Produces a concise explanation, not replacement copy |
+| Already-natural prose | Preserves it unless an authorized broader edit requires change | Leaves it unchanged | Leaves it unchanged | Leaves it unchanged when comprehension does not benefit | Explains only what needs explanation |
+| Scientific register | May tighten and restructure within evidence boundaries | Preservation checks become stricter; the mode does not change silently | Same as Structural | Defines necessary terms without weakening evidence boundaries | Same as Rewrite, with extra caution for explanations |
+| Default | Separate skill | Default Faithful mode | Opt-in only | Default Plain Language mode | Opt-in only |
+| Audit and score | Optional 80-point editorial-quality audit | `Form changes:` and `Preservation notes:` only; no AI-likeness score | Same as Structural | Rewrite only unless combined output is requested | Explanation only |
+| Detector optimization | Not a goal | Forbidden | Forbidden | Forbidden | Forbidden |
 
 ### Shared guarantees
 
-Both Humanizers:
+All three Humanizers:
 
 - preserve supplied names, numbers, dates, quotations, citations, code,
   identifiers, paths, and technical terms when they remain relevant to the output;
@@ -95,8 +110,10 @@ Both Humanizers:
 - exclude detector evasion as an objective.
 
 Their common factual-integrity boundary does not make them interchangeable.
-Editorial may remove a supplied claim; Faithful may not. Faithful preserves source
-content, but it does not verify that the content is true.
+Editorial may remove a supplied claim; Faithful and Plain Language may not.
+Faithful permits no explanatory addition, while Plain Language may add only the
+definitions and explanation required for comprehension. Neither preservation
+contract verifies that the source content is true.
 
 ### When Editorial Humanizer is ideal
 
@@ -137,6 +154,25 @@ or paragraph structure. Preserving all claims does not automatically select
 Conservative. High-stakes or scientific register strengthens the preservation
 check but does not silently change the requested mode.
 
+### When Plain Language Humanizer is ideal
+
+Use Plain Language Humanizer when supplied technical content is accurate for its
+purpose but the intended reader lacks domain expertise. Typical cases include API
+behavior, webhooks, procedures, scientific findings, security notices, and other
+technical instructions that need plain language without losing conditions,
+warnings, operational order, or exact literals.
+
+Choose **Rewrite** for replacement copy. Rewrite is the default. Choose **Explain**
+when the reader needs a concise explanation of the supplied content rather than a
+replacement passage. A request for both produces the rewrite first and then a short
+`Explanation:` section.
+
+Explain mode may use a brief example or analogy when the user asks for one or when
+it is materially needed. It labels the device, states its limits, and must not add
+source-specific behavior, guarantees, numbers, consequences, or advice. High-stakes
+content requires extra caution, and every addition must be necessary for
+comprehension.
+
 ### Mixed and ambiguous requests
 
 “Preserve the meaning, but improve it editorially” is ambiguous because editorial
@@ -153,7 +189,7 @@ Do not choose Editorial merely because the user asks for a “strong” rewrite.
 choose Faithful merely because the user asks to “keep the general meaning.” The
 relevant question is whether every substantive element must survive.
 
-## Same source, three results
+## Same source, four results
 
 Source:
 
@@ -182,12 +218,24 @@ Faithful Conservative may return:
 Atlas Notes provides offline access to saved documents, so travelers can review project files without an internet connection. At the same time, it allows administrators to revoke access after a device has been lost, helping organizations balance convenience with security.
 ```
 
-The Faithful outputs retain the same propositions and scope. Structural rebuilds
-the sentence architecture; Conservative repairs it locally. The Structural wording
-does not narrow offline access to travelers: travelers are one use case for a
-generally available feature.
+Plain Language Rewrite may return:
 
-The comparison library applies all three behaviors to 12 same-source passages
+```text
+Atlas Notes lets people open saved documents without an internet connection. This allows travelers to review project files while offline. If a device is lost, administrators can remove its access. These features help organizations balance convenience with security.
+```
+
+The Faithful and Plain Language outputs retain the same propositions and scope.
+Structural rebuilds the sentence architecture; Conservative repairs it locally;
+Plain Language adapts the technical presentation for its default informed
+non-specialist audience. None of them narrows offline access to travelers:
+travelers are one use case for a generally available feature.
+
+Explain is not replacement copy, so it is not a fifth result in this comparison.
+See the linked [Plain Language Explain examples](docs/skill-examples.md#explain-a-webhook)
+for that output contract.
+
+The existing comparison library applies the three Editorial and Faithful behaviors
+to 12 same-source passages
 spanning opinion, academic/scientific, product, community, policy, medical,
 financial, cybersecurity, technical procedure, customer support, fundraising, and
 workplace contexts:
@@ -318,18 +366,55 @@ The audit contains:
 
 It does not assign an AI-likeness score.
 
+## Plain Language Humanizer
+
+Plain Language Humanizer adapts supplied technical content for a less technical
+audience while preserving technical meaning and operational safety. Its default
+audience is an informed non-specialist. It replaces unnecessary jargon with precise
+everyday language, briefly defines necessary technical terms, and keeps protected
+literals such as code, commands, flags, identifiers, API names, error messages,
+URLs, paths, versions, citations, formulas, and units exact.
+
+Rewrite use:
+
+```text
+Use $plain-language-humanizer in Rewrite mode. Adapt this technical content for an informed non-specialist. Return only the rewrite:
+[paste source]
+```
+
+Explain use:
+
+```text
+Use $plain-language-humanizer in Explain mode. Explain this supplied technical content concisely for an informed non-specialist:
+[paste source]
+```
+
+Combined use:
+
+```text
+Use $plain-language-humanizer to rewrite this and then explain it briefly. Put the rewrite first, followed by Explanation:
+[paste source]
+```
+
+An explicit mode always wins. Rewrite is the default when no mode is named.
+Explain returns an explanation rather than replacement copy. A combined request is
+not a third mode: it returns the rewrite followed by a short section labeled
+exactly `Explanation:`.
+
 ### Scientific and academic writing
 
-Both skills use a shared scientific-register reference, but with different
+All three skills use a shared scientific-register reference, but with different
 authority. Faithful treats terminology, passive voice, hedging, citations,
 statistical meaning, and repeated exact terms as preservation constraints.
 Editorial may remove formulaic padding or improve argument flow, but it must keep
 epistemic caution, evidence boundaries, attribution, definitions, and causal
-strength intact.
+strength intact. Plain Language retains precise scientific terms when substitution
+would change meaning, defines them briefly, and preserves statistics, uncertainty,
+evidence boundaries, and causal strength.
 
 ## Trigger behavior
 
-The two skills intentionally have different trigger contracts.
+The three skills intentionally have different trigger contracts.
 
 Editorial Humanizer can be selected for requests such as:
 
@@ -352,6 +437,17 @@ Humanize the form only. Do not change the substance.
 Preserve every claim, hedge, attribution, and example.
 ```
 
+Plain Language Humanizer should be selected for audience adaptation of supplied
+technical content, for example:
+
+```text
+Rewrite this API documentation in plain language for a nontechnical reader.
+```
+
+```text
+Explain what this supplied webhook behavior means for an informed non-specialist.
+```
+
 Within Faithful, routing is deterministic:
 
 - an explicitly named mode always wins;
@@ -364,11 +460,16 @@ Within Faithful, routing is deterministic:
 - high-stakes or scientific register strengthens preservation checks without
   silently changing the mode.
 
-If the requested rewrite conflicts with the Faithful preservation contract, state
-the boundary or use Editorial only when the user authorizes substantive selection,
+Within Plain Language, an explicit mode wins; rewrite, simplify, reduce-jargon, and
+nontechnical-reader requests select Rewrite; explanation or walkthrough requests
+select Explain; and no named mode selects Rewrite. An explicit request for both
+operations produces combined output.
+
+If the requested rewrite conflicts with a preservation contract, state the
+boundary or use Editorial only when the user authorizes substantive selection,
 compression, reprioritization, or argument restructuring. Detector-evasion requests
-are rejected or reframed as ordinary writing-quality work; neither skill optimizes
-for detector outcomes.
+are rejected or reframed as ordinary writing-quality work; none of the skills
+optimizes for detector outcomes.
 
 Automatic selection varies by client. Use the client-specific activation form
 whenever the distinction matters. See
@@ -422,9 +523,14 @@ git clone https://github.com/CoveMB/humanizer-skill-plugin.git
 ### Plain Codex skills
 
 ```bash
-mkdir -p ~/.agents/skills/editorial-humanizer ~/.agents/skills/faithful-humanizer ~/.agents/skills/references
+mkdir -p \
+  ~/.agents/skills/editorial-humanizer \
+  ~/.agents/skills/faithful-humanizer \
+  ~/.agents/skills/plain-language-humanizer \
+  ~/.agents/skills/references
 cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.agents/skills/editorial-humanizer/
 cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.agents/skills/faithful-humanizer/
+cp -R humanizer-skill-plugin/skills/plain-language-humanizer/. ~/.agents/skills/plain-language-humanizer/
 cp -R humanizer-skill-plugin/skills/references/. ~/.agents/skills/references/
 ```
 
@@ -434,20 +540,33 @@ can make selection and provenance ambiguous.
 ### Claude Code
 
 ```bash
-mkdir -p ~/.claude/skills/references
-cp -R humanizer-skill-plugin/skills/editorial-humanizer ~/.claude/skills/editorial-humanizer
-cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.claude/skills/faithful-humanizer
+mkdir -p \
+  ~/.claude/skills/editorial-humanizer \
+  ~/.claude/skills/faithful-humanizer \
+  ~/.claude/skills/plain-language-humanizer \
+  ~/.claude/skills/references
+cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.claude/skills/editorial-humanizer/
+cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.claude/skills/faithful-humanizer/
+cp -R humanizer-skill-plugin/skills/plain-language-humanizer/. ~/.claude/skills/plain-language-humanizer/
 cp -R humanizer-skill-plugin/skills/references/. ~/.claude/skills/references/
 ```
 
 ### OpenCode
 
 ```bash
-mkdir -p ~/.config/opencode/skills/references
-cp -R humanizer-skill-plugin/skills/editorial-humanizer ~/.config/opencode/skills/editorial-humanizer
-cp -R humanizer-skill-plugin/skills/faithful-humanizer ~/.config/opencode/skills/faithful-humanizer
+mkdir -p \
+  ~/.config/opencode/skills/editorial-humanizer \
+  ~/.config/opencode/skills/faithful-humanizer \
+  ~/.config/opencode/skills/plain-language-humanizer \
+  ~/.config/opencode/skills/references
+cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.config/opencode/skills/editorial-humanizer/
+cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.config/opencode/skills/faithful-humanizer/
+cp -R humanizer-skill-plugin/skills/plain-language-humanizer/. ~/.config/opencode/skills/plain-language-humanizer/
 cp -R humanizer-skill-plugin/skills/references/. ~/.config/opencode/skills/references/
 ```
+
+After a manual install or update, start a new client session so its skill catalog
+reloads the copied files.
 
 ## Repository layout
 
@@ -471,11 +590,14 @@ cp -R humanizer-skill-plugin/skills/references/. ~/.config/opencode/skills/refer
 │   │   └── references/pattern-catalog.md
 │   ├── faithful-humanizer/
 │   │   └── SKILL.md
+│   ├── plain-language-humanizer/
+│   │   └── SKILL.md
 │   └── references/registers/scientific-writing.md
 └── tests/
 ```
 
-The eval runner exercises Editorial Humanizer and both Faithful modes. Executable
+The eval runner exercises Editorial Humanizer, both Faithful modes, and both Plain
+Language modes. Executable
 Faithful cases share checks for attribution, modality, scope, supplied promotional
 claims, opinion, chronology, logical relations, comparisons, exact anchors, list
 membership, scientific register, audit output, and forbidden additions. Structural
@@ -493,6 +615,9 @@ Its dedicated live rubric keeps semantic fidelity at a minimum 9/10 and adds eit
 averaged into one intervention score.
 Editorial eval summaries also record deterministic pattern diagnostics as advisory
 evidence; those observations do not determine pass/fail or authorship.
+Plain Language cases cover API and webhook behavior, protected procedures,
+scientific and high-stakes boundaries, already-clear text, mode routing, and
+anti-bloat constraints.
 
 ## Testing
 
@@ -525,6 +650,18 @@ Preview only Faithful Conservative cases across three trials:
 
 ```bash
 make eval-humanizer-dry-run EVAL_ARGS='--target-skill faithful-humanizer --faithful-mode conservative --trials 3 --rubric-grade --rubric-model gpt-5.5'
+```
+
+Preview only Plain Language Rewrite cases:
+
+```bash
+make eval-humanizer-dry-run EVAL_ARGS='--target-skill plain-language-humanizer --plain-language-mode rewrite'
+```
+
+Preview only Plain Language Explain cases:
+
+```bash
+make eval-humanizer-dry-run EVAL_ARGS='--target-skill plain-language-humanizer --plain-language-mode explain'
 ```
 
 Validate the seeded rubric-calibration matrix without invoking a model:
@@ -583,21 +720,28 @@ The detailed comparison and rejected design choices are documented in
 
 ## Design limits
 
-Neither skill can mathematically guarantee semantic equivalence. Language is
-ambiguous, and a model can still make a bad paraphrase.
+None of the skills can mathematically guarantee semantic equivalence. Language is
+ambiguous, and a model can still make a bad paraphrase or explanation.
 
 Faithful Humanizer reduces that risk through a shared semantic ledger, explicit
 invariants, exact-anchor preservation, mode-specific intervention, and
 restore-on-doubt rules. High-stakes legal, medical, scientific, financial,
 security, or policy text still requires human review.
 
-Neither skill guarantees that an AI detector will classify the output as
-human-written. Detector evasion is not the objective.
+Plain Language Humanizer reduces that risk through a technical-content ledger,
+protected literals, a bidirectional content check, and an anti-bloat contract. It
+does not research missing facts, troubleshoot systems, fact-check, summarize, or
+provide professional advice. Examples and analogies remain bounded explanatory
+devices, not source facts.
+
+No skill guarantees that an AI detector will classify the output as human-written.
+Detector evasion is not the objective.
 
 ## License
 
 Original repository code, plugin metadata, tests, repository-authored
-documentation, and Faithful Humanizer are released under the MIT License.
+documentation, Faithful Humanizer, and Plain Language Humanizer are released under
+the MIT License.
 
 Wikipedia-derived material adapted into Editorial Humanizer skill instructions,
 reference material, examples, and related plugin documentation remains available

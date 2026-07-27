@@ -1,19 +1,24 @@
 # Skill examples
 
-This repository ships two related but intentionally different skills:
+This repository ships three related but intentionally different skills:
 
 - **Editorial Humanizer** (`editorial-humanizer`) applies broad, voice-oriented
   editorial judgment.
 - **Faithful Humanizer** (`faithful-humanizer`) makes decisive surface rewrites
   while preserving substance.
+- **Plain Language Humanizer** (`plain-language-humanizer`) adapts supplied
+  technical content for a less technical audience.
 
 Editorial Humanizer may change selection, structure, emphasis, and rhetorical
-presentation. Faithful Humanizer may change only surface form.
+presentation. Faithful Humanizer may change only surface form. Plain Language
+Humanizer preserves substantive technical content while allowing only the brief
+definitions and explanations required for comprehension.
 
 Use the explicit invocation whenever the distinction matters.
 
-For side-by-side outputs from the same source across 17 genres and editing cases,
-see [`Paired Humanizer comparison examples`](humanizer-comparison-examples.md).
+For side-by-side Editorial and Faithful outputs from the same source across 12
+contexts, see
+[`Three-behavior Humanizer comparison examples`](humanizer-comparison-examples.md).
 
 ## Choosing a skill
 
@@ -31,6 +36,9 @@ see [`Paired Humanizer comparison examples`](humanizer-comparison-examples.md).
 | Receive only form-change and preservation notes | Faithful Humanizer |
 | Tighten scientific prose within evidence boundaries | Editorial Humanizer |
 | Preserve scientific terminology, hedging, passive voice, and citations | Faithful Humanizer |
+| Rewrite technical content for an informed non-specialist | Plain Language Rewrite |
+| Explain supplied technical content for an informed non-specialist | Plain Language Explain |
+| Preserve protected literals while reducing unnecessary jargon | Plain Language Humanizer |
 
 ## Editorial Humanizer
 
@@ -296,6 +304,115 @@ The response should contain:
 
 It should not assign an AI-likeness score.
 
+## Plain Language Humanizer
+
+Plain Language Humanizer uses an informed non-specialist as its default audience.
+Rewrite is the default mode and produces replacement copy. Explain is explicit and
+produces an explanation rather than replacement copy. A combined request returns
+the rewrite first, followed by a short section labeled exactly `Explanation:`.
+
+It preserves every substantive claim, condition, warning, prerequisite, step,
+qualifier, relationship, and protected literal. It may add only the definitions and
+explanation required for comprehension.
+
+### Rewrite an API limit
+
+```text
+Use $plain-language-humanizer in Rewrite mode. Adapt this technical content for an
+informed non-specialist. Return only the rewrite:
+
+The API enforces a per-client rate limit of 120 requests per minute and returns
+HTTP 429 for requests above the threshold.
+```
+
+Expected rewrite:
+
+```text
+The application programming interface (API), which lets software systems communicate, limits each client to 120 requests per minute. Requests above that limit receive HTTP 429, an error code meaning too many requests.
+```
+
+The output defines the necessary term and error code without changing the rate,
+scope, threshold, or response.
+
+### Explain a webhook
+
+```text
+Use $plain-language-humanizer in Explain mode. Explain this supplied technical
+content concisely for an informed non-specialist:
+
+When an invoice is paid, Ledger emits an `invoice.paid` webhook to the configured
+HTTPS endpoint. Delivery is retried with exponential backoff for up to 24 hours.
+```
+
+Expected explanation:
+
+```text
+When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff.
+```
+
+Explain mode may add a brief example or analogy only when requested or materially
+needed. It must label the device as explanatory, state its limits, and add no
+source-specific behavior, guarantees, numbers, consequences, or advice. High-stakes
+content requires extra caution, and decorative or repeated explanation is excluded.
+
+### Rewrite and explain a protected procedure
+
+```text
+Use $plain-language-humanizer to rewrite this and then explain it briefly. Put the
+rewrite first, followed by Explanation:
+
+Run `atlas migrate --dry-run` before `atlas migrate --apply`. Do not use `--apply`
+if validation reports an incompatible schema. If the second command fails, restore
+`/srv/atlas/schema.json`.
+```
+
+Expected combined output:
+
+```text
+First, run `atlas migrate --dry-run`, which checks the migration without applying it. Then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema, meaning the existing and proposed data structures cannot work together. If `atlas migrate --apply` fails, restore `/srv/atlas/schema.json`.
+
+Explanation:
+
+The order is required: check the migration first, then apply it. An incompatible-schema report stops the apply step. A failed second command requires restoring the exact file named in the source.
+```
+
+The commands, flags, path, prohibition, condition, and operational order remain
+exact.
+
+### Preserve a scientific causal boundary
+
+Source:
+
+```text
+Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This association does not establish causality.
+```
+
+Plain Language Rewrite may return:
+
+```text
+Smith et al. (2024) reported a hazard ratio of 0.78, which compares the rate of an event between two groups over time. The 95% confidence interval (CI) was 0.61–0.99, a range that expresses uncertainty around the estimate. This association does not establish causality.
+```
+
+The explanation keeps the citation, estimate, interval, uncertainty, and statement
+that association does not establish causality.
+
+### Preserve already-clear text
+
+Source:
+
+```text
+Run `make test` before deployment. Stop if any test fails.
+```
+
+Expected rewrite:
+
+```text
+Run `make test` before deployment. Stop if any test fails.
+```
+
+Plain Language Humanizer does not rewrite already-clear content when comprehension
+would not improve.
+
 ## Same source, different contracts
 
 Source:
@@ -345,6 +462,11 @@ Use $faithful-humanizer to humanize the form only:
 [paste draft]
 ```
 
+```text
+Use $plain-language-humanizer in Rewrite mode for an informed non-specialist:
+[paste technical content]
+```
+
 ### Claude Code
 
 Claude Code exposes installed skills as slash commands:
@@ -359,6 +481,11 @@ Claude Code exposes installed skills as slash commands:
 [paste draft]
 ```
 
+```text
+/plain-language-humanizer Use Rewrite mode for an informed non-specialist:
+[paste technical content]
+```
+
 ### OpenCode
 
 OpenCode agents discover installed skills and load the selected instructions with
@@ -366,8 +493,19 @@ the native `skill` tool. Ask the agent to load the exact skill name before givin
 the editing request:
 
 ```text
+Load `editorial-humanizer` with the skill tool, then rewrite this editorially:
+[paste draft]
+```
+
+```text
 Load `faithful-humanizer` with the skill tool, then humanize the form only:
 [paste draft]
+```
+
+```text
+Load `plain-language-humanizer` with the skill tool, then use Rewrite mode for an
+informed non-specialist:
+[paste technical content]
 ```
 
 This repository does not define a direct OpenCode invocation command. For a

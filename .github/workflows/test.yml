@@ -57,6 +57,12 @@ jobs:
           EVAL_ARGS='--target-skill faithful-humanizer --trials 3
           --rubric-grade --rubric-model gpt-5.5'
 
+      - name: Check Plain Language eval mode flags
+        run: >-
+          make eval-humanizer-dry-run
+          EVAL_ARGS='--target-skill plain-language-humanizer
+          --plain-language-mode rewrite --plain-language-mode explain'
+
       - name: Check rubric calibration matrix
         run: >-
           make eval-humanizer-dry-run

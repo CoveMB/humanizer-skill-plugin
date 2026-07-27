@@ -20,6 +20,7 @@ on:
           - all
           - editorial-humanizer
           - faithful-humanizer
+          - plain-language-humanizer
       trials:
         description: "Number of trials per selected case"
         required: true
