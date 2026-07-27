@@ -1438,8 +1438,9 @@
           "guaranteed delivery"
         ],
         "must_not_match": [
-          "(?i)(?:\\bdelivery\\s+(?:is|will\\s+be)\\s+guaranteed\\b|\\bguarantees?\\s+delivery\\b|\\bdelivery\\s+(?:will\\s+)?always\\s+succeeds?\\b)",
-          "(?i)(?:\\b(?:(?:up\\s+to|at\\s+most|exactly)\\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|\\d+)\\s+(?:retr(?:y|ies)|(?:(?:retry|delivery)\\s+)?attempts?)\\b|\\b(?:retries|tries)\\s+(?:(?:up\\s+to|at\\s+most|exactly)\\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|\\d+)\\s+times?\\b)"
+          "(?i)(?:\\bdelivery\\s+(?:is|will\\s+be)\\s+guaranteed\\b|(?<!not )(?<!never )(?<!cannot )(?<!can't )(?<!doesn't )(?<!not able to )\\bguarantees?\\s+delivery\\b|\\bdelivery\\s+(?:will\\s+)?always\\s+succeeds?\\b)",
+          "(?i)\\b(?:(?:up\\s+to|at\\s+most|exactly)\\s+)?(?:\\d+|(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion)(?:[\\s-]+[a-z]+)*)\\s+(?:retr(?:y|ies)|(?:(?:retry|delivery)\\s+)?attempts?)\\b",
+          "(?i)\\b(?:retries|tries)\\s+(?:(?:up\\s+to|at\\s+most|exactly)\\s+)?(?:\\d+|(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion)(?:[\\s-]+[a-z]+)*)\\s+times?\\b"
         ],
         "no_chatbot_wrapper": true,
         "no_markdown_fence": true,
@@ -1472,6 +1473,16 @@
         {
           "label": "invents a delivery-attempt count",
           "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It retries with three delivery attempts within 24 hours and waits longer between attempts.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "invents a delivery-attempt count above ten",
+          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It retries with eleven delivery attempts within 24 hours and waits longer between attempts.",
+          "expected_error": "forbidden pattern matched"
+        },
+        {
+          "label": "invents a hyphenated retry-times count",
+          "output": "Ledger sends an `invoice.paid` notification to the configured HTTPS endpoint when an invoice is paid. It retries twenty-one times within 24 hours and waits longer between attempts.",
           "expected_error": "forbidden pattern matched"
         },
         {

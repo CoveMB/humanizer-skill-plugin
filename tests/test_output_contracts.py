@@ -139,6 +139,39 @@ class OutputContractTests(unittest.TestCase):
                     ):
                         validate_case_output(case, failure["output"])
 
+    def test_plain_language_claim_guards_allow_explicit_negation(self):
+        cases = {case["id"]: case for case in load_fixture_cases()}
+        allowed_outputs = {
+            "api_never_delayed": (
+                "plain_language_api_rewrite",
+                "The API allows each client 120 requests per minute. Requests above "
+                "the threshold are never delayed; they return HTTP 429.",
+            ),
+            "api_does_not_delay": (
+                "plain_language_api_rewrite",
+                "The API does not delay requests. It allows each client 120 requests "
+                "per minute and returns HTTP 429 for requests above the threshold.",
+            ),
+            "webhook_does_not_guarantee": (
+                "plain_language_webhook_explain",
+                "Ledger does not guarantee delivery. It sends an `invoice.paid` "
+                "notification to the configured HTTPS endpoint when an invoice is "
+                "paid. If delivery fails, it retries for up to 24 hours and waits "
+                "longer between attempts.",
+            ),
+            "webhook_never_guarantees": (
+                "plain_language_webhook_explain",
+                "Ledger never guarantees delivery. It sends an `invoice.paid` "
+                "notification to the configured HTTPS endpoint when an invoice is "
+                "paid. If delivery fails, it retries for up to 24 hours and waits "
+                "longer between attempts.",
+            ),
+        }
+
+        for label, (case_id, output) in allowed_outputs.items():
+            with self.subTest(output=label):
+                validate_case_output(cases[case_id], output)
+
     def test_requires_source_change_when_requested(self):
         case = {
             "id": "meaningful_rewrite",
