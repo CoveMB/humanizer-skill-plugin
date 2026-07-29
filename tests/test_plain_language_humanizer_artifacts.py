@@ -67,6 +67,11 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
         self.normalized_skill = normalize_markdown(self.skill_markdown)
         self.frontmatter = extract_frontmatter(self.skill_markdown)
         self.normalized_frontmatter = normalize_markdown(self.frontmatter.lower())
+        self.public_artifacts = {
+            "skill": self.skill_markdown,
+            "readme": read_text(REPO_ROOT / "README.md"),
+            "examples": read_text(REPO_ROOT / "docs" / "skill-examples.md"),
+        }
 
     def test_frontmatter_identifies_the_skill_and_trigger_boundary(self):
         self.assertEqual(frontmatter_scalar(self.frontmatter, "name"), "plain-language-humanizer")
@@ -179,12 +184,14 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
             self.assertIn(source, self.skill_markdown)
 
     def test_output_contract_rejects_generic_shape_escape_clauses(self):
-        normalized_lower = self.normalized_skill.lower()
-        for escape_clause in (
-            "unless the user requests another output shape",
-            "unless the user requested another shape",
-        ):
-            self.assertNotIn(escape_clause, normalized_lower)
+        for artifact_name, artifact in self.public_artifacts.items():
+            with self.subTest(artifact=artifact_name):
+                normalized_lower = normalize_markdown(artifact).lower()
+                for escape_clause in (
+                    "unless the user requests another output shape",
+                    "unless the user requested another shape",
+                ):
+                    self.assertNotIn(escape_clause, normalized_lower)
 
     def test_explanatory_devices_have_the_complete_safety_boundary(self):
         normalized_lower = self.normalized_skill.lower()
@@ -203,13 +210,7 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
             self.assertIn(term, normalized_lower)
 
     def test_explanatory_device_authority_aligns_across_public_artifacts(self):
-        public_artifacts = {
-            "skill": self.skill_markdown,
-            "readme": read_text(REPO_ROOT / "README.md"),
-            "examples": read_text(REPO_ROOT / "docs" / "skill-examples.md"),
-        }
-
-        for artifact_name, artifact in public_artifacts.items():
+        for artifact_name, artifact in self.public_artifacts.items():
             with self.subTest(artifact=artifact_name):
                 normalized_lower = normalize_markdown(artifact).lower()
                 self.assertRegex(
