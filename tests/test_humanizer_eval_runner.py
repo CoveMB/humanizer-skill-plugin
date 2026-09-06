@@ -1999,9 +1999,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         installation = self.runner.EvalPluginInstallation(
             plugin_id="humanizer-plugin@humanizer-eval-test",
             marketplace_name="humanizer-eval-test",
-            version="test-version",
             installed_path=Path("/tmp/installed-humanizer"),
-            package_sha256="digest",
             environment={"HOME": "/tmp/home", "CODEX_HOME": "/tmp/codex-home"},
         )
 
@@ -2054,9 +2052,7 @@ class HumanizerEvalRunnerTests(unittest.TestCase):
         installation = self.runner.EvalPluginInstallation(
             plugin_id="humanizer-plugin@humanizer-eval-test",
             marketplace_name="humanizer-eval-test",
-            version="test-version",
             installed_path=Path("/tmp/installed-humanizer"),
-            package_sha256="digest",
             environment={"HOME": "/tmp/home", "CODEX_HOME": "/tmp/codex-home"},
         )
 
