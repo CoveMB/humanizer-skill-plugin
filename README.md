@@ -521,18 +521,14 @@ the directory that contains `humanizer-skill-plugin`:
 git clone https://github.com/CoveMB/humanizer-skill-plugin.git
 ```
 
+Each client command copies every released skill directory and the shared
+`references/` directory from the checkout.
+
 ### Plain Codex skills
 
 ```bash
-mkdir -p \
-  ~/.agents/skills/editorial-humanizer \
-  ~/.agents/skills/faithful-humanizer \
-  ~/.agents/skills/plain-language-humanizer \
-  ~/.agents/skills/references
-cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.agents/skills/editorial-humanizer/
-cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.agents/skills/faithful-humanizer/
-cp -R humanizer-skill-plugin/skills/plain-language-humanizer/. ~/.agents/skills/plain-language-humanizer/
-cp -R humanizer-skill-plugin/skills/references/. ~/.agents/skills/references/
+mkdir -p ~/.agents/skills/{editorial-humanizer,faithful-humanizer,plain-language-humanizer,references}
+cp -R humanizer-skill-plugin/skills/. ~/.agents/skills/
 ```
 
 Do not enable the plain skills and plugin copies at the same time. Duplicate copies
@@ -541,29 +537,15 @@ can make selection and provenance ambiguous.
 ### Claude Code
 
 ```bash
-mkdir -p \
-  ~/.claude/skills/editorial-humanizer \
-  ~/.claude/skills/faithful-humanizer \
-  ~/.claude/skills/plain-language-humanizer \
-  ~/.claude/skills/references
-cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.claude/skills/editorial-humanizer/
-cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.claude/skills/faithful-humanizer/
-cp -R humanizer-skill-plugin/skills/plain-language-humanizer/. ~/.claude/skills/plain-language-humanizer/
-cp -R humanizer-skill-plugin/skills/references/. ~/.claude/skills/references/
+mkdir -p ~/.claude/skills/{editorial-humanizer,faithful-humanizer,plain-language-humanizer,references}
+cp -R humanizer-skill-plugin/skills/. ~/.claude/skills/
 ```
 
 ### OpenCode
 
 ```bash
-mkdir -p \
-  ~/.config/opencode/skills/editorial-humanizer \
-  ~/.config/opencode/skills/faithful-humanizer \
-  ~/.config/opencode/skills/plain-language-humanizer \
-  ~/.config/opencode/skills/references
-cp -R humanizer-skill-plugin/skills/editorial-humanizer/. ~/.config/opencode/skills/editorial-humanizer/
-cp -R humanizer-skill-plugin/skills/faithful-humanizer/. ~/.config/opencode/skills/faithful-humanizer/
-cp -R humanizer-skill-plugin/skills/plain-language-humanizer/. ~/.config/opencode/skills/plain-language-humanizer/
-cp -R humanizer-skill-plugin/skills/references/. ~/.config/opencode/skills/references/
+mkdir -p ~/.config/opencode/skills/{editorial-humanizer,faithful-humanizer,plain-language-humanizer,references}
+cp -R humanizer-skill-plugin/skills/. ~/.config/opencode/skills/
 ```
 
 After a manual install or update, start a new client session so its skill catalog
