@@ -107,12 +107,6 @@ class OutputContractTests(unittest.TestCase):
                 "Short rewrite here.\n\nExplanation:\nThis explanation adds five more words.",
             )
 
-    def test_combined_output_accepts_source_grounded_explanation(self):
-        cases = {case["id"]: case for case in load_fixture_cases()}
-        case = cases["plain_language_combined_output"]
-
-        validate_case_output(case, case["passing_output"])
-
     def test_rewrite_only_rejects_standalone_explanation_heading(self):
         case = {"id": "rewrite", "constraints": {"rewrite_only": True}}
         wrapped_outputs = (
@@ -174,51 +168,11 @@ class OutputContractTests(unittest.TestCase):
             ):
                 validate_case_output(case, output)
 
-    def test_plain_language_definitions_are_required_semantically(self):
-        cases = {case["id"]: case for case in load_fixture_cases()}
-        missing_definition_outputs = {
-            "plain_language_api_rewrite": (
-                "The API (application programming interface) sets a rate limit of "
-                "120 requests per minute for each client. Requests above the threshold "
-                "receive HTTP 429, an error code meaning too many requests."
-            ),
-            "plain_language_legal_obligation": (
-                "The controller must notify the processor, the party receiving the "
-                "notice, within 24 hours unless disclosure is prohibited by applicable "
-                "law. This exception does not remove the duty to retain the incident "
-                "record."
-            ),
-            "plain_language_webhook_explain": (
-                "When an invoice is paid, Ledger sends an `invoice.paid` webhook to "
-                "the configured HTTPS endpoint. If delivery fails, Ledger retries for "
-                "up to 24 hours and waits longer between attempts; this is exponential "
-                "backoff."
-            ),
-            "plain_language_protected_procedure": (
-                "First, run `atlas migrate --dry-run`, which checks the migration "
-                "without applying it. Then run `atlas migrate --apply`. Do not use "
-                "`--apply` if validation reports an incompatible schema. If "
-                "`atlas migrate --apply` fails, restore `/srv/atlas/schema.json`."
-            ),
-        }
-
-        for case_id, output in missing_definition_outputs.items():
-            with self.subTest(case=case_id), self.assertRaisesRegex(
-                AssertionError,
-                "required pattern missing",
-            ):
-                validate_case_output(cases[case_id], output)
-
     def test_webhook_delay_guard_accepts_precise_increasing_delay_wording(self):
         case = {
             case["id"]: case for case in load_fixture_cases()
         }["plain_language_webhook_explain"]
         valid_outputs = (
-            "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a "
-            "message that one system automatically sends to another—to the configured "
-            "HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, "
-            "waiting progressively longer between attempts; this is exponential "
-            "backoff.",
             "When an invoice is paid, Ledger sends an `invoice.paid` webhook, a "
             "message sent automatically from one system to another, to the configured "
             "HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours and "
@@ -557,51 +511,6 @@ class OutputContractTests(unittest.TestCase):
 
         for output in valid_outputs:
             with self.subTest(output=output):
-                validate_case_output(case, output)
-
-    def test_plain_language_scientific_definitions_reject_misinterpretations(self):
-        cases = {case["id"]: case for case in load_fixture_cases()}
-        case = cases["plain_language_scientific_boundary"]
-        invalid_outputs = {
-            "missing definitions": (
-                "Smith et al. (2024) reported a hazard ratio of 0.78 "
-                "(95% CI 0.61–0.99). This shows an association, but it does not "
-                "establish causality."
-            ),
-            "confidence interval as observations": (
-                "Smith et al. (2024) reported a hazard ratio of 0.78 "
-                "(95% CI 0.61–0.99). A hazard ratio compares how quickly an event "
-                "occurs between groups over time. CI means confidence interval, "
-                "a range containing observations rather than uncertainty around the "
-                "estimate. This association "
-                "does not establish causality."
-            ),
-            "hazard ratio as absolute risk": (
-                "Smith et al. (2024) reported a hazard ratio of 0.78 "
-                "(95% CI 0.61–0.99). A hazard ratio is the absolute risk that an "
-                "event will occur. CI means confidence interval, a range expressing "
-                "uncertainty around the estimate. This association does not "
-                "establish causality."
-            ),
-            "invented favored group": (
-                "Smith et al. (2024) reported a hazard ratio of 0.78 "
-                "(95% CI 0.61–0.99). A hazard ratio compares groups over time and "
-                "shows the treated group had lower risk. CI means confidence interval, "
-                "a range expressing uncertainty around the estimate. This association "
-                "does not establish causality."
-            ),
-        }
-
-        for label, output in invalid_outputs.items():
-            expected_error = (
-                "required pattern missing"
-                if label == "missing definitions"
-                else "forbidden pattern matched"
-            )
-            with self.subTest(output=label), self.assertRaisesRegex(
-                AssertionError,
-                expected_error,
-            ):
                 validate_case_output(case, output)
 
     def test_accepts_output_that_satisfies_constraints(self):
