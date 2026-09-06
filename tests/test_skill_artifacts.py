@@ -415,11 +415,6 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
             "codex plugin remove humanizer-plugin@humanizer-plugin-local",
             "codex plugin list",
             "Start a new Codex session",
-            "~/.agents/skills/editorial-humanizer",
-            "~/.agents/skills/faithful-humanizer",
-            "~/.agents/skills/plain-language-humanizer",
-            "~/.claude/skills/plain-language-humanizer",
-            "~/.config/opencode/skills/plain-language-humanizer",
             "--target-skill plain-language-humanizer --plain-language-mode rewrite",
             "--target-skill plain-language-humanizer --plain-language-mode explain",
             "Do not enable the plain skills and plugin copies at the same time",
@@ -441,15 +436,27 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.assertLess(clone_position, plain_position)
         self.assertLess(plain_position, claude_position)
         self.assertLess(claude_position, opencode_position)
-        for skill_name in (
+        skill_entries = (
             "editorial-humanizer",
             "faithful-humanizer",
             "plain-language-humanizer",
-        ):
-            source_path = f"humanizer-skill-plugin/skills/{skill_name}"
-            self.assertGreaterEqual(self.readme_markdown.count(source_path), 3)
-        shared_reference_path = "humanizer-skill-plugin/skills/references"
-        self.assertGreaterEqual(self.readme_markdown.count(shared_reference_path), 3)
+            "references",
+        )
+        brace_expression = "{" + ",".join(skill_entries) + "}"
+        install_roots = (
+            "~/.agents/skills",
+            "~/.claude/skills",
+            "~/.config/opencode/skills",
+        )
+
+        for install_root in install_roots:
+            mkdir_command = f"mkdir -p {install_root}/{brace_expression}"
+            copy_command = (
+                "cp -R humanizer-skill-plugin/skills/. "
+                f"{install_root}/"
+            )
+            self.assertEqual(self.readme_markdown.count(mkdir_command), 1)
+            self.assertEqual(self.readme_markdown.count(copy_command), 1)
 
     def test_client_specific_activation_uses_supported_forms(self):
         examples = read_text(SKILL_EXAMPLES_PATH)
