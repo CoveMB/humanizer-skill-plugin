@@ -1,4 +1,3 @@
-import json
 import unittest
 
 from tests.helpers.skill_artifacts import (
@@ -8,6 +7,7 @@ from tests.helpers.skill_artifacts import (
     extract_frontmatter,
     frontmatter_list,
     frontmatter_scalar,
+    load_fixture_cases,
     read_text,
 )
 
@@ -40,26 +40,6 @@ REQUIRED_HEADINGS = [
     "## Examples",
 ]
 
-TASK_1_EXAMPLE_SOURCES = [
-    "The API enforces a per-client rate limit of 120 requests per minute and returns HTTP 429 for requests above the threshold.",
-    "When an invoice is paid, Ledger emits an `invoice.paid` webhook to the configured HTTPS endpoint. Delivery is retried with exponential backoff for up to 24 hours.",
-    "Run `atlas migrate --dry-run` before `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema. If the second command fails, restore `/srv/atlas/schema.json`.",
-    "Smith et al. (2024) reported a hazard ratio of 0.78 (95% CI 0.61–0.99). This association does not establish causality.",
-    "Run `make test` before deployment. Stop if any test fails.",
-]
-
-CANONICAL_API_OUTPUT = "The API (application programming interface) sets a rate limit, or threshold, of 120 requests per minute for each client. Requests above the threshold receive HTTP 429, an error code meaning too many requests."
-CANONICAL_LEGAL_OUTPUT = "The controller—the party required to give notice—must notify the processor, the party receiving the notice, within 24 hours unless disclosure is prohibited by applicable law. This exception does not remove the duty to retain the incident record."
-CANONICAL_WEBHOOK_OUTPUT = "When an invoice is paid, Ledger sends an `invoice.paid` webhook—a message that one system automatically sends to another—to the configured HTTPS endpoint. If delivery fails, Ledger retries for up to 24 hours, waiting progressively longer between attempts; this is exponential backoff."
-CANONICAL_PROCEDURE_OUTPUT = "First, run `atlas migrate --dry-run`, which checks the migration without applying it. Then run `atlas migrate --apply`. Do not use `--apply` if validation reports an incompatible schema, meaning the existing and proposed data structures cannot work together. If `atlas migrate --apply` fails, restore `/srv/atlas/schema.json`."
-CANONICAL_SCIENTIFIC_OUTPUT = (
-    "Smith et al. (2024) reported a hazard ratio of 0.78 "
-    "(95% CI 0.61–0.99). A hazard ratio compares how quickly an event occurs "
-    "between groups over time. CI means confidence interval, a range that "
-    "expresses uncertainty around the estimate. This association does not "
-    "establish causality."
-)
-
 
 class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
     def setUp(self):
@@ -67,6 +47,7 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
         self.normalized_skill = normalize_markdown(self.skill_markdown)
         self.frontmatter = extract_frontmatter(self.skill_markdown)
         self.normalized_frontmatter = normalize_markdown(self.frontmatter.lower())
+        self.fixture_cases = {case["id"]: case for case in load_fixture_cases()}
         self.public_artifacts = {
             "skill": self.skill_markdown,
             "readme": read_text(REPO_ROOT / "README.md"),
@@ -144,31 +125,17 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
             self.assertIn(term, self.normalized_skill)
 
     def test_canonical_definition_examples_align_across_public_artifacts(self):
-        public_examples = read_text(REPO_ROOT / "docs" / "skill-examples.md")
-
-        for output in (
-            CANONICAL_API_OUTPUT,
-            CANONICAL_LEGAL_OUTPUT,
-            CANONICAL_WEBHOOK_OUTPUT,
-            CANONICAL_PROCEDURE_OUTPUT,
+        for case_id in (
+            "plain_language_api_rewrite",
+            "plain_language_legal_obligation",
+            "plain_language_webhook_explain",
+            "plain_language_protected_procedure",
+            "plain_language_scientific_boundary",
         ):
-            with self.subTest(output=output):
+            with self.subTest(case=case_id):
+                output = self.fixture_cases[case_id]["passing_output"]
                 self.assertIn(output, self.skill_markdown)
-                self.assertIn(output, public_examples)
-
-    def test_scientific_canonical_example_aligns_across_contract_owners(self):
-        public_examples = read_text(REPO_ROOT / "docs" / "skill-examples.md")
-        fixture_data = json.loads(
-            read_text(REPO_ROOT / "tests" / "fixtures" / "humanizer_contract_cases.json")
-        )
-        cases = {case["id"]: case for case in fixture_data["cases"]}
-
-        self.assertEqual(
-            cases["plain_language_scientific_boundary"]["passing_output"],
-            CANONICAL_SCIENTIFIC_OUTPUT,
-        )
-        self.assertIn(CANONICAL_SCIENTIFIC_OUTPUT, self.skill_markdown)
-        self.assertIn(CANONICAL_SCIENTIFIC_OUTPUT, public_examples)
+                self.assertIn(output, self.public_artifacts["examples"])
 
     def test_required_headings_are_ordered_and_skill_stays_under_line_limit(self):
         actual_headings = [
@@ -180,8 +147,15 @@ class PlainLanguageHumanizerArtifactTests(unittest.TestCase):
         self.assertLess(len(self.skill_markdown.splitlines()), 500)
 
     def test_task_1_example_sources_are_retained_exactly(self):
-        for source in TASK_1_EXAMPLE_SOURCES:
-            self.assertIn(source, self.skill_markdown)
+        for case_id in (
+            "plain_language_api_rewrite",
+            "plain_language_webhook_explain",
+            "plain_language_protected_procedure",
+            "plain_language_scientific_boundary",
+            "plain_language_already_clear",
+        ):
+            with self.subTest(case=case_id):
+                self.assertIn(self.fixture_cases[case_id]["source"], self.skill_markdown)
 
     def test_output_contract_rejects_generic_shape_escape_clauses(self):
         for artifact_name, artifact in self.public_artifacts.items():
