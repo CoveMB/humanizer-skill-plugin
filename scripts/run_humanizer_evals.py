@@ -70,9 +70,7 @@ RUBRIC_MAX_DIMENSION_SCORE = 10
 class EvalPluginInstallation:
     plugin_id: str
     marketplace_name: str
-    version: str
     installed_path: Path
-    package_sha256: str
     environment: dict
 
 
@@ -298,7 +296,7 @@ def installed_eval_plugin(codex_bin, repo_root, artifacts_dir, codex_home):
         isolated_home = temporary_root / "home"
         marketplace_root = temporary_root / "marketplace"
         isolated_home.mkdir()
-        staged_plugin_root = stage_eval_marketplace(
+        stage_eval_marketplace(
             repo_root,
             marketplace_root,
             marketplace_name,
@@ -307,9 +305,7 @@ def installed_eval_plugin(codex_bin, repo_root, artifacts_dir, codex_home):
         installation = EvalPluginInstallation(
             plugin_id=plugin_id,
             marketplace_name=marketplace_name,
-            version=read_json(Path(repo_root) / ".codex-plugin" / "plugin.json")["version"],
             installed_path=Path(),
-            package_sha256=plugin_package_sha256(staged_plugin_root),
             environment=environment,
         )
         marketplace_added = False
@@ -361,7 +357,6 @@ def installed_eval_plugin(codex_bin, repo_root, artifacts_dir, codex_home):
                 encoding="utf-8",
             )
             installation.installed_path = Path(provenance["installedPath"])
-            installation.package_sha256 = provenance["packageSha256"]
             yield installation
         finally:
             cleanup_errors = cleanup_eval_plugin(
