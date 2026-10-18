@@ -1,15 +1,7 @@
 ---
 name: plain-language-humanizer
 version: 1.0.0
-description: |
-  Adapt supplied technical content for a less technical audience. Use whenever the
-  user explicitly invokes `$plain-language-humanizer`, asks for plain language,
-  asks to reduce jargon, a nontechnical reader, or a concise explanation of supplied
-  technical content. Rewrite mode is the default; Explain mode is opt-in. Do not
-  use for broad editorial selection, strict form-only preservation, research,
-  troubleshooting, fact-checking, translation, summarization, professional advice,
-  or AI-detector evasion; use editorial-humanizer or faithful-humanizer when their
-  authority boundary fits instead.
+description: "Adapt supplied technical content for less technical readers: plain-language rewrites, reduced jargon, or concise explanations. Excludes strict form-only preservation, broad editorial selection, research, troubleshooting, fact-checking, translation, summarization, professional advice, and AI-detector evasion."
 license: MIT
 compatibility: claude-code opencode codex
 allowed-tools:

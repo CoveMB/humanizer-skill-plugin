@@ -1,13 +1,7 @@
 ---
 name: editorial-humanizer
 version: 3.0.0
-description: |
-  Apply broad editorial judgment to AI-drafted or AI-sounding prose. Use when the
-  user wants anti-slop cleanup, tighter structure, removal of weak or generic
-  material, stronger natural voice, or an audit of formulaic writing patterns. This
-  skill may reshape wording, structure, emphasis, and voice while preserving factual
-  integrity. Do not use when every supplied claim, qualifier, attribution, example,
-  and logical relation must remain; use faithful-humanizer instead.
+description: "Apply broad editorial judgment to AI-drafted or AI-sounding prose: anti-slop cleanup, removal of weak or generic material, structure, content selection, emphasis, voice, and audits of formulaic writing patterns, while preserving factual integrity. For preservation of every supplied claim, qualifier, attribution, example, and logical relation, use faithful-humanizer."
 license: MIT AND CC-BY-SA-4.0
 compatibility: claude-code opencode codex
 allowed-tools:

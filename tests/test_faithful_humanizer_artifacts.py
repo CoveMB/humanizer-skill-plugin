@@ -52,17 +52,15 @@ class FaithfulHumanizerArtifactTests(unittest.TestCase):
 
     def test_description_triggers_faithful_requests_and_excludes_other_tasks(self):
         required_terms = [
-            "use whenever the user explicitly invokes `$faithful-humanizer`",
-            "preserve every claim and opinion",
-            "keep approved claims or all substance",
-            "preserve propositions, hedges, scope qualifiers",
-            "humanize form only",
-            "without adding",
-            "fact-checking",
-            "structural mode is the default",
-            "conservative mode is opt-in",
+            "humanize prose",
+            "changing form only",
+            "preserving every claim, opinion, qualifier, attribution, example",
+            "logical relation",
+            "strict substance preservation",
             "broader editorial cleanup",
-            "editorial-humanizer",
+            "summarization",
+            "invented voice",
+            "fact-checking",
             "ai-detector",
         ]
         for required_term in required_terms:

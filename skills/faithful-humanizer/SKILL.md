@@ -1,18 +1,7 @@
 ---
 name: faithful-humanizer
 version: 1.0.0
-description: |
-  Rewrite AI-sounding prose so it reads more naturally without changing its
-  substance. Use whenever the user explicitly invokes `$faithful-humanizer`, or
-  asks to preserve every claim and opinion, keep approved claims or all substance,
-  preserve propositions, hedges, scope qualifiers, or relations, humanize form
-  only, make prose less formulaic, or improve wording without adding, removing,
-  fact-checking, strengthening, softening, or reinterpreting content. Structural
-  mode is the default and may reconstruct sentence and paragraph form.
-  Conservative mode is opt-in for minimal, local edits that stay close to the
-  existing structure. Do not use for broader editorial cleanup, summarization,
-  invented voice, or AI-detector evasion; use editorial-humanizer when substantive
-  editorial judgment is wanted.
+description: "Humanize prose by changing form only, preserving every claim, opinion, qualifier, attribution, example, and logical relation. Use for strict substance preservation. Excludes broader editorial cleanup, summarization, invented voice, fact-checking, and AI-detector evasion."
 license: MIT
 compatibility: claude-code opencode codex
 allowed-tools:
