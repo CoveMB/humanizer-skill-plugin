@@ -130,6 +130,14 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.assertEqual(self.manifest["name"], "humanizer-plugin")
         self.assertEqual(self.manifest["interface"]["displayName"], "Humanizer Plugin")
 
+    def test_antigravity_manifest_matches_plugin_identity(self):
+        manifest = json.loads(read_text(REPO_ROOT / "plugin.json"))
+        self.assertEqual(set(manifest), {"name", "description"})
+        self.assertEqual(manifest["name"], self.manifest["name"])
+        self.assertRegex(manifest["name"], r"^[a-zA-Z0-9_-]+$")
+        self.assertIsInstance(manifest["description"], str)
+        self.assertTrue(manifest["description"].strip())
+
     def test_manifest_and_skill_versions_are_explicit(self):
         self.assertEqual(self.manifest["version"], "3.1.0")
         self.assertEqual(frontmatter_scalar(self.frontmatter, "version"), "3.0.0")
@@ -475,16 +483,18 @@ class EditorialHumanizerArtifactTests(unittest.TestCase):
         self.assertIn("/faithful-humanizer", examples)
         self.assertIn("/plain-language-humanizer", examples)
         self.assertIn("native `skill` tool", normalized_examples)
-        self.assertIn(
-            "does not define a direct OpenCode invocation command",
-            normalized_examples,
-        )
+        opencode_examples = examples.split("### OpenCode v2\n", 1)[1].split(
+            "### Antigravity\n", 1
+        )[0]
+        antigravity_examples = examples.split("### Antigravity\n", 1)[1]
         for skill_name in (
             "editorial-humanizer",
             "faithful-humanizer",
             "plain-language-humanizer",
         ):
-            self.assertIn(f"Load `{skill_name}` with the skill tool", examples)
+            self.assertIn(f"@{skill_name}", opencode_examples)
+            self.assertIn(f"/{skill_name}", antigravity_examples)
+        self.assertIn('{"id":"faithful-humanizer"}', opencode_examples)
         self.assertIn(
             "docs/skill-examples.md#client-specific-activation",
             self.readme_markdown,

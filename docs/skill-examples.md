@@ -506,31 +506,52 @@ Claude Code exposes installed skills as slash commands:
 [paste technical content]
 ```
 
-### OpenCode
+### OpenCode v2
 
-OpenCode agents discover installed skills and load the selected instructions with
-the native `skill` tool. Ask the agent to load the exact skill name before giving
-the editing request:
+OpenCode v2 supports explicit `@skill-id` mentions and the native `skill` tool.
+Use the directory-derived ID:
 
 ```text
-Load `editorial-humanizer` with the skill tool, then rewrite this editorially:
+@editorial-humanizer Rewrite this editorially:
 [paste draft]
 ```
 
 ```text
-Load `faithful-humanizer` with the skill tool, then humanize the form only:
+@faithful-humanizer Use Structural mode and preserve every substantive element:
 [paste draft]
 ```
 
 ```text
-Load `plain-language-humanizer` with the skill tool, then use Rewrite mode for an
-informed non-specialist:
+@plain-language-humanizer Use Rewrite mode for an informed non-specialist:
 [paste technical content]
 ```
 
-This repository does not define a direct OpenCode invocation command. For a
-reproducible check, inspect the session trace and confirm that the `skill` tool
-loaded the selected skill's `SKILL.md`.
+You can also ask the agent to load a skill with `{"id":"faithful-humanizer"}`.
+Inspect the session trace to confirm the intended skill and required references
+were read. See [OpenCode v2 skills](https://opencode.ai/v2/docs/skills/).
+
+### Antigravity
+
+For plain skill installations, Antigravity App and CLI support slash invocation:
+
+```text
+/editorial-humanizer Rewrite this editorially:
+[paste draft]
+```
+
+```text
+/faithful-humanizer Use Conservative mode and preserve every substantive element:
+[paste draft]
+```
+
+```text
+/plain-language-humanizer Use Explain mode for an informed non-specialist:
+[paste technical content]
+```
+
+For plugin installs, inspect the loaded skill names in the client's customization
+or plugin view. In the standalone IDE, request the installed skill by name.
+See [Antigravity skills](https://antigravity.google/docs/skills).
 
 Do not rely on automatic skill selection when choosing the wrong editing contract
 could change the content.

@@ -3,7 +3,7 @@
 Humanizer Plugin contains three prose-editing skills and exposes five user-facing
 behaviors:
 
-| Behavior | Invocation | Core promise |
+| Behavior | Invocation (Codex syntax) | Core promise |
 |---|---|---|
 | **Editorial Humanizer** | `$editorial-humanizer` | Produce a substantive, voice-oriented editorial rewrite while preserving factual integrity |
 | **Faithful Humanizer — Structural** (default) | `$faithful-humanizer` or an explicit Structural request | Reconstruct sentence and paragraph form while preserving every substantive element |
@@ -475,9 +475,19 @@ optimizes for detector outcomes.
 Automatic selection varies by client. Use the client-specific activation form
 whenever the distinction matters. See
 [`Client-specific activation`](docs/skill-examples.md#client-specific-activation)
-for Codex, Claude Code, and OpenCode instructions.
+for Codex, Claude Code, OpenCode v2, and Antigravity instructions.
 
 ## Installation
+
+The same three skill directories serve every client. Codex uses
+`.codex-plugin/plugin.json`; Antigravity uses the root `plugin.json`. OpenCode v2
+loads the skills directly, without a JavaScript plugin or MCP server. The Python
+scripts are development and evaluation tools, not runtime dependencies of the
+editing skills.
+
+Choose one installation method per client. Before copying into an existing skill
+location, check for same-named skills and local edits; reconcile those copies
+instead of overwriting them blindly.
 
 ### Codex plugin marketplace
 
@@ -513,7 +523,7 @@ codex plugin list
 
 ### Manual skill checkout
 
-The Plain Codex, Claude Code, and OpenCode instructions below copy from a local
+The manual installation instructions below copy from a local
 repository checkout. Create it first, then run the client-specific commands from
 the directory that contains `humanizer-skill-plugin`:
 
@@ -523,6 +533,9 @@ git clone https://github.com/CoveMB/humanizer-skill-plugin.git
 
 Each client command copies every released skill directory and the shared
 `references/` directory from the checkout.
+All three skills also read `../references/registers/scientific-writing.md` for
+scientific content. Copying an individual skill without the sibling `references/`
+directory breaks that path. Keep `LICENSE` and `NOTICE` with redistributed copies.
 
 ### Plain Codex skills
 
@@ -541,15 +554,102 @@ mkdir -p ~/.claude/skills/{editorial-humanizer,faithful-humanizer,plain-language
 cp -R humanizer-skill-plugin/skills/. ~/.claude/skills/
 ```
 
-### OpenCode
+### OpenCode v2
 
 ```bash
 mkdir -p ~/.config/opencode/skills/{editorial-humanizer,faithful-humanizer,plain-language-humanizer,references}
 cp -R humanizer-skill-plugin/skills/. ~/.config/opencode/skills/
 ```
 
+For a project install, use `<project>/.opencode/skills/` instead. Existing
+`.agents/skills/` and `~/.agents/skills/` installs are also discovered; avoid
+installing a second copy of the same IDs. See the
+[OpenCode v2 skills documentation](https://opencode.ai/v2/docs/skills/).
+
+Alternatively, retain the complete checkout and add its absolute skill path to
+the `skills` array in your existing `opencode.jsonc`:
+
+```json
+{
+  "skills": ["/absolute/path/humanizer-skill-plugin/skills"]
+}
+```
+
+Merge this entry into existing configuration. This is a skill source, not an
+entry in `plugins`. V2 uses an array here; relative skill paths resolve from the
+active working directory. See the
+[V2 configuration reference](https://opencode.ai/v2/docs/config#skills).
+
+Invoke `@editorial-humanizer`, `@faithful-humanizer`, or
+`@plain-language-humanizer`. Skill loading and file access remain subject to the
+client's permissions; frontmatter `allowed-tools` is not a portable security
+boundary.
+
+### Antigravity
+
+For a workspace skill install, replace `/path/to/workspace` below:
+
+```bash
+mkdir -p /path/to/workspace/.agents/skills
+cp -R humanizer-skill-plugin/skills/. /path/to/workspace/.agents/skills/
+```
+
+For a global skill install, use the location for your Antigravity surface:
+
+| Surface | Global skill directory |
+|---|---|
+| Antigravity App or standalone IDE | `~/.gemini/config/skills/` |
+| Antigravity CLI | `~/.gemini/antigravity-cli/skills/` |
+
+The current default workspace path is `.agents/skills/`; `.agent/skills/` remains
+a legacy alias. App and CLI expose skills as `/<skill-name>`. In the standalone
+IDE, inspect Customizations and request the skill by name. See Google's
+[skill documentation](https://antigravity.google/docs/skills).
+
+#### Antigravity plugin install
+
+The root `plugin.json` also supports a native Antigravity bundle. From the checkout's
+parent directory, create a fresh workspace plugin directory containing only its
+manifest, skills, and license files:
+
+```bash
+plugin_dir="/path/to/workspace/.agents/plugins/humanizer-plugin"
+mkdir -p "$(dirname "$plugin_dir")"
+mkdir "$plugin_dir" &&
+  cp humanizer-skill-plugin/{plugin.json,LICENSE,NOTICE} "$plugin_dir/" &&
+  cp -R humanizer-skill-plugin/skills "$plugin_dir/"
+```
+
+The second `mkdir` refuses an existing bundle. For App/IDE global use, set
+`plugin_dir="$HOME/.gemini/config/plugins/humanizer-plugin"` instead. For the CLI,
+stage that same bundle in a temporary location, then run
+`agy plugin install /absolute/path/to/bundle` and inspect `agy plugin list --json`.
+Follow the
+[Antigravity plugin documentation](https://antigravity.google/docs/plugins).
+
+Install either the plugin or the plain skills in the selected client, avoiding
+duplicate skills. The bundle deliberately excludes `.git`, repository agent
+instructions, local planning files, tests, and evaluation artifacts.
+
 After a manual install or update, start a new client session so its skill catalog
 reloads the copied files.
+
+### Compatibility evidence
+
+Installation guidance was checked against the official OpenCode v2 and Antigravity
+documentation on 2026-10-28. The entrypoints already supply names, descriptions,
+and relative reference paths; their editing procedures require no client-specific
+API adaptation. Platform-specific frontmatter is not evidence that a client
+enforces those fields.
+
+Deterministic checks cover repository contracts and copied bundle structure.
+They do not establish client discovery, automatic selection, reference reading,
+or editing quality in a live session. To verify an installation, confirm all three
+skills appear, explicitly load one, and inspect its reference reads using synthetic
+text. Cover both Faithful modes, both Plain Language modes, an Editorial audit,
+and a scientific passage before claiming full behavioral compatibility. The
+existing live-evaluation runner and workflow exercise Codex only; OpenCode and
+Antigravity live evaluations require separate approval.
 
 ## Repository layout
 
@@ -557,6 +657,7 @@ reloads the copied files.
 .
 ├── .agents/plugins/marketplace.json
 ├── .codex-plugin/plugin.json
+├── plugin.json  # Antigravity manifest; shares skills/ with the Codex package
 ├── docs/
 │   ├── faithful-humanizer-research.md
 │   ├── humanizer-comparison-examples.md
@@ -659,6 +760,7 @@ Run saved-output validation:
 make validate-humanizer-output OUTPUT_DIR=output-dir
 ```
 
+The live runner targets Codex; it does not launch OpenCode or Antigravity.
 Live evals require isolated home and Codex directories:
 
 ```bash

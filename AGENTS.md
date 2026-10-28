@@ -67,6 +67,7 @@ Apply this coherence pass to every change that can alter plugin behavior, skill 
 
 2. Use the repository's existing ownership boundaries:
    - `.codex-plugin/plugin.json` owns plugin identity, version, description, skill entry path, interface metadata, and default prompts.
+   - `plugin.json` owns the Antigravity plugin manifest; its name must match the canonical plugin identity in `.codex-plugin/plugin.json`. Both packages use the same `skills/` tree.
    - `.agents/plugins/marketplace.json` owns this repository's marketplace source and installation policy.
    - Each `skills/<name>/SKILL.md` owns that skill's runtime procedure and skill-specific behavior.
    - Files under `skills/<name>/references/` own reference material specific to that skill.
