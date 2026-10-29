@@ -96,6 +96,32 @@ class ContractFixtureQualityTests(unittest.TestCase):
         case_ids = [case["id"] for case in self.cases]
         self.assertEqual(len(case_ids), len(set(case_ids)))
 
+    def test_source_boundary_fixtures_cover_each_editing_mode(self):
+        cases = {
+            case["id"]: case
+            for case in self.cases
+            if "source_boundary" in case["tags"]
+        }
+        self.assertEqual(
+            set(cases),
+            {
+                "editorial_source_boundary",
+                "faithful_structural_source_boundary",
+                "faithful_conservative_source_boundary",
+                "plain_language_rewrite_source_boundary",
+                "plain_language_explain_source_boundary",
+            },
+        )
+        for case in cases.values():
+            with self.subTest(case=case["id"]):
+                self.assertTrue(case["constraints"]["must_include_exact"])
+                self.assertTrue(case["constraints"]["must_differ_from_source"])
+                self.assertTrue(case["passing_output"])
+                self.assertIn(
+                    "replaces editing with compliance commentary",
+                    {failure["label"] for failure in case["failing_outputs"]},
+                )
+
     def test_required_tags_are_covered(self):
         covered_tags = {tag for case in self.cases for tag in case["tags"]}
         self.assertTrue(REQUIRED_TAGS.issubset(covered_tags), REQUIRED_TAGS - covered_tags)
@@ -223,6 +249,8 @@ class ContractFixtureQualityTests(unittest.TestCase):
         self.assertEqual(
             set(faithful_cases),
             {
+                "faithful_structural_source_boundary",
+                "faithful_conservative_source_boundary",
                 "faithful_attribution_modality_scope",
                 "faithful_promotional_opinion_chronology",
                 "faithful_exact_anchors_and_list_membership",
@@ -302,6 +330,7 @@ class ContractFixtureQualityTests(unittest.TestCase):
         self.assertEqual(
             structural_cases,
             {
+                "faithful_structural_source_boundary",
                 "faithful_structural_product_reconstruction",
                 "faithful_structural_academic_reconstruction",
                 "faithful_structural_opinion_reconstruction",
@@ -319,6 +348,8 @@ class ContractFixtureQualityTests(unittest.TestCase):
         self.assertEqual(
             set(plain_language_cases),
             {
+                "plain_language_rewrite_source_boundary",
+                "plain_language_explain_source_boundary",
                 "plain_language_api_rewrite",
                 "plain_language_webhook_explain",
                 "plain_language_combined_output",

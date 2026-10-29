@@ -19,6 +19,7 @@ def normalize_markdown(text):
 REQUIRED_HEADINGS = [
     "# Plain Language Humanizer: Technical Meaning in Plain Language",
     "## Purpose",
+    "## Source handling",
     "## Direct distinction from the other Humanizers",
     "## Audience",
     "## Deterministic mode selection",
