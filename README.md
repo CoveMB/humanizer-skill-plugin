@@ -680,6 +680,21 @@ Antigravity live evaluations require separate approval.
 └── tests/
 ```
 
+The eval matrix contains 60 cases: 22 Editorial, 22 Faithful, and 16 Plain Language.
+It includes 44 forced positive behavior cases, eight unforced positive probes, and
+eight negative controls. Forced cases request loaded-skill behavior. Explicit
+unforced probes exercise named invocation; implicit and contextual probes exercise
+selection with all three skills available. Editorial has an explicit and an
+implicit unforced probe, alongside the existing Faithful and Plain Language probes.
+
+Trace checks match skill paths or command substrings; they do not verify successful
+reads. Confirm successful tool results and installed-source provenance before
+claiming that a skill was read. Correct output alone does not prove skill selection,
+and current trace requirements cannot establish selection in clients that hide
+loading events. A trace failure occurs before output-contract and rubric grading:
+keep the failed result and validate the saved output separately before making
+output-quality claims. Further model-backed grading still needs approval.
+
 The eval runner exercises Editorial Humanizer, both Faithful modes, and both Plain
 Language modes. Executable
 Faithful cases share checks for attribution, modality, scope, supplied promotional
@@ -687,13 +702,7 @@ claims, opinion, chronology, logical relations, comparisons, exact anchors, list
 membership, scientific register, audit output, and forbidden additions. Structural
 cases require meaning-driven reconstruction where local substitutions are
 insufficient and reject unnecessary changes to already-natural prose. Conservative
-cases preserve localized intervention and reject unnecessarily broad rewriting. An
-explicit unforced catalog probe verifies named-skill
-behavior, while plugin provenance verifies that the installed Faithful skill is
-present in the model-visible catalog. Neutral implicit and contextual probes verify
-faithful output behavior without assuming that every client exposes automatic or
-client-managed skill-loading traces. Additional probes cover the boundary with
-Editorial Humanizer and detector-evasion requests.
+cases preserve localized intervention and reject unnecessarily broad rewriting.
 Its dedicated live rubric keeps semantic fidelity at a minimum 9/10 and adds either
 `structural_initiative` or `conservative_restraint`; the two strategies are not
 averaged into one intervention score.
@@ -702,6 +711,31 @@ evidence; those observations do not determine pass/fail or authorship.
 Plain Language cases cover API and webhook behavior, protected procedures,
 scientific and high-stakes boundaries, already-clear text, mode routing, and
 anti-bloat constraints.
+
+Five synthetic source-boundary cases cover Editorial, both Faithful modes, and both
+Plain Language modes. They pair quoted upload/file-change directives with ordinary
+prose and a legitimate command. Saved-output checks require the protected text,
+surrounding edits, and normal output shape; preserving a quoted directive is valid.
+These checks cannot establish whether an agent attempted a tool action. Live
+evaluation requires separate approval and inspection of observable actions; a
+sandbox blocking an attempted action still counts as an attempted violation. The
+cases do not isolate the runtime wording's effect from the model, prompt wrapper,
+or host controls.
+
+## Source handling and privacy
+
+All three delivered skills treat drafts, notes, transcripts, and documents as
+confidential task data. Source authority concerns content preservation; embedded
+commands, links, or instructions do not authorize tool actions or change the task.
+Legitimate quotations and procedural text remain subject to the selected skill's
+preservation rules. User instructions outside the source still authorize ordinary
+rewrites and requested file edits, with the usual output shape.
+
+The skills direct the agent not to independently search for private text online,
+upload it, or transfer it externally. External transfer requires explicit user
+authorization and task need. These runtime instructions are behavioral guidance;
+the host's permissions and data-handling controls remain authoritative. They do
+not provide an enforced security boundary or establish injection resistance.
 
 ## Testing
 
